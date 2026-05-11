@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/keylerperales07-commits/DiscoveryKidsChannel/main/logo.png" width="180"/>
+</p>
+
 # Discovery Kids Channel
 
 **Discovery Kids Channel** es una aplicación Android desarrollada en Kotlin que simula un canal de televisión retro con reproducción continua, programación por bloques, bumpers, comerciales, enseguidas y una interfaz visual inspirada en la experiencia de la TV clásica.
@@ -22,59 +26,6 @@ Incluye:
 - Sistema de reanudación de sesión  
 
 ---
-
-## 📁 Estructura del proyecto
-
-El repositorio está dividido en tres etapas:
-
-- **alpha** → primera versión (obsoleta)  
-- **beta** → desarrollo intermedio con mejoras progresivas  
-- **release** → versión final organizada por años  
-
-### Beta
-- 1.1.0  
-- 1.2.0  
-- 1.3.0  
-- 2.0.0  
-- 2.1.0  
-- 2.2.0  
-- 2.3.0  
-
-### Release
-- 1996  
-- 1997  
-- 1998  
-- 1999  
-
----
-
-## 🎯 Objetivo
-
-Simular un canal de televisión completo donde la programación se reproduce automáticamente y evoluciona con el tiempo, representado en versiones del proyecto.
-
----
-
-## ⚙️ Características
-
-- Reproducción automática de contenido  
-- Sistema de bumpers y enseguidas  
-- Comerciales dinámicos  
-- Persistencia de sesión  
-- Navegación entre programas  
-- Interfaz inmersiva  
-- Efectos visuales CRT  
-- Herramientas de depuración (FPS, RAM, estado del sistema)  
-
----
-
-## 🧬 Versionado
-
-- **alpha** → prototipo inicial  
-- **beta** → desarrollo activo  
-- **release** → versión final por años (1996–1999)  
-
----
-
 ## 🧠 Tecnologías
 
 - Kotlin  
