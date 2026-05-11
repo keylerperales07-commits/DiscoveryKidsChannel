@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_height="match_parent"
+     android:layout_width="match_parent"
+     android:background="#000000">
+
+    <com.keyler.discoverykidschannel.AspectRatioFrameLayout
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:id="@+id/videoContainer"
+         android:layout_gravity="center">
+
+        <VideoView
+             android:layout_height="match_parent"
+             android:layout_width="match_parent"
+             android:id="@+id/videoView"
+             android:layout_gravity="center" />
+
+    </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
+
+    <ImageView
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:src="@drawable/screenbug"
+         android:contentDescription="Channel watermark"
+         android:alpha="0"
+         android:id="@+id/screenBug" />
+
+    <TextView
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         android:gravity="center"
+         android:alpha="0"
+         android:textColor="#FFFFFF"
+         android:id="@+id/debugInfo"
+         android:layout_gravity="center|top"
+         android:text="Espere..." />
+
+</FrameLayout>

@@ -1,0 +1,69 @@
+
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+}
+
+android {
+    namespace 'com.keyler.discoverykidschannel'
+    compileSdk 34
+    
+    defaultConfig {
+        applicationId "com.keyler.discoverykidschannel"
+        minSdk 23
+        targetSdk 36
+        versionCode 02020022
+        versionName "1999.2.2.0.22"
+        
+        vectorDrawables { 
+            useSupportLibrary true
+        }
+    }
+    
+    signingConfigs {
+        release {
+            storeFile file("mi_clave.jks")
+            storePassword "29keyler07"
+            keyAlias "mi_alias"
+            keyPassword "29keyler07"
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    buildFeatures {
+        viewBinding true
+        
+    }
+    
+    aaptOptions {
+        noCompress "mp4"
+    }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+  kotlinOptions {
+    jvmTarget = "11"
+  }
+}
+
+dependencies {
+
+
+    implementation("com.google.android.material:material:1.9.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+}
