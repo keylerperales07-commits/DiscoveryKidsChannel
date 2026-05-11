@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/keylerperales07-commits/DiscoveryKidsChannel/main/logo.png" width="180"/>
+  <img src="https://raw.githubusercontent.com/keylerperales07-commits/DiscoveryKidsChannel/main/icon.png" width="180"/>
 </p>
 
 # Discovery Kids Channel
