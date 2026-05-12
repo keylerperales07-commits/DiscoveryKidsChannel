@@ -34,10 +34,10 @@ import androidx.core.content.ContextCompat
 import java.io.File
 
 /**
- * Discovery Kids Channel – TV Simulator
- * Release 1999.2.2.0.01 – basado en el año 1999
+ * Release 2000.2.3.1 – basado en el año 2000
  *
- * CRT Effect: CrtOverlayView renderiza scanlines, phosphor mask (RGB),
+ * Bug fixes: todos los textos hardcodeados del Activity fueron migrados
+ * a res/values/strings.xml para cumplir con buenas prácticas de localización.
  * vignette radial, border gradient lineal en los 4 bordes del 4:3
  * y flicker sinusoidal sobre el VideoView y ScreenBug.
  * Todo Canvas puro, sin OpenGL ni shaders externos, cero dependencias.
@@ -894,26 +894,23 @@ class LiveDiscoveryKids : AppCompatActivity() {
 
         // Descripción legible de dónde se quedó
         val whereStr = when (itemType) {
-            "program"    -> "Programa ${progIdx + 1} (${posMs / 60_000}m ${(posMs % 60_000) / 1_000}s)"
-            "commercial" -> "Espacio publicitario (programa ${progIdx + 1})"
-            "bumper"     -> "Presentación de canal"
-            "enseguida"  -> "Avance de próximo programa"
-            else         -> "posición anterior"
+            "program"    -> getString(R.string.resume_where_program, progIdx + 1, posMs / 60_000, (posMs % 60_000) / 1_000)
+            "commercial" -> getString(R.string.resume_where_commercial, progIdx + 1)
+            "bumper"     -> getString(R.string.resume_where_bumper)
+            "enseguida"  -> getString(R.string.resume_where_enseguida)
+            else         -> getString(R.string.resume_where_unknown)
         }
 
         AlertDialog.Builder(this)
-            .setTitle("¿Continuar donde estabas?")
-            .setMessage("Estabas viendo:\n$whereStr\n\n¿Querés continuar desde ahí?")
+            .setTitle(getString(R.string.dialog_resume_title))
+            .setMessage(getString(R.string.dialog_resume_message, whereStr))
             .setCancelable(false)
-            .setPositiveButton("Continuar") { _, _ ->
+            .setPositiveButton(getString(R.string.dialog_resume_positive)) { _, _ ->
                 // BUG FIX 1999.2.2.0.21: resetear pausedPositionMs ANTES de restaurar.
-                // Sin este reset, la variable conserva el valor de la sesión anterior y
-                // si el usuario sigue viendo y luego sale guardando, saveChannelState()
-                // lee el valor viejo del tracker en lugar de la posición actual.
                 pausedPositionMs = 0
                 resumeSavedState(itemType, plIdx, progIdx, posMs, commMs, prefs)
             }
-            .setNegativeButton("Empezar de nuevo") { _, _ ->
+            .setNegativeButton(getString(R.string.dialog_resume_negative)) { _, _ ->
                 // BUG FIX 1999.2.2.0.21: mismo reset para "empezar de nuevo"
                 pausedPositionMs = 0
                 clearSavedState()
@@ -1003,22 +1000,18 @@ class LiveDiscoveryKids : AppCompatActivity() {
      */
     private fun showExitConfirmationDialog() {
         AlertDialog.Builder(this)
-            .setTitle("¿Salir del canal?")
-            .setMessage(
-                "• Salir y guardar → cierra la app y guarda tu posición para continuar luego.\n\n" +
-                "• Salir sin guardar → cierra la app sin guardar, la próxima vez empezará desde el principio.\n\n" +
-                "• Cancelar → vuelve al canal sin hacer nada."
-            )
+            .setTitle(getString(R.string.dialog_exit_title))
+            .setMessage(getString(R.string.dialog_exit_message))
             .setCancelable(false)
-            .setPositiveButton("Salir y guardar") { _, _ ->
+            .setPositiveButton(getString(R.string.dialog_exit_save)) { _, _ ->
                 // Guardar estado SOLO cuando el usuario confirma salir
                 saveChannelState()
                 finish()
             }
-            .setNegativeButton("Salir sin guardar") { _, _ ->
+            .setNegativeButton(getString(R.string.dialog_exit_no_save)) { _, _ ->
                 finish()
             }
-            .setNeutralButton("Cancelar", null)
+            .setNeutralButton(getString(R.string.dialog_exit_cancel), null)
             .show()
     }
 
