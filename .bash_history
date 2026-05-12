@@ -44,3 +44,42 @@ git rebase --abort
 git add release/2000/2.3.0
 git commit -m "Update 2.3.0"
 exit
+git add --ignore-removal .
+git init
+git add --ignore-removal .
+git commit -m "Update 2.3.0"
+git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
+git remote add origin https://github.com/keylerperales07-commits/DiscoveryKidsChannel
+git remote set-url origin https://github.com/keylerperales07-commits/DiscoveryKidsChannel
+git branch -M main
+git add --ignore-removal .
+git commit -M "Update 2.3.0"
+git commit -m "Update 2.3.0"
+gut 
+git push
+git push origin main
+git pull origin main
+git config pull.rebase true
+git pull or
+git commit -m "Update 2.3.0"
+git push origin main
+github add --ignore-removal .
+git add --ignore-removal .
+git commit -m "Update 2.3.0"
+git push origin main
+git add --ignore-removal .
+git commit -m "Update 2.3.0"
+git push origin main
+git add .
+git commit -m "Update 2.3.0"
+git push origin main
+git add release/2000/2.3.0
+git add /release/2000/2.3.0
+git add ./release/2000/2.3.0
+git add release/2000/2.3.0
+git init
+git add --ignore-removal .
+git commit -m "Update 2.3.0"
+git push origin main
+git status
+exit
