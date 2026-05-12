@@ -49,6 +49,37 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 
 ---
 
+## 🎮 Cómo Usar
+
+¿Querés experimentar tu propio canal de Discovery Kids? Solo necesitás **4 videos** de tu elección. Así se hace:
+
+**1. Descargá 4 videos a tu gusto**
+
+Pueden ser episodios de tu serie favorita, películas cortas, o cualquier contenido que quieras ver como si fuera un canal de TV. El formato recomendado es `.mp4`.
+
+**2. Renombrá los archivos exactamente así**
+
+```
+pro1.mp4
+pro2.mp4
+pro3.mp4
+pro4.mp4
+```
+
+> ⚠️ Los nombres deben ser exactamente esos — en minúsculas y sin espacios. La app los busca por ese nombre específico.
+
+**3. Copiá los archivos a la carpeta de Videos del dispositivo**
+
+Mové los 4 archivos a la carpeta **Movies** (Películas) del almacenamiento interno de tu Android.
+
+**4. Abrí la app y disfrutá**
+
+La app detecta automáticamente los videos, los intercala con bumpers, comerciales, enseguidas y música de fondo, y te da una experiencia completa de canal de televisión retro. ¡Listo!
+
+> 💡 Si algún video no existe, la app lo omite automáticamente y continúa con el siguiente.
+
+---
+
 ## 🗂️ Estructura del Proyecto
 
 ```
