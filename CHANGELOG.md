@@ -7,7 +7,27 @@ y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org
 
 ---
 
-## [2000.2.3.1] — 26-05-12 Corrección de errores · Era 2000
+## [2000.2.4.0.40-beta] — 2026-05-12 · Beta Pre-Release · Era 2000
+
+> *Pre-release de pruebas internas. Esta versión puede contener comportamientos inestables. No destinada a producción.*
+
+### Corregido
+
+**Pausa al mostrar el AlertDialog de salida**
+- El video principal y la música de fondo ahora se pausan automáticamente cuando el `AlertDialog` de confirmación de salida (`showExitConfirmationDialog`) es visible.
+- Anteriormente, el contenido continuaba reproduciéndose en segundo plano mientras el diálogo estaba activo.
+- Al cancelar el diálogo (botón **Cancelar**), el video y la música se reanudan exactamente desde donde fueron pausados.
+
+### Modificado
+
+**Volumen de música de fondo ajustado al 2%**
+- El volumen del `MediaPlayer` de música de fondo (`bg_music`) fue ajustado a `0.02f` (2%) en ambos canales (izquierdo y derecho).
+- Cambio aplicado dentro de `startBgMusic()` en `LiveDiscoveryKids.kt`.
+- El ajuste mejora la presencia ambiental de la música sin tapar el audio del video principal.
+
+---
+
+## [2000.2.3.1] — 2026-05-12 · Corrección de errores · Era 2000
 
 > *Versión de mantenimiento enfocada en calidad de código y buenas prácticas de localización.*
 
@@ -42,8 +62,10 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 ## Historial de Versiones
 
-| Versión       | Fecha      | Resumen                                                    |
-|---------------|------------|------------------------------------------------------------|
-| 2000.2.3.0    | 2026-05-11 | Comerciales Y2K agregados; mejora de resolución en bumpers |
+| Versión              | Fecha      | Canal  | Resumen                                                              |
+|----------------------|------------|--------|----------------------------------------------------------------------|
+| 2000.2.4.0.40-beta   | 2026-05-12 | 🔧 Beta   | Pausa en AlertDialog de salida; volumen bg_music al 2%            |
+| 2000.2.3.1           | 2026-05-12 | 🚀 Release | Migración de textos a `strings.xml`                              |
+| 2000.2.3.0           | 2026-05-11 | 🚀 Release | Comerciales Y2K agregados; mejora de resolución en bumpers        |
 
 ---
