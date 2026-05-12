@@ -7,7 +7,7 @@ y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org
 
 ---
 
-## [2000.2.3.1] — Corrección de errores · Era 2000
+## [2000.2.3.1] — 26-05-12 Corrección de errores · Era 2000
 
 > *Versión de mantenimiento enfocada en calidad de código y buenas prácticas de localización.*
 

@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/keylerperales07-commits/DiscoveryKidsChannel/main/icon.png" width="140" alt="Discovery Kids Channel Logo"/>
 </p>
 
-<h1 align="center">Discovery Kids Channel</h1>
+<h1 align="center">Discovery Kids</h1>
 
 <p align="center">
   Simulador de canal de TV retro para Android — desarrollado en Kotlin.<br/>
@@ -21,7 +21,7 @@
 
 ## 📖 Descripción General
 
-**Discovery Kids Channel** es una aplicación Android que recrea fielmente la experiencia de ver un canal infantil de televisión clásico. Cuenta con reproducción lineal continua con elementos auténticos de transmisión — bumpers, comerciales, pantallas de transición (*enseguidas*), música de fondo y un overlay estilo CRT en pantalla completa — todo diseñado para hacerte sentir que estás viendo televisión real otra vez.
+**Discovery Kids** es una aplicación Android que recrea fielmente la experiencia de ver un canal infantil de televisión clásico. Cuenta con reproducción lineal continua con elementos auténticos de transmisión — bumpers, comerciales, pantallas de transición (*enseguidas*), música de fondo y un overlay estilo CRT en pantalla completa — todo diseñado para hacerte sentir que estás viendo televisión real otra vez.
 
 El proyecto está organizado en tres etapas evolutivas que reflejan la historia del canal:
 
