@@ -1,0 +1,20 @@
+{
+  "allFiles": [
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/Discovery Kids Channel/settings.gradle",
+      "selection": {
+        "end": {
+          "column": 24,
+          "index": 321,
+          "line": 18
+        },
+        "start": {
+          "column": 24,
+          "index": 321,
+          "line": 18
+        }
+      }
+    }
+  ],
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/Discovery Kids Channel/settings.gradle"
+}

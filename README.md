@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Version-2000.2.3.0-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Version-2000.2.3.1-blue?style=flat-square"/>
 </p>
 
 ---
@@ -120,28 +120,21 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 ---
 
-## 🗺️ Hoja de Ruta
-
-Funcionalidades planeadas y mejoras en progreso, registradas en [`New Update 2.0.txt`](./New%20Update%202.0.txt):
-
-- [ ] Más enseguidas (clips de transición)
-- [x] Comerciales adicionales
-- [x] Nuevos bumpers
-- [x] Nuevo screenbug (marca de agua del canal)
-- [x] Pantalla "Ya Volvemos"
-- [x] Logo del canal
-- [ ] Reanudación de sesión en segundo plano (continuar desde donde quedó)
-- [ ] Medidor de FPS / Frames por segundo
-
----
-
 ## 📋 Registro de Cambios
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### Última versión — `v2000.2.3.0`
+### Última versión — `v2000.2.3.1`
+- 🐛 Corrección: todos los textos del Activity migrados a `strings.xml` (buenas prácticas de localización)
+- Sin cambios funcionales — versión de mantenimiento de código
+
+<details>
+<summary>v2000.2.3.0</summary>
+
 - ✅ Nuevos comerciales de la era Y2K (~estética del año 2000)
 - ✅ Dos bumpers actualizados a mayor resolución
+
+</details>
 
 ---
 

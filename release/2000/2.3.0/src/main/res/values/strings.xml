@@ -3,4 +3,27 @@
     <string name="release_app_name">Discovery Kids</string>
     <string name="beta_app_name">Discovery Kids Beta</string>
 
+    <!-- ══ Diálogo: Continuar donde estabas ══ -->
+    <string name="dialog_resume_title">¿Continuar donde estabas?</string>
+    <string name="dialog_resume_message">Estabas viendo:\n%1$s\n\n¿Querés continuar desde ahí?</string>
+    <string name="dialog_resume_positive">Continuar</string>
+    <string name="dialog_resume_negative">Empezar de nuevo</string>
+
+    <!-- Descripciones de posición en el diálogo de reanudación -->
+    <string name="resume_where_program">Programa %1$d (%2$dm %3$ds)</string>
+    <string name="resume_where_commercial">Espacio publicitario (programa %1$d)</string>
+    <string name="resume_where_bumper">Presentación de canal</string>
+    <string name="resume_where_enseguida">Avance de próximo programa</string>
+    <string name="resume_where_unknown">posición anterior</string>
+
+    <!-- ══ Diálogo: Confirmar salida ══ -->
+    <string name="dialog_exit_title">¿Salir del canal?</string>
+    <string name="dialog_exit_message">• Salir y guardar → cierra la app y guarda tu posición para continuar luego.\n\n• Salir sin guardar → cierra la app sin guardar, la próxima vez empezará desde el principio.\n\n• Cancelar → vuelve al canal sin hacer nada.</string>
+    <string name="dialog_exit_save">Salir y guardar</string>
+    <string name="dialog_exit_no_save">Salir sin guardar</string>
+    <string name="dialog_exit_cancel">Cancelar</string>
+
+    <!-- ══ Debug overlay ══ -->
+    <string name="debug_loading">Espere…</string>
+
 </resources>
