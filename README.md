@@ -69,20 +69,6 @@ DiscoveryKidsChannel/
 
 ---
 
-## 📺 Catálogo de Programas
-
-El canal cuenta actualmente con los siguientes creadores de contenido y programas:
-
-| Programa | Activo desde |
-|----------|-------------|
-| Academia Play | 1996 |
-| El Bes MC | 1997 |
-| Bobicraft | 1998 |
-| Bulgarian CountryBall | 1999 |
-| Jhon Dezz | 2000 |
-
----
-
 ## 🛠️ Tecnologías Utilizadas
 
 | Tecnología | Propósito |

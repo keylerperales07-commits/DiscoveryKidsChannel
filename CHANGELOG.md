@@ -24,5 +24,3 @@ y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org
 | 2000.2.3.0    | 2026-05-11 | Comerciales Y2K agregados; mejora de resolución en bumpers |
 
 ---
-
-> Para las notas completas de cada versión, ver [RELEASE.md](./RELEASE.md).
