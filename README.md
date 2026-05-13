@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Version-2000.2.3.1-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2000.2.4.0.40-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2000.2.4.0.41-orange?style=flat-square"/>
 </p>
 
 ---
@@ -40,7 +40,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 🎬 **Bumpers** — Clips de identidad del canal entre programas, ahora en resolución mejorada
 - 📣 **Comerciales Dinámicos** — Bloques de publicidad que rotan durante la programación, incluyendo contenido de la era Y2K
 - ➡️ **Enseguidas** — Clips de transición "a continuación" entre programas
-- 🎵 **Música de Fondo** — Música ambiente durante la reproducción de programas (volumen al 2%)
+- 🎵 **Música de Fondo** — Música ambiente durante la reproducción de programas (volumen al 5%)
 - 🖥️ **Modo Pantalla Completa Inmersivo** — Sin distracciones de interfaz, experiencia TV pura
 - 📡 **Overlay Visual CRT** — Efectos de scanlines y pantalla para esa sensación retro de televisor
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
@@ -170,14 +170,14 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 ---
 
-## 🔧 Última versión Beta — `v2000.2.4.0.40`
+## 🔧 Última versión Beta — `v2000.2.4.0.41`
 
 > *Pre-release activa en pruebas. No destinada a producción.*
 
-- ⏸ **Pausa al mostrar el AlertDialog de salida** — El video y la música se pausan mientras el diálogo de confirmación está visible, y se reanudan si el usuario cancela
-- 🎵 **Volumen de música de fondo ajustado al 2%** — Mejora la presencia ambiental sin interferir con el audio del video
+- 🎵 **Volumen de música de fondo ajustado al 5%** — Incremento respecto a la beta anterior (2%) para mayor presencia ambiental
+- 📺 **`enseguida4` y `ya_volvemos4` actualizados a 480p** — Mejor resolución en los clips de transición y pantalla "Ya volvemos"
 
-Consultá [`RELEASE_NOTES_beta_2000.2.4.0.40.md`](./RELEASE_NOTES_beta_2000.2.4.0.40.md) para ver las notas completas de esta beta.
+Consultá [`RELEASE_NOTES_beta_2000.2.4.0.41.md`](./RELEASE_NOTES_beta_2000.2.4.0.41.md) para ver las notas completas de esta beta.
 
 ---
 

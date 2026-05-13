@@ -5,6 +5,22 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/),
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2000.2.4.0.41-beta] — 2026-05-13 · Beta Pre-Release · Era 2000
+
+> *Pre-release de pruebas internas. Esta versión puede contener comportamientos inestables. No destinada a producción.*
+
+### Modificado
+
+**Volumen de música de fondo ajustado al 5%**
+- El volumen del `MediaPlayer` de música de fondo (`bg_music`) fue incrementado de **2% → 5%** (`0.05f`) en ambos canales (izquierdo y derecho).
+- Cambio aplicado dentro de `startBgMusic()` en `LiveDiscoveryKids.kt`.
+- El ajuste aumenta ligeramente la presencia ambiental de la música sin interferir con el audio del video principal.
+
+**Assets `enseguida4` y `ya_volvemos4` actualizados a 480p**
+- Los archivos `enseguida4` y `ya_volvemos4` fueron reemplazados por versiones de mayor resolución **(480p)**.
+- La calidad visual de estos clips ahora es consistente con el resto de los assets de transición del canal.
+- No hay cambios en la duración ni en la lógica de reproducción.
+
 ---
 
 ## [2000.2.4.0.40-beta] — 2026-05-12 · Beta Pre-Release · Era 2000
@@ -64,6 +80,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal  | Resumen                                                              |
 |----------------------|------------|--------|----------------------------------------------------------------------|
+| 2000.2.4.0.41-beta   | 2026-05-13 | 🔧 Beta   | Volumen al 5%; `enseguida4` y `ya_volvemos4` a 480p              |
 | 2000.2.4.0.40-beta   | 2026-05-12 | 🔧 Beta   | Pausa en AlertDialog de salida; volumen bg_music al 2%            |
 | 2000.2.3.1           | 2026-05-12 | 🚀 Release | Migración de textos a `strings.xml`                              |
 | 2000.2.3.0           | 2026-05-11 | 🚀 Release | Comerciales Y2K agregados; mejora de resolución en bumpers        |
