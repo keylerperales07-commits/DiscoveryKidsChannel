@@ -177,7 +177,7 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 - 🎵 **Volumen de música de fondo ajustado al 5%** — Incremento respecto a la beta anterior (2%) para mayor presencia ambiental
 - 📺 **`enseguida4` y `ya_volvemos4` actualizados a 480p** — Mejor resolución en los clips de transición y pantalla "Ya volvemos"
 
-Consultá [`RELEASE_NOTES_beta_2000.2.4.0.41.md`](./RELEASE_NOTES_beta_2000.2.4.0.41.md) para ver las notas completas de esta beta.
+Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas de esta beta.
 
 ---
 
