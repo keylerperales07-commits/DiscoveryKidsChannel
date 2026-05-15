@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Version-2.4.0-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Release-2.4.0-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Release-2.4.0-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2.4.0.42-orange?style=flat-square"/>
 </p>
 
 ---
@@ -161,7 +161,6 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 - ✅ Volumen de música de fondo ajustado al 5%
 - ✅ `enseguida4` y `ya_volvemos4` actualizados a 480p
 - ✅ Pausa automática al mostrar el `AlertDialog` de salida
-- ✅ Migración de textos a `strings.xml`
 
 <details>
 <summary>v2000.2.3.0</summary>

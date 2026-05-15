@@ -42,12 +42,6 @@ y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org
 - El volumen del `MediaPlayer` de música de fondo (`bg_music`) fue ajustado a `0.02f` (2%) en ambos canales (izquierdo y derecho).
 - Este ajuste queda registrado dentro del historial de la rama beta que fue promovida a release.
 
-### Migración incluida
-
-**Migración de textos a `strings.xml`**
-- Todos los textos hardcodeados en `LiveDiscoveryKids.kt` fueron extraídos al archivo de recursos `res/values/strings.xml`.
-- El código ahora usa `getString(R.string.x)` en todos los casos, eliminando cadenas literales del código fuente.
-
 ---
 
 ## [2000.2.4.0.42-beta] — 2026-05-14 · Beta Pre-Release · Era 2000
