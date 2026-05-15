@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Version-2000.2.3.1-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2000.2.4.0.42-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Version-2.4.0-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Release-2.4.0-orange?style=flat-square"/>
 </p>
 
 ---
@@ -95,7 +95,6 @@ DiscoveryKidsChannel/
 ├── gradlew / gradlew.bat       # Scripts del wrapper de Gradle
 ├── icon.png                    # Ícono de la aplicación
 ├── Programas en Discovery Kids.txt   # Catálogo de programas
-├── New Update 2.0.txt          # Notas de actualización / Roadmap
 └── README.md                   # Este archivo
 ```
 
@@ -156,9 +155,13 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### Última versión estable — `v2000.2.3.1`
-- 🐛 Corrección: todos los textos del Activity migrados a `strings.xml` (buenas prácticas de localización)
-- Sin cambios funcionales — versión de mantenimiento de código
+### Última versión estable — `v2.4.0`
+- ✅ Release estable basada en la rama beta `2000.2.4.0.x`
+- ✅ `bumper2.mp4` actualizado a 480p
+- ✅ Volumen de música de fondo ajustado al 5%
+- ✅ `enseguida4` y `ya_volvemos4` actualizados a 480p
+- ✅ Pausa automática al mostrar el `AlertDialog` de salida
+- ✅ Migración de textos a `strings.xml`
 
 <details>
 <summary>v2000.2.3.0</summary>
@@ -175,6 +178,9 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 > *Pre-release activa en pruebas. No destinada a producción.*
 
 - 📺 **`bumper2.mp4` actualizado a 480p** — Mejor resolución en el bumper 2, anteriormente en 360p
+- 🎵 **Volumen de música de fondo al 5%**
+- ➡️ **`enseguida4` y `ya_volvemos4` a 480p**
+- ⏸ **Pausa automática al abrir el diálogo de salida**
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas de esta beta.
 
