@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Version-2000.2.3.1-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2000.2.4.0.41-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2000.2.4.0.42-orange?style=flat-square"/>
 </p>
 
 ---
@@ -170,12 +170,11 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 ---
 
-## 🔧 Última versión Beta — `v2000.2.4.0.41`
+## 🔧 Última versión Beta — `v2000.2.4.0.42`
 
 > *Pre-release activa en pruebas. No destinada a producción.*
 
-- 🎵 **Volumen de música de fondo ajustado al 5%** — Incremento respecto a la beta anterior (2%) para mayor presencia ambiental
-- 📺 **`enseguida4` y `ya_volvemos4` actualizados a 480p** — Mejor resolución en los clips de transición y pantalla "Ya volvemos"
+- 📺 **`bumper2.mp4` actualizado a 480p** — Mejor resolución en el bumper 2, anteriormente en 360p
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas de esta beta.
 

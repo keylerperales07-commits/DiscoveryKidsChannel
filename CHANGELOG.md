@@ -5,6 +5,21 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/),
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
+---
+
+## [2000.2.4.0.42-beta] — 2026-05-14 · Beta Pre-Release · Era 2000
+
+> *Pre-release de pruebas internas. Esta versión puede contener comportamientos inestables. No destinada a producción.*
+
+### Modificado
+
+**`bumper2.mp4` actualizado a 480p**
+- El archivo `bumper2.mp4` fue reemplazado por una versión de mayor resolución **(480p)**, anteriormente en 360p.
+- La calidad visual de este bumper ahora es consistente con el resto de los assets del canal.
+- No hay cambios en la duración ni en la lógica de reproducción.
+
+---
+
 ## [2000.2.4.0.41-beta] — 2026-05-13 · Beta Pre-Release · Era 2000
 
 > *Pre-release de pruebas internas. Esta versión puede contener comportamientos inestables. No destinada a producción.*
@@ -78,11 +93,12 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 ## Historial de Versiones
 
-| Versión              | Fecha      | Canal  | Resumen                                                              |
-|----------------------|------------|--------|----------------------------------------------------------------------|
-| 2000.2.4.0.41-beta   | 2026-05-13 | 🔧 Beta   | Volumen al 5%; `enseguida4` y `ya_volvemos4` a 480p              |
-| 2000.2.4.0.40-beta   | 2026-05-12 | 🔧 Beta   | Pausa en AlertDialog de salida; volumen bg_music al 2%            |
-| 2000.2.3.1           | 2026-05-12 | 🚀 Release | Migración de textos a `strings.xml`                              |
-| 2000.2.3.0           | 2026-05-11 | 🚀 Release | Comerciales Y2K agregados; mejora de resolución en bumpers        |
+| Versión              | Fecha      | Canal      | Resumen                                                                 |
+|----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2000.2.4.0.42-beta   | 2026-05-14 | 🔧 Beta    | `bumper2.mp4` actualizado a 480p (antes 360p)                          |
+| 2000.2.4.0.41-beta   | 2026-05-13 | 🔧 Beta    | Volumen al 5%; `enseguida4` y `ya_volvemos4` a 480p                    |
+| 2000.2.4.0.40-beta   | 2026-05-12 | 🔧 Beta    | Pausa en AlertDialog de salida; volumen bg_music al 2%                 |
+| 2000.2.3.1           | 2026-05-12 | 🚀 Release | Migración de textos a `strings.xml`                                    |
+| 2000.2.3.0           | 2026-05-11 | 🚀 Release | Comerciales Y2K agregados; mejora de resolución en bumpers             |
 
 ---

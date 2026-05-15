@@ -47,7 +47,7 @@
          android:layout_height="wrap_content"
          android:layout_width="wrap_content"
          android:gravity="center"
-         android:alpha="0"
+         android:alpha="1"
          android:textColor="#FFFFFF"
          android:id="@+id/debugInfo"
          android:fontFamily="@font/googlesans"
