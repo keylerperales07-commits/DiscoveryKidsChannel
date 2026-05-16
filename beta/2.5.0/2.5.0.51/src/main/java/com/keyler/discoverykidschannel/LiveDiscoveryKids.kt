@@ -36,7 +36,7 @@ import java.io.File
 /**
  * Beta 2001.2.5.0.51
  *
- * Novedades respecto a 2000.2.4.0.40:
+ * Novedades respecto a 2001.2.5.0.51:
  *   - Se incorpora el segmento TALLA a la lista de programación.
  *     tallas.mp4 tiene tres variaciones (tallas_1, tallas_2, tallas_3) que se eligen
  *     al azar evitando repetir la misma dos veces seguidas, igual que los comerciales.
@@ -47,7 +47,7 @@ import java.io.File
  *   - currentScreenBugRes persiste en SharedPreferences para que la sesión guardada
  *     restaure el screenbug correcto al reanudarse.
  *
- * [2000.2.4.0.40] Bug fixes / cambios respecto a 2000.2.3.1:
+ * [2001.2.5.0.50] Bug fixes / cambios respecto a 2000.2.3.1:
  *   - showExitConfirmationDialog: pausa el video y la música de fondo al
  *     mostrarse; los reanuda si el usuario cancela el diálogo.
  *   - startBgMusic: volumen ajustado al 2% (0.02f) en ambos canales.
@@ -165,8 +165,9 @@ class LiveDiscoveryKids : AppCompatActivity() {
             if (isInProgramSegment && videoView.isPlaying) {
                 pausedPositionMs = videoView.currentPosition
             }
-            // Se reprograma a sí mismo cada 500 ms; se cancela en stopPositionTracker()
-            positionTrackerHandler.postDelayed(this, 500)
+            // BUG FIX 2.4.1 (portado a beta): se reprograma cada 16 ms (~60 fps / tiempo real)
+            // en lugar de cada 500 ms, eliminando el retraso de ~1 segundo al volver de background.
+            positionTrackerHandler.postDelayed(this, 16)
         }
     }
 
@@ -661,7 +662,14 @@ class LiveDiscoveryKids : AppCompatActivity() {
             if (startOffsetMs > 0) videoView.seekTo(startOffsetMs)
 
             scheduleSegmentLogic(startOffsetMs)
+            // Nueva funcionalidad 2.4.1 (portado a beta): FadeIn del VideoView al iniciar el
+            // programa, tanto en el arranque inicial como al regresar del bloque comercial.
+            videoView.alpha = 0f
             videoView.start()
+            videoView.animate()
+                .alpha(1f)
+                .setDuration(500L)
+                .start()
             isInProgramSegment = true   // programa activo → pausar al ir a background
             currentItemType = "program"
             startPositionTracker()      // comienza a guardar posición cada 500 ms
@@ -782,28 +790,38 @@ class LiveDiscoveryKids : AppCompatActivity() {
 
         Log.d(TAG, "▶ ENSEGUIDA pre-comercial [res=$chosenPreComercial] → ya_volvemos [res=$chosenYaVolvemos]")
 
-        // Paso 1: enseguida3 o enseguida4 (pre-comercial)
-        playUri(rawUri(chosenPreComercial)) {
-            Log.d(TAG, "▶ COMMERCIAL [res=$chosenCommercial] (resumes program at ${resumeProgramAtMs}ms)")
+        // BUG FIX / Nueva funcionalidad 2.4.1 (portado a beta):
+        // FadeOut del VideoView antes de iniciar el bloque comercial para una
+        // transición suave al corte publicitario. La secuencia arranca una vez
+        // que la animación de fade ha completado (withEndAction).
+        videoView.animate()
+            .alpha(0f)
+            .setDuration(500L)
+            .withEndAction {
+                // Paso 1: enseguida3 o enseguida4 (pre-comercial)
+                playUri(rawUri(chosenPreComercial)) {
+                    Log.d(TAG, "▶ COMMERCIAL [res=$chosenCommercial] (resumes program at ${resumeProgramAtMs}ms)")
 
-            // Paso 2: comercial elegido
-            playUri(rawUri(chosenCommercial)) {
-                Log.d(TAG, "▶ YA VOLVEMOS post-comercial [res=$chosenYaVolvemos]")
+                    // Paso 2: comercial elegido
+                    playUri(rawUri(chosenCommercial)) {
+                        Log.d(TAG, "▶ YA VOLVEMOS post-comercial [res=$chosenYaVolvemos]")
 
-                // Paso 3: ya_volvemos pareado con la enseguida elegida
-                playUri(rawUri(chosenYaVolvemos)) {
-                    // Paso 4: retomar programa
-                    val uri = currentProgramUri ?: run {
-                        Log.e(TAG, "No currentProgramUri – advancing")
-                        playlistIndex++
-                        advance()
-                        return@playUri
+                        // Paso 3: ya_volvemos pareado con la enseguida elegida
+                        playUri(rawUri(chosenYaVolvemos)) {
+                            // Paso 4: retomar programa
+                            val uri = currentProgramUri ?: run {
+                                Log.e(TAG, "No currentProgramUri – advancing")
+                                playlistIndex++
+                                advance()
+                                return@playUri
+                            }
+                            Log.d(TAG, "Ya volvemos done – resuming program at ${resumeProgramAtMs}ms")
+                            beginProgramSegment(uri, startOffsetMs = resumeProgramAtMs, isFirstPlay = false)
+                        }
                     }
-                    Log.d(TAG, "Ya volvemos done – resuming program at ${resumeProgramAtMs}ms")
-                    beginProgramSegment(uri, startOffsetMs = resumeProgramAtMs, isFirstPlay = false)
                 }
             }
-        }
+            .start()
     }
 
     // ══════════════════════════════════════════════════════════════════════════

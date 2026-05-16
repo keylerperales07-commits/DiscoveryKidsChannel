@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Release-2.4.0-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2001.2.5.0.50-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Release-2.4.1-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2001.2.5.0.51-orange?style=flat-square"/>
 </p>
 
 ---
@@ -40,12 +40,13 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 🎬 **Bumpers** — Clips de identidad del canal entre programas, ahora en resolución mejorada
 - 📣 **Comerciales Dinámicos** — Bloques de publicidad que rotan durante la programación, incluyendo contenido de la era Y2K
 - ➡️ **Enseguidas** — Clips de transición "a continuación" entre programas
-- 🎵 **Música de Fondo** — Música ambiente durante la reproducción de programas (volumen al 5%)
+- 🎵 **Música de Fondo** — Música ambiente durante la reproducción de programas (volumen al 8%)
 - 🖥️ **Modo Pantalla Completa Inmersivo** — Sin distracciones de interfaz, experiencia TV pura
 - 📡 **Overlay Visual CRT** — Efectos de scanlines y pantalla para esa sensación retro de televisor
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
 - 🆕 **Nuevo Screenbug** — Marca de agua con el logo del canal en pantalla
 - ⏸ **Pantalla "Ya Volvemos"** — Pantalla intersticial auténtica de "Volvemos en un momento"
+- 🎞️ **Transiciones FadeIn / FadeOut** — El video aparece y desaparece suavemente al entrar y salir de los comerciales
 
 ---
 
@@ -110,7 +111,7 @@ DiscoveryKidsChannel/
 | **MediaPlayer** | Gestión de audio y medios |
 | **SharedPreferences** | Persistencia de sesión |
 | **Handler / Looper** | Planificación y temporización |
-| **Choreographer** | Renderizado frame a frame |
+| **Choreographer** | Renderizado frame a frame y guardado de posición en tiempo real |
 | **AndroidX** | Compatibilidad moderna con Android |
 
 ---
@@ -155,12 +156,21 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### Última versión estable — `v2.4.0`
+### Última versión estable — `v2.4.1`
+- ✅ Bug fix: posición del video guardada en tiempo real (~60 fps) — elimina el retraso de ~1 s al volver de segundo plano
+- ✅ FadeOut del `VideoView` al comenzar el bloque comercial
+- ✅ FadeIn del `VideoView` al reanudar el programa tras el comercial
+
+<details>
+<summary>v2.4.0</summary>
+
 - ✅ Release estable basada en la rama beta `2000.2.4.0.x`
 - ✅ `bumper2.mp4` actualizado a 480p
 - ✅ Volumen de música de fondo ajustado al 5%
 - ✅ `enseguida4` y `ya_volvemos4` actualizados a 480p
 - ✅ Pausa automática al mostrar el `AlertDialog` de salida
+
+</details>
 
 <details>
 <summary>v2000.2.3.0</summary>
@@ -172,13 +182,17 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 ---
 
-## 🔧 Última versión Beta — `v2001.2.5.0.50`
+## 🔧 Última versión Beta — `v2001.2.5.0.51`
 
 > *Pre-release activa en pruebas. No destinada a producción.*
 
 - 📣 **Comerciales 1, 2 y 3 actualizados a la Era 2001** — Los comerciales fueron reemplazados por versiones basadas en la estética del año 2001, en línea con la nueva era del canal
 - ➡️ **`enseguida1.mp4` actualizado a la Era 2001** — El clip de transición ahora es coherente con la identidad visual de la Era 2001
 - 🆕 **`screenbug.webp` actualizado a la Era 2001** — La marca de agua del canal ahora refleja la identidad visual de la Era 2001
+- 🎬 **Sistema de Tallas** — Se incorpora `tallas.mp4` en tres variaciones aleatorias (`tallas_1`, `tallas_2`, `tallas_3`) entre las enseguidas y los bumpers
+- 🖼️ **ScreenBug dinámico según talla** — La talla reproducida determina qué versión del screenbug se muestra: pequeño, mediano o grande
+- 🎵 **Volumen de música de fondo ajustado al 8%** — Incremento de 5% → 8% para mayor presencia ambiental
+- 💬 **`enseguida2.mp4` reemplazada** — Ahora es una enseguida de burbujas
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas de esta beta.
 
