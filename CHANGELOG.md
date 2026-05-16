@@ -6,6 +6,26 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2001.2.5.0.50-beta] — 2026-05-15 · Beta Pre-Release · Era 2001
+
+> *Pre-release de pruebas internas. Esta versión puede contener comportamientos inestables. No destinada a producción.*
+
+### Modificado
+
+**Comerciales 1, 2 y 3 actualizados a la Era 2001**
+- Los archivos `comercial1`, `comercial2` y `comercial3` fueron reemplazados por versiones basadas en la estética y el contenido del año 2001, en línea con la nueva era del canal.
+- El cambio refleja la transición del canal de la Era 2000 a la Era 2001.
+
+**`enseguida1.mp4` actualizado a la Era 2001**
+- El archivo `enseguida1.mp4` fue reemplazado por una versión basada en 2001.
+- El clip de transición ahora es coherente con la identidad visual de la Era 2001.
+
+**`screenbug.webp` actualizado a la Era 2001**
+- El archivo `screenbug.webp` fue reemplazado por una versión basada en 2001.
+- La marca de agua del canal en pantalla ahora refleja la identidad visual de la Era 2001.
+
+---
+
 ## [2.4.0] — 2026-05-15 · Release · Era 2000
 
 > *Versión estable de lanzamiento basada en la rama beta `2000.2.4.0.x`.*
@@ -132,6 +152,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2001.2.5.0.50-beta   | 2026-05-15 | 🔧 Beta    | Comerciales 1-3 a Era 2001; `enseguida1.mp4` y `screenbug.webp` a Era 2001 |
 | 2000.2.4.0.42-beta   | 2026-05-14 | 🔧 Beta    | `bumper2.mp4` actualizado a 480p (antes 360p)                          |
 | 2000.2.4.0.41-beta   | 2026-05-13 | 🔧 Beta    | Volumen al 5%; `enseguida4` y `ya_volvemos4` a 480p                    |
 | 2000.2.4.0.40-beta   | 2026-05-12 | 🔧 Beta    | Pausa en AlertDialog de salida; volumen bg_music al 2%                 |

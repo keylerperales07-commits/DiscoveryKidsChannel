@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Release-2.4.0-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2.4.0.42-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2001.2.5.0.50-orange?style=flat-square"/>
 </p>
 
 ---
@@ -172,14 +172,13 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 ---
 
-## 🔧 Última versión Beta — `v2000.2.4.0.42`
+## 🔧 Última versión Beta — `v2001.2.5.0.50`
 
 > *Pre-release activa en pruebas. No destinada a producción.*
 
-- 📺 **`bumper2.mp4` actualizado a 480p** — Mejor resolución en el bumper 2, anteriormente en 360p
-- 🎵 **Volumen de música de fondo al 5%**
-- ➡️ **`enseguida4` y `ya_volvemos4` a 480p**
-- ⏸ **Pausa automática al abrir el diálogo de salida**
+- 📣 **Comerciales 1, 2 y 3 actualizados a la Era 2001** — Los comerciales fueron reemplazados por versiones basadas en la estética del año 2001, en línea con la nueva era del canal
+- ➡️ **`enseguida1.mp4` actualizado a la Era 2001** — El clip de transición ahora es coherente con la identidad visual de la Era 2001
+- 🆕 **`screenbug.webp` actualizado a la Era 2001** — La marca de agua del canal ahora refleja la identidad visual de la Era 2001
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas de esta beta.
 
