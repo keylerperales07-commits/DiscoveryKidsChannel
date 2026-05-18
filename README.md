@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Release-2.4.1-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2001.2.5.0.51-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Release-2.4.2-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2001.2.5.0.52-orange?style=flat-square"/>
 </p>
 
 ---
@@ -156,43 +156,21 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### Última versión estable — `v2.4.1`
-- ✅ Bug fix: posición del video guardada en tiempo real (~60 fps) — elimina el retraso de ~1 s al volver de segundo plano
-- ✅ FadeOut del `VideoView` al comenzar el bloque comercial
-- ✅ FadeIn del `VideoView` al reanudar el programa tras el comercial
-
-<details>
-<summary>v2.4.0</summary>
-
-- ✅ Release estable basada en la rama beta `2000.2.4.0.x`
-- ✅ `bumper2.mp4` actualizado a 480p
-- ✅ Volumen de música de fondo ajustado al 5%
-- ✅ `enseguida4` y `ya_volvemos4` actualizados a 480p
-- ✅ Pausa automática al mostrar el `AlertDialog` de salida
-
-</details>
-
-<details>
-<summary>v2000.2.3.0</summary>
-
-- ✅ Nuevos comerciales de la era Y2K (~estética del año 2000)
-- ✅ Dos bumpers actualizados a mayor resolución
-
-</details>
+### Última versión estable — `v2.4.2`
+- 🐛 **Bug fix urgente:** El `alpha` del `VideoView` no se restablecía al iniciar el bloque comercial — los videos de enseguida pre-comercial, comercial y `ya_volvemos` se reproducían de forma invisible
+- ✅ Se agregó `videoView.alpha = 1f` (sin animación) al inicio del `withEndAction` del FadeOut para que el bloque comercial completo sea visible desde el primer frame
 
 ---
 
-## 🔧 Última versión Beta — `v2001.2.5.0.51`
+## 🔧 Última versión Beta — `v2001.2.5.0.52`
 
 > *Pre-release activa en pruebas. No destinada a producción.*
 
-- 📣 **Comerciales 1, 2 y 3 actualizados a la Era 2001** — Los comerciales fueron reemplazados por versiones basadas en la estética del año 2001, en línea con la nueva era del canal
-- ➡️ **`enseguida1.mp4` actualizado a la Era 2001** — El clip de transición ahora es coherente con la identidad visual de la Era 2001
-- 🆕 **`screenbug.webp` actualizado a la Era 2001** — La marca de agua del canal ahora refleja la identidad visual de la Era 2001
-- 🎬 **Sistema de Tallas** — Se incorpora `tallas.mp4` en tres variaciones aleatorias (`tallas_1`, `tallas_2`, `tallas_3`) entre las enseguidas y los bumpers
-- 🖼️ **ScreenBug dinámico según talla** — La talla reproducida determina qué versión del screenbug se muestra: pequeño, mediano o grande
-- 🎵 **Volumen de música de fondo ajustado al 8%** — Incremento de 5% → 8% para mayor presencia ambiental
-- 💬 **`enseguida2.mp4` reemplazada** — Ahora es una enseguida de burbujas
+- 🐛 **Bug fix urgente: bloque comercial invisible** — El `VideoView` quedaba en `alpha = 0f` al terminar el FadeOut, haciendo que la enseguida pre-comercial, el comercial y el `ya_volvemos` fueran completamente invisibles. Se agrega `videoView.alpha = 1f` sin animación al inicio del bloque comercial
+- 🕐 **Tallas por horario** — La selección de talla ya no es aleatoria; se elige según la franja horaria: `tallas_1` (06:00–12:59), `tallas_2` (13:00–16:29), `tallas_3` (16:30–23:59). Entre las 00:00 y las 06:00 no se reproduce ninguna talla y se usa `screenbug.webp` directamente
+- 📅 **Tallas_4 en fin de semana** — De sábado a domingo se reproduce siempre `tallas_4` y se usa `screenbug.webp` como screenbug
+- 🕐 **Enseguidas post-programa por horario** — La selección ya no es aleatoria; se elige según la franja horaria (lunes a viernes): `enseguida1` (00:00–12:59), `enseguida2` (13:00–16:29), `enseguida5` (16:30–23:59). De sábado a domingo se usa siempre `enseguida1`
+- 📼 **`comercial4` actualizado a la Era 2001** — El archivo fue reemplazado por una versión basada en la estética del año 2001, en línea con la era actual del canal
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas de esta beta.
 

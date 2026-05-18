@@ -6,6 +6,48 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2001.2.5.0.52-beta] — 2026-05-17 · Beta Pre-Release · Era 2001
+
+> *Pre-release de pruebas internas. Esta versión puede contener comportamientos inestables. No destinada a producción.*
+
+### Corregido
+
+**BUG FIX URGENTE: `VideoView` invisible durante el bloque comercial**
+- Al agregar el `FadeOut` del `VideoView` en `2.4.1` (portado a beta en `2001.2.5.0.51`) nunca se colocó la lógica para restablecer el `alpha` al **comenzar** el bloque comercial.
+- Como consecuencia, la enseguida pre-comercial, el comercial y el `ya_volvemos` se reproducían de forma completamente **invisible** (el `VideoView` quedaba en `alpha = 0f` al terminar el FadeOut).
+- **Fix:** Se agrega `videoView.alpha = 1f` (sin animación, sin fadeIn) al inicio del bloque `withEndAction` del FadeOut en `playCommercial()`, inmediatamente antes de reproducir la enseguida pre-comercial. Esto garantiza que el bloque comercial sea visible desde el primer frame.
+
+### Modificado
+
+**Enseguidas post-programa: de aleatorias a basadas en horario**
+- Se elimina la selección aleatoria de enseguidas post-programa (`candidates.random()`).
+- La enseguida ahora se determina según la franja horaria (lunes a viernes):
+  - `enseguida1` → 00:00 – 12:59
+  - `enseguida2` → 13:00 – 16:29
+  - `enseguida5` → 16:30 – 23:59
+- De **sábado a domingo** se usa siempre `enseguida1.mp4`.
+- La variable `lastEnseguidaPostProgramaRes` (usada para evitar repetición aleatoria) ya no cumple función activa; se conserva declarada para posibles usos futuros.
+- `ENSEGUIDAS_POST_PROGRAMA` actualizado para incluir `enseguida5`.
+
+**`comercial4.mp4` actualizado a la Era 2001**
+- El archivo `comercial4.mp4` fue reemplazado por una versión basada en la estética y el contenido del año 2001, en línea con la Era 2001 del canal.
+- No hay cambios en la lógica de selección ni reproducción.
+
+**Selección de tallas: de aleatoria a basada en hora y día de la semana**
+- Se elimina la selección aleatoria de tallas (`candidates.random()`).
+- La talla ahora se determina según la franja horaria (lunes a viernes):
+  - `tallas_1` → 06:00 – 12:59
+  - `tallas_2` → 13:00 – 16:29
+  - `tallas_3` → 16:30 – 23:59
+  - `00:00 – 05:59` → **sin talla** (se salta la reproducción y se usa `screenbug.webp` directamente)
+- De **sábado a domingo** se elige siempre `tallas_4`, y en ese caso también se usa `screenbug.webp`.
+- La variable `lastTallaRes` (usada para evitar repetición aleatoria) fue eliminada, ya que ya no aplica.
+- El `ScreenBug` resultante sigue siendo:
+  - `tallas_1` → `screenbug_small` | `tallas_2` → `screenbug_medium` | `tallas_3` → `screenbug_large`
+  - `tallas_4` / sin talla → `screenbug` (`screenbug.webp`)
+
+---
+
 ## [2001.2.5.0.51-beta] — 2026-05-16 · Beta Pre-Release · Era 2001
 
 > *Pre-release de pruebas internas. Esta versión puede contener comportamientos inestables. No destinada a producción.*
@@ -60,6 +102,20 @@ y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org
 **`screenbug.webp` actualizado a la Era 2001**
 - El archivo `screenbug.webp` fue reemplazado por una versión basada en 2001.
 - La marca de agua del canal en pantalla ahora refleja la identidad visual de la Era 2001.
+
+---
+
+## [2.4.2] — 2026-05-17 · Release · Era 2000
+
+> *Versión estable de corrección de errores basada en `2.4.1`.*
+
+### Corregido
+
+**Alpha del `VideoView` no se restablecía al iniciar el bloque comercial**
+- Al ejecutarse el `FadeOut` del `VideoView` antes del bloque comercial, el `alpha` quedaba en `0f` al terminar la animación.
+- Los videos del bloque comercial (enseguida pre-comercial, comercial y `ya_volvemos`) se reproducían de forma invisible porque nunca se restableció el `alpha`.
+- Se agregó `videoView.alpha = 1f` (sin animación) al inicio del `withEndAction` del `FadeOut`, asegurando que el bloque comercial completo sea visible desde el primer frame.
+- Cambio aplicado en `playCommercial()` de `LiveDiscoveryKids.kt`.
 
 ---
 
@@ -215,8 +271,10 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2001.2.5.0.52-beta   | 2026-05-17 | 🔧 Beta    | Bug fix urgente: VideoView invisible en comercial; tallas por horario; tallas_4 en fin de semana; enseguidas por horario; comercial4 a Era 2001 |
 | 2001.2.5.0.51-beta   | 2026-05-16 | 🔧 Beta    | Sistema de Tallas; ScreenBug dinámico; volumen al 8%; `enseguida2` de burbujas |
 | 2001.2.5.0.50-beta   | 2026-05-15 | 🔧 Beta    | Comerciales 1-3 a Era 2001; `enseguida1.mp4` y `screenbug.webp` a Era 2001 |
+| 2.4.2                | 2026-05-17 | 🚀 Release | Bug fix urgente: alpha del `VideoView` no se restablecía al iniciar el bloque comercial |
 | 2.4.1                | 2026-05-16 | 🚀 Release | Bug fix posición en tiempo real; FadeOut al comercial; FadeIn al programa |
 | 2000.2.4.0.42-beta   | 2026-05-14 | 🔧 Beta    | `bumper2.mp4` actualizado a 480p (antes 360p)                          |
 | 2000.2.4.0.41-beta   | 2026-05-13 | 🔧 Beta    | Volumen al 5%; `enseguida4` y `ya_volvemos4` a 480p                    |
