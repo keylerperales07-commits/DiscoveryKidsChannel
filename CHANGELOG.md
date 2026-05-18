@@ -6,6 +6,73 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2001.2.5.0] — 2026-05-18 · Release · Era 2001
+
+> *Versión estable de producción. Consolida todos los cambios validados durante la rama beta `2001.2.5.0.5x`.*
+
+### Corregido
+
+**BUG FIX URGENTE: `VideoView` invisible durante el bloque comercial**
+- Al agregar el `FadeOut` del `VideoView` en `2.4.1`, nunca se colocó la lógica para restablecer el `alpha` al **comenzar** el bloque comercial.
+- Como consecuencia, la enseguida pre-comercial, el comercial y el `ya_volvemos` se reproducían de forma completamente **invisible** (el `VideoView` quedaba en `alpha = 0f` al terminar el FadeOut).
+- **Fix:** Se agrega `videoView.alpha = 1f` (sin animación, sin fadeIn) al inicio del bloque `withEndAction` del FadeOut en `playCommercial()`. Garantiza que el bloque comercial sea visible desde el primer frame.
+
+### Modificado
+
+**Selección de tallas: de aleatoria a basada en hora y día de la semana**
+- Se elimina la selección aleatoria de tallas (`candidates.random()`).
+- La talla ahora se determina según la franja horaria (lunes a viernes):
+  - `tallas_1` → 06:00 – 12:59
+  - `tallas_2` → 13:00 – 16:29
+  - `tallas_3` → 16:30 – 23:59
+  - `00:00 – 05:59` → **sin talla** (se salta la reproducción y se usa `screenbug.webp` directamente)
+- De **sábado a domingo** se elige siempre `tallas_4`, y en ese caso también se usa `screenbug.webp`.
+- La variable `lastTallaRes` fue eliminada, ya que ya no aplica.
+- El `ScreenBug` resultante:
+  - `tallas_1` → `screenbug_small` | `tallas_2` → `screenbug_medium` | `tallas_3` → `screenbug_large`
+  - `tallas_4` / sin talla → `screenbug` (`screenbug.webp`)
+
+**Enseguidas post-programa: de aleatorias a basadas en horario**
+- Se elimina la selección aleatoria de enseguidas post-programa (`candidates.random()`).
+- La enseguida ahora se determina según la franja horaria (lunes a viernes):
+  - `enseguida1` → 00:00 – 12:59
+  - `enseguida2` → 13:00 – 16:29
+  - `enseguida5` → 16:30 – 23:59
+- De **sábado a domingo** se usa siempre `enseguida1.mp4`.
+- `ENSEGUIDAS_POST_PROGRAMA` actualizado para incluir `enseguida5`.
+
+**`comercial4.mp4` actualizado a la Era 2001**
+- El archivo `comercial4.mp4` fue reemplazado por una versión basada en la estética del año 2001.
+- No hay cambios en la lógica de selección ni reproducción.
+
+**Volumen de música de fondo ajustado al 8%**
+- El volumen del `MediaPlayer` de música de fondo (`bg_music`) fue incrementado de **5% → 8%** (`0.08f`) en ambos canales.
+
+**`enseguida2.mp4` reemplazada por enseguida de burbujas**
+- El archivo `enseguida2.mp4` fue reemplazado por un nuevo clip de transición con estética de burbujas.
+
+### Agregado
+
+**Sistema de Tallas (`tallas.mp4`)**
+- Se incorpora el segmento **Talla** a la lista de programación como un nuevo tipo de ítem (`PlayItem.Talla`).
+- Cuatro variaciones: `tallas_1.mp4`, `tallas_2.mp4`, `tallas_3.mp4` y `tallas_4.mp4`.
+- Las tallas se ubican **entre la enseguida post-programa y el bumper**:
+  ```
+  Enseguida (1/2/5) → Talla (1/2/3/4) → Bumper → Programa
+  ```
+
+**ScreenBug dinámico según la talla reproducida**
+- La talla elegida determina qué drawable del screenbug se muestra durante el programa siguiente.
+- Implementado mediante `TALLA_SCREENBUG_MAP` en el `companion object`.
+- `currentScreenBugRes` se persiste en `SharedPreferences` para restaurar el screenbug al reanudarse.
+
+**Assets actualizados a la Era 2001**
+- `comercial1.mp4`, `comercial2.mp4`, `comercial3.mp4` → versiones Era 2001.
+- `enseguida1.mp4` → versión Era 2001.
+- `screenbug.webp` → versión Era 2001.
+
+---
+
 ## [2001.2.5.0.52-beta] — 2026-05-17 · Beta Pre-Release · Era 2001
 
 > *Pre-release de pruebas internas. Esta versión puede contener comportamientos inestables. No destinada a producción.*
@@ -271,6 +338,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2001.2.5.0           | 2026-05-18 | 🚀 Release | Bug fix VideoView invisible; tallas y enseguidas por horario; tallas_4 fin de semana; ScreenBug dinámico; assets a Era 2001; volumen al 8% |
 | 2001.2.5.0.52-beta   | 2026-05-17 | 🔧 Beta    | Bug fix urgente: VideoView invisible en comercial; tallas por horario; tallas_4 en fin de semana; enseguidas por horario; comercial4 a Era 2001 |
 | 2001.2.5.0.51-beta   | 2026-05-16 | 🔧 Beta    | Sistema de Tallas; ScreenBug dinámico; volumen al 8%; `enseguida2` de burbujas |
 | 2001.2.5.0.50-beta   | 2026-05-15 | 🔧 Beta    | Comerciales 1-3 a Era 2001; `enseguida1.mp4` y `screenbug.webp` a Era 2001 |

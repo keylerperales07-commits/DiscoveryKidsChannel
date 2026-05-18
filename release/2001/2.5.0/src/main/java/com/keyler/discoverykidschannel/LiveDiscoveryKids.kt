@@ -34,9 +34,20 @@ import androidx.core.content.ContextCompat
 import java.io.File
 
 /**
- * Beta 2001.2.5.0.52
+ * Beta 2001.2.5.0.53
  *
- * Novedades respecto a 2001.2.5.0.51:
+ * Novedades respecto a 2001.2.5.0.52:
+ *   - BUG FIX: al ir a segundo plano durante un bloque comercial (enseguida3/4,
+ *     comercial o ya_volvemos), al volver la app saltaba directamente al punto
+ *     de reanudación del programa ignorando el resto del comercial.
+ *     Causa raíz: onPause/onResume solo manejaban isInProgramSegment, ignorando
+ *     el estado de bloque comercial (isInCommercialBlock).
+ *     Fix: se agrega el flag isInCommercialBlock (true durante todo el corte
+ *     publicitario), se pausa el VideoView en onPause cuando está activo, y se
+ *     reanuda con seekTo(commercialPausedMs) en onResume para que el onCompletion
+ *     de playUri continúe la secuencia normalmente.
+ *
+ * [2001.2.5.0.52] Novedades respecto a 2001.2.5.0.51:
  *   - BUG FIX URGENTE: al iniciar el bloque comercial el fadeOut dejaba el VideoView en alpha=0f.
  *     Se agrega setBugAlpha(0f) + videoView.alpha = 1f (sin animación) al comienzo del
  *     withEndAction en playCommercial(), garantizando que el bloque comercial sea visible.
@@ -117,6 +128,17 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // Flag que indica si el video principal de un programa está activo.
     // Se usa para distinguir si pausar al ir a background (no pausar en bumpers/comerciales).
     private var isInProgramSegment = false
+
+    // ── Estado de segundo plano durante bloque comercial ──────────────────────
+    // BUG FIX 2001.2.5.0.53:
+    // Si el usuario va a segundo plano mientras se reproduce un comercial (o la
+    // enseguida/ya_volvemos del corte), el VideoView queda congelado pero
+    // pausedByLifecycle nunca se setea (porque isInProgramSegment=false),
+    // provocando que al volver el video no se reanude correctamente y salte
+    // al comienzo del siguiente segmento del programa.
+    // Se agrega isInCommercialBlock para cubrir este caso.
+    private var isInCommercialBlock  = false  // true mientras dura todo el corte publicitario
+    private var commercialPausedMs   = 0      // posición del comercial activo al pausar
 
     // ── Tipo de ítem actual (para persistencia de sesión) ──────────────────────
     // Registra qué estaba reproduciendo la app en el momento de cerrar.
@@ -403,39 +425,71 @@ class LiveDiscoveryKids : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         stopPositionTracker()
-        if (isInProgramSegment) {
-            // pausedPositionMs ya tiene la última posición guardada por el tracker
-            videoView.pause()
-            bgPlayer?.pause()   // pausa sin liberar el player
-            cancelAllTasks()    // cancela timers de screenbug y comerciales
-            pausedByLifecycle = true
-            Log.d(TAG, "Background – pausado en ${pausedPositionMs}ms")
+        when {
+            isInProgramSegment -> {
+                // pausedPositionMs ya tiene la última posición guardada por el tracker
+                videoView.pause()
+                bgPlayer?.pause()   // pausa sin liberar el player
+                cancelAllTasks()    // cancela timers de screenbug y comerciales
+                pausedByLifecycle = true
+                Log.d(TAG, "Background – programa pausado en ${pausedPositionMs}ms")
+            }
+            isInCommercialBlock -> {
+                // BUG FIX 2001.2.5.0.53: el bloque comercial también debe pausarse y
+                // reanudarse correctamente al volver de segundo plano. Sin este bloque,
+                // el VideoView queda congelado en el último frame del comercial y el
+                // onCompletion nunca se dispara (o se dispara en el momento equivocado),
+                // haciendo que la secuencia salte directo al segmento del programa
+                // que debía reproducirse DESPUÉS del comercial.
+                commercialPausedMs = videoView.currentPosition
+                videoView.pause()
+                cancelAllTasks()    // cancela cualquier task de screenbug pendiente
+                pausedByLifecycle = true
+                Log.d(TAG, "Background – comercial pausado en ${commercialPausedMs}ms")
+            }
         }
     }
 
     /**
-     * Al volver al frente: si estábamos pausados por lifecycle, reanuda el
-     * video y la música desde exactamente donde se pausó y reprograma los
-     * timers del segmento actual.
+     * Al volver al frente: reanuda el video desde exactamente donde se pausó,
+     * tanto si estábamos en un segmento de programa como en un bloque comercial.
      *
-     * BUG FIX 1998.2.0.1:
+     * BUG FIX 2001.2.5.0.53:
+     *   - Se amplía el when para cubrir el caso isInCommercialBlock, que antes
+     *     era ignorado (solo se manejaba isInProgramSegment). Al ignorarlo, el
+     *     VideoView quedaba congelado y el onCompletion del comercial se disparaba
+     *     de forma incorrecta al retomar, saltando directamente al punto de
+     *     reanudación del programa en lugar de continuar el comercial.
+     *
+     * BUG FIX 1998.2.0.1 (original):
      *   - Se agrega seekTo(pausedPositionMs) ANTES de start() para asegurar
      *     que el video retome la posición correcta. Sin seekTo, el video puede
      *     retomar desde el principio o desde donde el sistema lo dejó.
-     *   - Se reinicia el tracker de posición al reanudar.
      */
     override fun onResume() {
         super.onResume()
-        if (pausedByLifecycle) {
-            pausedByLifecycle = false
-            // seekTo garantiza que el video esté en la posición correcta antes de start()
-            videoView.seekTo(pausedPositionMs)
-            videoView.start()
-            bgPlayer?.start()
-            startPositionTracker()
-            // Reprogramar screenbug y el próximo corte comercial desde la posición guardada
-            scheduleSegmentLogic(pausedPositionMs)
-            Log.d(TAG, "Foreground – reanudando desde ${pausedPositionMs}ms")
+        if (!pausedByLifecycle) return
+        pausedByLifecycle = false
+
+        when {
+            isInProgramSegment -> {
+                // Reanuda el programa exactamente donde se pausó
+                videoView.seekTo(pausedPositionMs)
+                videoView.start()
+                bgPlayer?.start()
+                startPositionTracker()
+                // Reprogramar screenbug y el próximo corte comercial desde la posición guardada
+                scheduleSegmentLogic(pausedPositionMs)
+                Log.d(TAG, "Foreground – programa reanudado desde ${pausedPositionMs}ms")
+            }
+            isInCommercialBlock -> {
+                // BUG FIX 2001.2.5.0.53: reanuda el comercial (enseguida/comercial/ya_volvemos)
+                // en el frame donde se pausó. El onCompletion registrado por playUri ya está
+                // en memoria y continúa la secuencia normalmente al terminar el video.
+                videoView.seekTo(commercialPausedMs)
+                videoView.start()
+                Log.d(TAG, "Foreground – comercial reanudado desde ${commercialPausedMs}ms")
+            }
         }
     }
 
@@ -720,6 +774,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
     private fun beginProgramSegment(uri: Uri, startOffsetMs: Int, isFirstPlay: Boolean) {
         cancelAllTasks()
         setBugAlpha(0f)
+        isInCommercialBlock = false   // garantiza reset si se llega aquí desde cualquier ruta
 
         videoView.setVideoURI(uri)
         videoView.setOnPreparedListener { mp ->
@@ -833,6 +888,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
         setBugAlpha(0f)
         stopBgMusic()   // comercial → sin música de fondo
         isInProgramSegment = false   // no pausar al ir a background en comercial
+        isInCommercialBlock = true    // BUG FIX 2001.2.5.0.53: marcar bloque comercial activo
         stopPositionTracker()        // no hace falta tracker fuera del programa
         commercialResumeMs = resumeProgramAtMs   // guardar para persistencia de sesión
 
@@ -897,6 +953,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
                                 return@playUri
                             }
                             Log.d(TAG, "Ya volvemos done – resuming program at ${resumeProgramAtMs}ms")
+                            isInCommercialBlock = false   // BUG FIX 2001.2.5.0.53: bloque comercial terminado
                             beginProgramSegment(uri, startOffsetMs = resumeProgramAtMs, isFirstPlay = false)
                         }
                     }
