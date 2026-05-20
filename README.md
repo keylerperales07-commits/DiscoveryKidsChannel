@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Release-2001.2.5.0-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Release-2001.2.5.1-blue?style=flat-square"/>
 </p>
 
 ---
@@ -155,7 +155,12 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### Última versión estable — `v2001.2.5.0`
+### Última versión estable — `v2001.2.5.1`
+- 🐛 **Bug fix: posición incorrecta al reanudar después de un comercial** — Al salir de la app durante o después de un bloque comercial y volver a abrirla, el programa retomaba desde el punto de continuación post-comercial en lugar de desde donde el usuario realmente estaba. Corregido mediante persistencia del `breakQueue` serializado y uso de `commercialResumeMs` como posición de guardado cuando `isInCommercialBlock` es verdadero.
+
+<details>
+<summary>v2001.2.5.0</summary>
+
 - 🐛 **Bug fix urgente: bloque comercial invisible** — El `VideoView` quedaba en `alpha = 0f` al terminar el FadeOut, haciendo que la enseguida pre-comercial, el comercial y el `ya_volvemos` fueran completamente invisibles. Se agrega `videoView.alpha = 1f` sin animación al inicio del bloque comercial
 - 🕐 **Tallas por horario** — La selección de talla ya no es aleatoria; se elige según la franja horaria: `tallas_1` (06:00–12:59), `tallas_2` (13:00–16:29), `tallas_3` (16:30–23:59). Entre las 00:00 y las 06:00 no se reproduce ninguna talla y se usa `screenbug.webp` directamente
 - 📅 **Tallas_4 en fin de semana** — De sábado a domingo se reproduce siempre `tallas_4` y se usa `screenbug.webp` como screenbug
@@ -165,7 +170,9 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 - 🖼️ **Assets a Era 2001** — `comercial1–3`, `enseguida1` y `screenbug.webp` actualizados a la identidad visual de la Era 2001
 - 🔊 **Volumen de música de fondo al 8%** — Incrementado de 5% a 8% para mayor presencia ambiental
 
-Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas de esta versión.
+</details>
+
+Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas.
 
 ---
 

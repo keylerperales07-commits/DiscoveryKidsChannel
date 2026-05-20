@@ -6,6 +6,24 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2001.2.5.1] — Release · Era 2001 · Corrección de errores
+
+> *Versión de mantenimiento enfocada en corregir el comportamiento de reanudación de sesión después de bloques comerciales.*
+
+### Corregido
+
+**Posición incorrecta al reanudar después de un comercial**
+
+Se identificaron y corrigieron tres causas encadenadas que producían que al reanudar la app después de haber salido durante o después de un bloque comercial, el programa comenzara desde un punto incorrecto:
+
+- **`saveChannelState()` guardaba la posición del comercial activo** en lugar de la posición del programa donde debía retomarse. Cuando el usuario salía durante el bloque comercial, `videoView.currentPosition` apuntaba al frame del comercial, no al punto de retoma del programa. Ahora se guarda `commercialResumeMs` cuando `isInCommercialBlock` es verdadero.
+
+- **`breakQueue` no se persistía**. Al reanudar, `beginProgramSegment` era llamado con `isFirstPlay = false` pero con `breakQueue` vacío. Esto producía que el programa continuara sin ningún corte comercial pendiente (los breaks posteriores desaparecían) o, en versiones anteriores con `isFirstPlay = true`, que todos los breaks se recalcularan desde cero, insertando un corte comercial en una posición ya consumida.
+
+- **Corrección**: `breakQueue` se serializa como cadena (`"ms1,ms2,ms3"`) y se persiste en `SharedPreferences` bajo la clave `break_queue`. Al restaurar, se deserializa y se asigna antes de llamar a `beginProgramSegment`, garantizando que los breaks pendientes estén disponibles sin recalcular.
+
+---
+
 ## [2001.2.5.0] — 2026-05-18 · Release · Era 2001
 
 > *Versión estable de producción. Consolida todos los cambios validados durante la rama beta `2001.2.5.0.5x`.*
