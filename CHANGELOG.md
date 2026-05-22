@@ -6,6 +6,26 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2001.2.5.2] — Release · Era 2001 · Corrección de errores
+
+> *Versión de mantenimiento enfocada en corregir el comportamiento de segundo plano durante un bloque comercial.*
+
+### Corregido
+
+**Posición incorrecta al volver de segundo plano durante un bloque comercial**
+
+Al enviar la app a segundo plano mientras se reproducía un bloque comercial (enseguida pre-comercial, comercial o ya_volvemos) y volver a primer plano, el video reiniciaba desde el comienzo del clip en lugar de retomar desde donde se había pausado.
+
+- **Causa raíz:** `onPause()` asignaba `commercialPausedMs` con `videoView.currentPosition` en el momento crítico en que Android ya había pausado el `VideoView`, devolviendo `0` o un valor incorrecto — el mismo bug clásico resuelto para programas en `BUG FIX 1998.2.0.1` mediante el `positionTrackerRunnable`. Al llamar luego `videoView.seekTo(0)` en `onResume()`, el clip comercial comenzaba desde el principio, rompiendo la secuencia del corte publicitario.
+
+- **Corrección:**
+  - `positionTrackerRunnable` ahora también actualiza `commercialPausedMs` cada 16 ms cuando `isInCommercialBlock` es `true`, manteniendo siempre disponible la posición correcta del clip comercial activo.
+  - `playCommercial()` llama a `startPositionTracker()` (en lugar de `stopPositionTracker()`) para mantener el tracker activo durante toda la secuencia del bloque comercial.
+  - `onPause()` elimina la lectura directa de `videoView.currentPosition` para el caso comercial; utiliza el valor ya actualizado por el tracker.
+  - `onResume()` llama a `startPositionTracker()` después de reanudar para cubrir posibles backgrounds consecutivos dentro del mismo bloque.
+
+---
+
 ## [2001.2.5.1] — Release · Era 2001 · Corrección de errores
 
 > *Versión de mantenimiento enfocada en corregir el comportamiento de reanudación de sesión después de bloques comerciales.*
@@ -356,6 +376,8 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2001.2.5.2           | 2026-05-21 | 🚀 Release | Bug fix: posición incorrecta al volver de segundo plano durante un bloque comercial |
+| 2001.2.5.1           | —          | 🚀 Release | Bug fix: posición incorrecta al reanudar sesión después de un comercial; persistencia de `breakQueue` |
 | 2001.2.5.0           | 2026-05-18 | 🚀 Release | Bug fix VideoView invisible; tallas y enseguidas por horario; tallas_4 fin de semana; ScreenBug dinámico; assets a Era 2001; volumen al 8% |
 | 2001.2.5.0.52-beta   | 2026-05-17 | 🔧 Beta    | Bug fix urgente: VideoView invisible en comercial; tallas por horario; tallas_4 en fin de semana; enseguidas por horario; comercial4 a Era 2001 |
 | 2001.2.5.0.51-beta   | 2026-05-16 | 🔧 Beta    | Sistema de Tallas; ScreenBug dinámico; volumen al 8%; `enseguida2` de burbujas |

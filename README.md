@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Release-2001.2.5.1-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Release-2001.2.5.2-blue?style=flat-square"/>
 </p>
 
 ---
@@ -155,8 +155,15 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### Última versión estable — `v2001.2.5.1`
+### Última versión estable — `v2001.2.5.2`
+- 🐛 **Bug fix: posición incorrecta al volver de segundo plano durante un bloque comercial** — Al enviar la app a segundo plano durante un bloque comercial (enseguida pre-comercial, comercial o ya_volvemos) y volver a primer plano, el clip comercial reiniciaba desde el comienzo en lugar de retomar desde donde se pausó. Corregido extendiendo el `positionTrackerRunnable` para que actualice `commercialPausedMs` cada 16 ms durante el bloque comercial, eliminando la lectura poco confiable de `videoView.currentPosition` en `onPause()`.
+
+<details>
+<summary>v2001.2.5.1</summary>
+
 - 🐛 **Bug fix: posición incorrecta al reanudar después de un comercial** — Al salir de la app durante o después de un bloque comercial y volver a abrirla, el programa retomaba desde el punto de continuación post-comercial en lugar de desde donde el usuario realmente estaba. Corregido mediante persistencia del `breakQueue` serializado y uso de `commercialResumeMs` como posición de guardado cuando `isInCommercialBlock` es verdadero.
+
+</details>
 
 <details>
 <summary>v2001.2.5.0</summary>
