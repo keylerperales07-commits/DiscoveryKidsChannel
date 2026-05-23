@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Release-2001.2.5.2-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Release-2001.2.6.0-blue?style=flat-square"/>
 </p>
 
 ---
@@ -155,27 +155,31 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### Última versión estable — `v2001.2.5.2`
-- 🐛 **Bug fix: posición incorrecta al volver de segundo plano durante un bloque comercial** — Al enviar la app a segundo plano durante un bloque comercial (enseguida pre-comercial, comercial o ya_volvemos) y volver a primer plano, el clip comercial reiniciaba desde el comienzo en lugar de retomar desde donde se pausó. Corregido extendiendo el `positionTrackerRunnable` para que actualice `commercialPausedMs` cada 16 ms durante el bloque comercial, eliminando la lectura poco confiable de `videoView.currentPosition` en `onPause()`.
+### Última versión estable — `v2001.2.6.0`
+- 🐛 **Reescritura completa del manejo de segundo plano** — Las versiones 2.5.x usaban múltiples flags de estado para decidir qué pausar/reanudar, dejando casos sin cubrir. La nueva estrategia de **Pausa Universal** hace que `onPause()` siempre pause el video y `onResume()` siempre reanude, sin importar qué tipo de ítem se reproducía (programa, bumper, enseguida, talla, comercial o ya_volvemos).
+- 📺 **`bumper5.mp4`** incorporado como avance anticipado de la Gran Update 3.0.0
+- ⏱️ **Intervalo de cortes comerciales ajustado a 9 minutos** para programación más realista
+
+> Esta es una de las últimas versiones de la fase 1.1 (Era 1998–2001) y de la rama 2.x.x.
+
+<details>
+<summary>v2001.2.5.2</summary>
+
+- 🐛 **Bug fix: posición incorrecta al volver de segundo plano durante un bloque comercial** — Al enviar la app a segundo plano durante un bloque comercial y volver, el clip reiniciaba desde el comienzo. Corregido extendiendo el `positionTrackerRunnable` para actualizar `commercialPausedMs` cada 16 ms.
+
+</details>
 
 <details>
 <summary>v2001.2.5.1</summary>
 
-- 🐛 **Bug fix: posición incorrecta al reanudar después de un comercial** — Al salir de la app durante o después de un bloque comercial y volver a abrirla, el programa retomaba desde el punto de continuación post-comercial en lugar de desde donde el usuario realmente estaba. Corregido mediante persistencia del `breakQueue` serializado y uso de `commercialResumeMs` como posición de guardado cuando `isInCommercialBlock` es verdadero.
+- 🐛 **Bug fix: posición incorrecta al reanudar después de un comercial** — Corregido mediante persistencia del `breakQueue` serializado y uso de `commercialResumeMs` como posición de guardado.
 
 </details>
 
 <details>
 <summary>v2001.2.5.0</summary>
 
-- 🐛 **Bug fix urgente: bloque comercial invisible** — El `VideoView` quedaba en `alpha = 0f` al terminar el FadeOut, haciendo que la enseguida pre-comercial, el comercial y el `ya_volvemos` fueran completamente invisibles. Se agrega `videoView.alpha = 1f` sin animación al inicio del bloque comercial
-- 🕐 **Tallas por horario** — La selección de talla ya no es aleatoria; se elige según la franja horaria: `tallas_1` (06:00–12:59), `tallas_2` (13:00–16:29), `tallas_3` (16:30–23:59). Entre las 00:00 y las 06:00 no se reproduce ninguna talla y se usa `screenbug.webp` directamente
-- 📅 **Tallas_4 en fin de semana** — De sábado a domingo se reproduce siempre `tallas_4` y se usa `screenbug.webp` como screenbug
-- 🕐 **Enseguidas post-programa por horario** — La selección ya no es aleatoria; se elige según la franja horaria (lunes a viernes): `enseguida1` (00:00–12:59), `enseguida2` (13:00–16:29), `enseguida5` (16:30–23:59). De sábado a domingo se usa siempre `enseguida1`
-- 📼 **`comercial4` actualizado a la Era 2001** — El archivo fue reemplazado por una versión basada en la estética del año 2001
-- 🎞️ **Sistema de Tallas** — Nuevo segmento `PlayItem.Talla` con ScreenBug dinámico determinado por la talla reproducida
-- 🖼️ **Assets a Era 2001** — `comercial1–3`, `enseguida1` y `screenbug.webp` actualizados a la identidad visual de la Era 2001
-- 🔊 **Volumen de música de fondo al 8%** — Incrementado de 5% a 8% para mayor presencia ambiental
+- 🐛 Bloque comercial invisible corregido · 🕐 Tallas y enseguidas por horario · 📼 Assets Era 2001 · 🎞️ Sistema de Tallas con ScreenBug dinámico
 
 </details>
 

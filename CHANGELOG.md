@@ -6,6 +6,28 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2001.2.6.0] — Release · Era 2001 · Última versión de la fase 1.1 y de la rama 2.x.x
+
+> *Esta es una de las últimas versiones de la fase 1.1 (Era 1998–2001) y de la rama 2.x.x, previa a la Gran Update 3.0.0 que rediseñará la arquitectura completa del canal.*
+
+### Corregido
+
+**Reescritura completa del manejo de segundo plano — Pausa Universal**
+
+Las versiones 2.5.x intentaron resolver el bug de reanudación con múltiples flags de estado. Cada fix parcial cubría un caso pero dejaba otro descubierto. La solución definitiva elimina toda esa lógica condicional:
+
+- **`onPause()` — pausa universal**: pausa el `VideoView` y `bgPlayer` siempre, sin condiciones. La posición se toma de `lastVideoPositionMs`, actualizado cada 16ms por el tracker.
+- **`onResume()` — reanudación universal**: hace `seekTo(lastVideoPositionMs)` + `start()` siempre. El `onCompletion` registrado por `playUri()` continúa la secuencia correctamente para cualquier tipo de ítem.
+- **`positionTrackerRunnable` simplificado**: actualiza `lastVideoPositionMs` cada 16ms para cualquier video, sin distinguir tipo de ítem.
+- **Tracker global**: se inicia en `onCreate()` y corre durante toda la vida de la Activity.
+
+### Agregado
+
+- **`bumper5.mp4`** incorporado a la rotación de bumpers como avance de la Gran Update 3.0.0
+- **Intervalo de cortes comerciales ajustado a 9 minutos** para una programación más realista
+
+---
+
 ## [2001.2.5.2] — Release · Era 2001 · Corrección de errores
 
 > *Versión de mantenimiento enfocada en corregir el comportamiento de segundo plano durante un bloque comercial.*
