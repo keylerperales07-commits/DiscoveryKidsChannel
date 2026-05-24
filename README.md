@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Release-2001.2.6.0-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2002.3.0.0.1-orange?style=flat-square"/>
 </p>
 
 ---
@@ -154,6 +155,15 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 ## 📋 Registro de Cambios
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
+
+### 🧪 Última beta — `v2002.3.0.0.1-beta`
+> *Primera versión de la rama 3.x.x · Inicio de la Gran Update 3.0.0 · Fase 2.0 · Era 2002*
+
+- 📺 **Bumpers 1–4 actualizados a la Era 2002–2005** — Los bumpers anteriores (Era 1998–2001) fueron reemplazados por versiones de la nueva era. La lógica de rotación aleatoria no cambia.
+
+> Esta beta inaugura la **rama 3.x.x** y el desarrollo de la **fase 2.0** del proyecto. La rama 2.x.x queda cerrada con la versión 2.6.0.
+
+---
 
 ### Última versión estable — `v2001.2.6.0`
 - 🐛 **Reescritura completa del manejo de segundo plano** — Las versiones 2.5.x usaban múltiples flags de estado para decidir qué pausar/reanudar, dejando casos sin cubrir. La nueva estrategia de **Pausa Universal** hace que `onPause()` siempre pause el video y `onResume()` siempre reanude, sin importar qué tipo de ítem se reproducía (programa, bumper, enseguida, talla, comercial o ya_volvemos).

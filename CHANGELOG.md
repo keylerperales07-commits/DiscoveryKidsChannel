@@ -6,6 +6,23 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2002.3.0.0.1-beta] — Beta · Era 2002 · Inicio de la rama 3.x.x y de la fase 2.0
+
+> *Primera versión beta de la rama 3.x.x. Marca el inicio oficial del desarrollo de la **Gran Update 3.0.0** y de la **fase 2.0** de Discovery Kids, ambientada a partir del año 2002.*
+
+### Contexto
+
+Esta beta inaugura una nueva etapa del proyecto. La rama 2.x.x (Era 1998–2001) queda cerrada con la versión 2.6.0. A partir de aquí, el desarrollo avanza hacia la fase 2.0, que expandirá la arquitectura del canal para reflejar la evolución del canal en el período 2002–2005.
+
+### Modificado
+
+**Bumpers actualizados a la Era 2002–2005**
+- Los archivos `bumper1.mp4` a `bumper4.mp4` fueron reemplazados por nuevas versiones basadas en la estética del período 2002–2005.
+- El contenido de los bumpers ahora refleja la identidad visual actualizada del canal para esta nueva era.
+- La lógica de selección aleatoria con anti-repetición no requiere cambios.
+
+---
+
 ## [2001.2.6.0] — Release · Era 2001 · Última versión de la fase 1.1 y de la rama 2.x.x
 
 > *Esta es una de las últimas versiones de la fase 1.1 (Era 1998–2001) y de la rama 2.x.x, previa a la Gran Update 3.0.0 que rediseñará la arquitectura completa del canal.*
