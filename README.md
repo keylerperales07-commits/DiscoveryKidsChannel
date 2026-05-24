@@ -172,27 +172,6 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 > Esta es una de las últimas versiones de la fase 1.1 (Era 1998–2001) y de la rama 2.x.x.
 
-<details>
-<summary>v2001.2.5.2</summary>
-
-- 🐛 **Bug fix: posición incorrecta al volver de segundo plano durante un bloque comercial** — Al enviar la app a segundo plano durante un bloque comercial y volver, el clip reiniciaba desde el comienzo. Corregido extendiendo el `positionTrackerRunnable` para actualizar `commercialPausedMs` cada 16 ms.
-
-</details>
-
-<details>
-<summary>v2001.2.5.1</summary>
-
-- 🐛 **Bug fix: posición incorrecta al reanudar después de un comercial** — Corregido mediante persistencia del `breakQueue` serializado y uso de `commercialResumeMs` como posición de guardado.
-
-</details>
-
-<details>
-<summary>v2001.2.5.0</summary>
-
-- 🐛 Bloque comercial invisible corregido · 🕐 Tallas y enseguidas por horario · 📼 Assets Era 2001 · 🎞️ Sistema de Tallas con ScreenBug dinámico
-
-</details>
-
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas.
 
 ---
