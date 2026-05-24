@@ -6,6 +6,26 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2002.3.0.0.2-beta] — Beta · Era 2002–2005
+
+> *Segunda beta de la rama 3.x.x. Agrega comerciales independientes a la programación lineal y actualiza los assets a la Era 2002–2005.*
+
+### Agregado
+
+**Comerciales en la programación lineal (`PlayItem.StandaloneCommercial`)**
+- Se agrega un nuevo tipo de ítem `PlayItem.StandaloneCommercial` a la secuencia de canal. Aparece entre la enseguida post-programa y la talla, como ocurría en la televisión real de la era 2002–2005.
+- Es independiente del bloque publicitario que interrumpe programas (`playCommercial`): no incluye transiciones ya_volvemos ni lógica de `breakQueue`.
+- Reutiliza la lista `COMMERCIALS` y el filtro anti-repetición existentes.
+- La secuencia del canal queda: `Enseguida → Comercial → Bumper → Talla → Programa`.
+
+### Modificado
+
+**Assets actualizados a la Era 2002–2005**
+- `comercial1.mp4` a `comercial4.mp4` reemplazados por versiones de la Era 2002–2005.
+- `screenbug.webp` actualizado a la identidad visual del período 2002–2005.
+
+---
+
 ## [2002.3.0.0.1-beta] — Beta · Era 2002 · Inicio de la rama 3.x.x y de la fase 2.0
 
 > *Primera versión beta de la rama 3.x.x. Marca el inicio oficial del desarrollo de la **Gran Update 3.0.0** y de la **fase 2.0** de Discovery Kids, ambientada a partir del año 2002.*
