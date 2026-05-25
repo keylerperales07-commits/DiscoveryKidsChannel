@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Release-2001.2.6.0-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2002.3.0.0.2-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2002.3.0.0.3-orange?style=flat-square"/>
 </p>
 
 ---
@@ -156,17 +156,25 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🧪 Última beta — `v2002.3.0.0.2-beta`
-> *Rama 3.x.x · Era 2002–2005 · Gran Update 3.0.0 en desarrollo*
+### 🧪 Última beta — `v2002.3.0.0.3-beta`
+> *Rama 3.x.x · Era 2002 · Gran Update 3.0.0 en desarrollo*
 
-- 📺 **Comerciales en la programación lineal** — Nuevo `PlayItem.StandaloneCommercial` insertado entre Enseguida y Talla. Reproduce un comercial como parte del flujo del canal, sin transiciones ya_volvemos. Secuencia: `Enseguida → Comercial → Bumper → Talla → Programa`.
-- 🎬 **`comercial1–4.mp4` actualizados a la Era 2002–2005**
-- 🖼️ **`screenbug.webp` actualizado a la Era 2002–2005**
+- 🎬 **Enseguidas — selección aleatoria** — Se eliminó la lógica de selección por horario. Ahora se elige aleatoriamente entre `enseguida1` y `enseguida2` con anti-repetición. `enseguida5` eliminado.
+- 🎬 **`enseguida1` y `enseguida2` actualizados a la Era 2002**
+- 🖼️ **Logo de la app actualizado**
+
+<details>
+<summary>v2002.3.0.0.2-beta</summary>
+
+- 📺 **Comerciales en la programación lineal** (`StandaloneCommercial`) entre Enseguida y Talla
+- 🎬 `comercial1–4.mp4` y `screenbug.webp` actualizados a Era 2002–2005
+
+</details>
 
 <details>
 <summary>v2002.3.0.0.1-beta</summary>
 
-- 📺 **Bumpers 1–4 actualizados a la Era 2002–2005** — Primera beta de la rama 3.x.x. Inicio de la fase 2.0 y la Gran Update 3.0.0.
+- 📺 Bumpers 1–4 actualizados a Era 2002–2005 · Inicio de la rama 3.x.x y la fase 2.0
 
 </details>
 

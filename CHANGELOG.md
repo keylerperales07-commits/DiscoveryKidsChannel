@@ -6,6 +6,23 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2002.3.0.0.3-beta] — Beta · Era 2002
+
+> *Tercera beta de la rama 3.x.x. Simplifica la selección de enseguidas y actualiza assets a la Era 2002.*
+
+### Modificado
+
+**Selección de enseguidas — eliminación del horario**
+- La selección de enseguidas post-programa ya no depende del horario ni del día de la semana.
+- Ahora se elige aleatoriamente entre `enseguida1` y `enseguida2` con anti-repetición, igual que bumpers y comerciales.
+- Se eliminó `enseguida5` de la lista y del proyecto (`res/raw/`).
+
+**Assets actualizados a la Era 2002**
+- `enseguida1.mp4` y `enseguida2.mp4` actualizados a contenido de la Era 2002.
+- Logo de la app actualizado (cambio externo).
+
+---
+
 ## [2002.3.0.0.2-beta] — Beta · Era 2002–2005
 
 > *Segunda beta de la rama 3.x.x. Agrega comerciales independientes a la programación lineal y actualiza los assets a la Era 2002–2005.*
