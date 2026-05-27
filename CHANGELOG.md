@@ -6,6 +6,31 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2002.3.0.0.4-beta] — Beta · Era 2002
+
+> *Cuarta beta de la rama 3.x.x. Elimina por completo el sistema de Tallas y renombra los videos de transición comercial.*
+
+### Eliminado
+
+**Sistema de Tallas — eliminación completa**
+- `PlayItem.Talla` removido del `sealed class PlayItem` y de la playlist.
+- `playTalla()` eliminada.
+- `TALLAS` y `TALLA_SCREENBUG_MAP` eliminados del `companion object`.
+- Los archivos `tallas_1.mp4`, `tallas_2.mp4`, `tallas_3.mp4` y `tallas_4.mp4` eliminados de `res/raw/` (los videos ya no existen).
+- `screenbug_small`, `screenbug_medium` y `screenbug_large` eliminados de `res/drawable/`. Ahora siempre se usa `screenbug.webp`.
+- La secuencia del canal queda: `Enseguida → StandaloneCommercial → Bumper → Programa`.
+
+### Modificado
+
+**Renombrado de videos de transición**
+- `ya_volvemos.mp4` → `continuamos1.mp4`
+- `ya_volvemos2.mp4` → `continuamos2.mp4`
+- `enseguida3.mp4` → `ya_regresa1.mp4`
+- `enseguida4.mp4` → `ya_regresa2.mp4`
+- `ENSEGUIDA_YA_VOLVEMOS_MAP` y `ENSEGUIDAS_PRE_COMERCIAL` actualizados con los nuevos nombres.
+
+---
+
 ## [2002.3.0.0.3-beta] — Beta · Era 2002
 
 > *Tercera beta de la rama 3.x.x. Simplifica la selección de enseguidas y actualiza assets a la Era 2002.*
@@ -452,6 +477,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2002.3.0.0.4-beta    | 2026-05-26 | 🔧 Beta    | Tallas eliminadas; renombrado ya_volvemos→continuamos1/2, enseguida3/4→ya_regresa1/2; screenbug S/M/L eliminados |
 | 2001.2.5.2           | 2026-05-21 | 🚀 Release | Bug fix: posición incorrecta al volver de segundo plano durante un bloque comercial |
 | 2001.2.5.1           | —          | 🚀 Release | Bug fix: posición incorrecta al reanudar sesión después de un comercial; persistencia de `breakQueue` |
 | 2001.2.5.0           | 2026-05-18 | 🚀 Release | Bug fix VideoView invisible; tallas y enseguidas por horario; tallas_4 fin de semana; ScreenBug dinámico; assets a Era 2001; volumen al 8% |

@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Release-2001.2.6.0-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2002.3.0.0.3-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2002.3.0.0.4-orange?style=flat-square"/>
 </p>
 
 ---
@@ -156,12 +156,20 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🧪 Última beta — `v2002.3.0.0.3-beta`
+### 🧪 Última beta — `v2002.3.0.0.4-beta`
 > *Rama 3.x.x · Era 2002 · Gran Update 3.0.0 en desarrollo*
+
+- 🗑️ **Tallas eliminadas** — Se eliminaron por completo las Tallas (`tallas_1–4`), sus screenbug S/M/L y toda la lógica asociada (`playTalla()`, `TALLAS`, `TALLA_SCREENBUG_MAP`). Los videos ya no existen.
+- 🎬 **Videos renombrados** — `ya_volvemos` → `continuamos1`, `ya_volvemos2` → `continuamos2`, `enseguida3` → `ya_regresa1`, `enseguida4` → `ya_regresa2`.
+
+<details>
+<summary>v2002.3.0.0.3-beta</summary>
 
 - 🎬 **Enseguidas — selección aleatoria** — Se eliminó la lógica de selección por horario. Ahora se elige aleatoriamente entre `enseguida1` y `enseguida2` con anti-repetición. `enseguida5` eliminado.
 - 🎬 **`enseguida1` y `enseguida2` actualizados a la Era 2002**
 - 🖼️ **Logo de la app actualizado**
+
+</details>
 
 <details>
 <summary>v2002.3.0.0.2-beta</summary>
