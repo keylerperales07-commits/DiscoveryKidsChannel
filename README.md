@@ -14,8 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Release-2001.2.6.0-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2002.3.0.0.4-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Release-2002.3.0.0-blue?style=flat-square"/>
 </p>
 
 ---
@@ -157,43 +156,22 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
 ### 🧪 Última beta — `v2002.3.0.0.4-beta`
-> *Rama 3.x.x · Era 2002 · Gran Update 3.0.0 en desarrollo*
+### Última versión estable — `v2002.3.0.0`
+> *Primera release de la rama 3.x.x · Era 2002–2005 · Fase 2.0*
 
-- 🗑️ **Tallas eliminadas** — Se eliminaron por completo las Tallas (`tallas_1–4`), sus screenbug S/M/L y toda la lógica asociada (`playTalla()`, `TALLAS`, `TALLA_SCREENBUG_MAP`). Los videos ya no existen.
-- 🎬 **Videos renombrados** — `ya_volvemos` → `continuamos1`, `ya_volvemos2` → `continuamos2`, `enseguida3` → `ya_regresa1`, `enseguida4` → `ya_regresa2`.
-
-<details>
-<summary>v2002.3.0.0.3-beta</summary>
-
-- 🎬 **Enseguidas — selección aleatoria** — Se eliminó la lógica de selección por horario. Ahora se elige aleatoriamente entre `enseguida1` y `enseguida2` con anti-repetición. `enseguida5` eliminado.
-- 🎬 **`enseguida1` y `enseguida2` actualizados a la Era 2002**
-- 🖼️ **Logo de la app actualizado**
-
-</details>
+- 📺 **`StandaloneCommercial`** — Comerciales en la programación lineal entre Enseguida y Bumper
+- 🗑️ **Sistema de Tallas eliminado** — Tallas, screenbug S/M/L y lógica asociada removidos por completo
+- 🔤 **Videos renombrados** — `ya_volvemos` → `continuamos1/2`, `enseguida3/4` → `ya_regresa1/2`
+- 🎬 **Enseguidas — selección aleatoria** — Sin lógica horaria, `enseguida5` eliminado
+- 🖼️ **Assets actualizados** — Bumpers, comerciales, enseguidas, screenbug y logo actualizados a la Era 2002–2005
 
 <details>
-<summary>v2002.3.0.0.2-beta</summary>
+<summary>v2001.2.6.0 (última release Era 2001)</summary>
 
-- 📺 **Comerciales en la programación lineal** (`StandaloneCommercial`) entre Enseguida y Talla
-- 🎬 `comercial1–4.mp4` y `screenbug.webp` actualizados a Era 2002–2005
-
-</details>
-
-<details>
-<summary>v2002.3.0.0.1-beta</summary>
-
-- 📺 Bumpers 1–4 actualizados a Era 2002–2005 · Inicio de la rama 3.x.x y la fase 2.0
+- 🐛 Reescritura completa del manejo de segundo plano (Pausa Universal)
+- 📺 `bumper5.mp4` incorporado · ⏱️ Intervalo comercial a 9 minutos
 
 </details>
-
----
-
-### Última versión estable — `v2001.2.6.0`
-- 🐛 **Reescritura completa del manejo de segundo plano** — Las versiones 2.5.x usaban múltiples flags de estado para decidir qué pausar/reanudar, dejando casos sin cubrir. La nueva estrategia de **Pausa Universal** hace que `onPause()` siempre pause el video y `onResume()` siempre reanude, sin importar qué tipo de ítem se reproducía (programa, bumper, enseguida, talla, comercial o ya_volvemos).
-- 📺 **`bumper5.mp4`** incorporado como avance anticipado de la Gran Update 3.0.0
-- ⏱️ **Intervalo de cortes comerciales ajustado a 9 minutos** para programación más realista
-
-> Esta es una de las últimas versiones de la fase 1.1 (Era 1998–2001) y de la rama 2.x.x.
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas.
 

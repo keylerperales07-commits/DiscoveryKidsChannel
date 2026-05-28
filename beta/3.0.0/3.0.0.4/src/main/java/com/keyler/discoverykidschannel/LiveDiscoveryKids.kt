@@ -192,20 +192,20 @@ class LiveDiscoveryKids : AppCompatActivity() {
 
     private val playlist = listOf(
         PlayItem.Enseguida,
-        PlayItem.StandaloneCommercial,   // Beta 3.0.0.2: comercial entre enseguida y bumper
         PlayItem.Bumper,
+        PlayItem.StandaloneCommercial,   // Beta 3.0.0.2: comercial entre enseguida y bumper
         PlayItem.Program(0),
         PlayItem.Enseguida,
-        PlayItem.StandaloneCommercial,
         PlayItem.Bumper,
+        PlayItem.StandaloneCommercial,
         PlayItem.Program(1),
         PlayItem.Enseguida,
-        PlayItem.StandaloneCommercial,
         PlayItem.Bumper,
+        PlayItem.StandaloneCommercial,
         PlayItem.Program(2),
         PlayItem.Enseguida,
-        PlayItem.StandaloneCommercial,
         PlayItem.Bumper,
+        PlayItem.StandaloneCommercial,
         PlayItem.Program(3)
     )
 

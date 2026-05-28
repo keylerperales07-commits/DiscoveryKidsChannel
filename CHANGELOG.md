@@ -6,6 +6,43 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2002.3.0.0] — Release · Era 2002 · Primera release de la rama 3.x.x · Fase 2.0
+
+> *Primera versión estable de la rama 3.x.x. Consolida todos los cambios validados durante las betas `3.0.0.1` a `3.0.0.4`. Marca el inicio oficial de la fase 2.0 de Discovery Kids, ambientada en el período 2002–2005.*
+
+### Agregado
+
+**`PlayItem.StandaloneCommercial` — comerciales en la programación lineal**
+- Nuevo tipo de ítem que aparece entre la enseguida post-programa y el bumper, como ocurría en la televisión real de 2002–2005.
+- Es independiente del bloque publicitario que interrumpe programas: no incluye transiciones ni lógica de `breakQueue`.
+- Reutiliza la lista `COMMERCIALS` y el filtro anti-repetición existentes.
+- Secuencia del canal: `Enseguida → StandaloneCommercial → Bumper → Programa`.
+
+### Eliminado
+
+**Sistema de Tallas — eliminación completa**
+- `PlayItem.Talla`, `playTalla()`, `TALLAS`, `TALLA_SCREENBUG_MAP` y `currentScreenBugRes` removidos.
+- `screenbug_small`, `screenbug_medium` y `screenbug_large` eliminados. Ahora siempre se usa `screenbug.webp`.
+- `tallas_1–4.mp4` y `enseguida5.mp4` eliminados del proyecto.
+
+**Selección de enseguidas por horario — eliminada**
+- La lógica horaria (lunes–viernes por franja / fin de semana) fue reemplazada por selección aleatoria con anti-repetición entre `enseguida1` y `enseguida2`.
+
+### Modificado
+
+**Assets actualizados a la Era 2002–2005**
+- `bumper1–4.mp4`, `comercial1–4.mp4`, `enseguida1.mp4`, `enseguida2.mp4` y `screenbug.webp` actualizados a la estética del período 2002–2005.
+- Logo de la app actualizado.
+
+**Renombrado de videos de transición comercial**
+- `ya_volvemos.mp4` → `continuamos1.mp4`
+- `ya_volvemos2.mp4` → `continuamos2.mp4`
+- `enseguida3.mp4` → `ya_regresa1.mp4`
+- `enseguida4.mp4` → `ya_regresa2.mp4`
+- `ENSEGUIDA_YA_VOLVEMOS_MAP` y `ENSEGUIDAS_PRE_COMERCIAL` actualizados con los nuevos nombres (`YA_REGRESA`, `YA_REGRESA_CONTINUAMOS_MAP`).
+
+---
+
 ## [2002.3.0.0.4-beta] — Beta · Era 2002
 
 > *Cuarta beta de la rama 3.x.x. Elimina por completo el sistema de Tallas y renombra los videos de transición comercial.*
