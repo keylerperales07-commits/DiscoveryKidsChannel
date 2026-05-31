@@ -6,6 +6,48 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2003.3.1.0.10-beta] — Beta · Era 2003 · Inicio de la sub-rama 3.1.x
+
+> *Primera beta de la sub-rama 3.1.x. Transición al año 2003 con nuevos assets y expansión del sistema de cortinillas comerciales.*
+
+### Agregado
+
+**`ya_regresa3.mp4` y `continuamos3.mp4` — cortinilla Discovery Kids Rosa**
+- Se agrega un tercer par de transición comercial con la cortinilla de color rosa.
+- `ya_regresa3` se suma a la lista `YA_REGRESA` para selección aleatoria anti-repetición.
+- `continuamos3` queda mapeado a `ya_regresa3` en `YA_REGRESA_CONTINUAMOS_MAP`.
+- La lista de pares disponibles pasa de 2 a 3.
+
+**`enseguida3.mp4` — cortinilla Discovery Kids Azul**
+- Se agrega una tercera enseguida post-programa con la cortinilla de color azul.
+- Se suma a `ENSEGUIDAS_POST_PROGRAMA` para selección aleatoria anti-repetición.
+- Con 3 enseguidas, la selección es verdaderamente aleatoria (siempre hay 2 candidatos).
+
+### Modificado
+
+**Assets actualizados a la Era 2003**
+- `bumper.mp4` reemplazado por versión con footage original del año 2003.
+- `comercial1.mp4` a `comercial4.mp4` actualizados a la estética del año 2003.
+
+### Nota técnica
+
+> ⚠️ Los videos de programas (`pro1–4.mp4`) deben estar en **resolución 480p o inferior**. Resoluciones superiores (720p+) causan que el `VideoView` use aceleración de hardware (`SurfaceView`) que renderiza en una capa separada y tapa el ScreenBug. Esto es una limitación conocida del sistema actual; se resolverá en una versión futura con `TextureView`.
+
+---
+
+## [2002.3.0.1] — Release · Era 2002 · Corrección de errores
+
+> *Versión de mantenimiento. Corrige el screenbug invisible tras la eliminación del sistema de Tallas en 3.0.0.*
+
+### Corregido
+
+**Screenbug invisible — `fadeInBug()` con referencia eliminada**
+- `fadeInBug()` referenciaba `currentScreenBugRes`, eliminado en la Beta 3.0.0.4 junto con el sistema de Tallas. El método llamaba `screenBug.setImageResource(currentScreenBugRes)` que causaba un crash silencioso, impidiendo que el screenbug apareciera después de los 20 segundos de inicio de programa.
+- Fix: `setImageResource(R.drawable.screenbug)` directamente, que es el único screenbug disponible desde que se eliminaron `screenbug_small/medium/large`.
+- Limpieza: constante `PREF_SCREENBUG_RES` eliminada del `companion object`.
+
+---
+
 ## [2002.3.0.0] — Release · Era 2002 · Primera release de la rama 3.x.x · Fase 2.0
 
 > *Primera versión estable de la rama 3.x.x. Consolida todos los cambios validados durante las betas `3.0.0.1` a `3.0.0.4`. Marca el inicio oficial de la fase 2.0 de Discovery Kids, ambientada en el período 2002–2005.*
