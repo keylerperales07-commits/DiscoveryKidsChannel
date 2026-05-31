@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Release-2002.3.0.1-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Release-2002.3.0.0-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/Beta-2003.3.1.0.10-orange?style=flat-square"/>
 </p>
 
@@ -163,36 +163,18 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 - 🔵 **`enseguida3.mp4`** — Cortinilla Discovery Kids **azul**, tercera enseguida post-programa
 - 🎬 **`bumper.mp4`** y **`comercial1–4.mp4`** actualizados con footage original del año 2003
 
-<details>
-<summary>Betas anteriores (rama 3.0.0.x)</summary>
-
-- **3.0.0.4** — Tallas eliminadas, videos renombrados (`continuamos`, `ya_regresa`)
-- **3.0.0.3** — Enseguidas aleatorias, `enseguida5` eliminado
-- **3.0.0.2** — `StandaloneCommercial` en programación lineal
-- **3.0.0.1** — Inicio rama 3.x.x, bumpers Era 2002–2005
-
-</details>
 
 ---
 
-### Última versión estable — `v2002.3.0.1`
-> *Era 2002–2005 · Rama 3.x.x · Bug fix*
+### Última versión estable — `v2002.3.0.0`
+> *Era 2002–2005 · Rama 3.x.x · RELEASE*
 
-- 🐛 **Screenbug invisible corregido** — `fadeInBug()` referenciaba `currentScreenBugRes` (eliminado en 3.0.0 junto con el sistema de Tallas), causando un crash silencioso que impedía que el logo del canal apareciera. Corregido con `setImageResource(R.drawable.screenbug)` directamente.
+- 📺 `StandaloneCommercial` en programación lineal 
+- 🗑️ Sistema de Tallas eliminado
+- 🔤 Videos renombrados (`continuamos1/2`, `ya_regresa1/2`)
+- 🎬 Enseguidas aleatorias
+- 🖼️ Assets Era 2002–2005
 
-<details>
-<summary>v2002.3.0.0</summary>
-
-- 📺 `StandaloneCommercial` en programación lineal · 🗑️ Sistema de Tallas eliminado · 🔤 Videos renombrados (`continuamos1/2`, `ya_regresa1/2`) · 🎬 Enseguidas aleatorias · 🖼️ Assets Era 2002–2005
-
-</details>
-
-<details>
-<summary>v2001.2.6.0 (última release Era 2001)</summary>
-
-- 🐛 Pausa Universal · 📺 `bumper5.mp4` · ⏱️ Intervalo comercial 9 min
-
-</details>
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas.
 
