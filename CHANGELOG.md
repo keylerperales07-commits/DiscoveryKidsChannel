@@ -6,6 +6,29 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2003.3.1.0.11-beta] — Beta · Era 2003 · Última beta de la sub-rama 3.1.x
+
+> *Última beta antes de la Release 3.1.0. Completa el sistema de cortinillas con los colores amarillo y verde, y mejora la resolución de la cortinilla verde existente.*
+
+### Agregado
+
+**`ya_regresa4.mp4` + `continuamos4.mp4` — Cortinilla Discovery Kids Verde**
+- Cuarto par de transición comercial con la cortinilla en color verde.
+- `ya_regresa4` se suma a la lista `YA_REGRESA`; `continuamos4` queda mapeado en `YA_REGRESA_CONTINUAMOS_MAP`.
+- La lista de pares de transición pasa de 3 a 4 elementos.
+
+**`enseguida4.mp4` — Cortinilla Discovery Kids Amarillo**
+- Cuarta enseguida post-programa con la cortinilla en color amarillo.
+- Se suma a `ENSEGUIDAS_POST_PROGRAMA`. Con 4 elementos, la selección aleatoria anti-repetición tiene siempre 3 candidatos disponibles.
+
+### Modificado
+
+**`enseguida2.mp4` — Cortinilla Verde actualizada a mejor resolución**
+- La cortinilla verde existente fue reemplazada por una versión de mayor calidad visual.
+- Sin cambios en código; solo reemplazo del archivo en `res/raw/`.
+
+---
+
 ## [2003.3.1.0.10-beta] — Beta · Era 2003 · Inicio de la sub-rama 3.1.x
 
 > *Primera beta de la sub-rama 3.1.x. Transición al año 2003 con nuevos assets y expansión del sistema de cortinillas comerciales.*

@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Release-2002.3.0.0-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2003.3.1.0.10-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2003.3.1.0.11-orange?style=flat-square"/>
 </p>
 
 ---
@@ -156,12 +156,19 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🧪 Última beta — `v2003.3.1.0.10-beta`
-> *Sub-rama 3.1.x · Era 2003 · Nuevas cortinillas y assets 2003*
+### 🧪 Última beta — `v2003.3.1.0.11-beta` *(última beta)*
+> *Sub-rama 3.1.x · Era 2003 · Sistema de cortinillas completo*
 
-- 🌸 **`ya_regresa3` + `continuamos3`** — Cortinilla Discovery Kids **rosa**, tercer par de transición comercial
-- 🔵 **`enseguida3.mp4`** — Cortinilla Discovery Kids **azul**, tercera enseguida post-programa
-- 🎬 **`bumper.mp4`** y **`comercial1–4.mp4`** actualizados con footage original del año 2003
+- 💚 **`ya_regresa4` + `continuamos4`** — Cortinilla Discovery Kids **verde** (4.º par de transición comercial)
+- 💛 **`enseguida4.mp4`** — Cortinilla Discovery Kids **amarillo** (4.ª enseguida post-programa)
+- 🔼 **`enseguida2.mp4`** — Cortinilla verde actualizada a mejor resolución
+
+<details>
+<summary>v2003.3.1.0.10-beta</summary>
+
+- 🌸 `ya_regresa3` + `continuamos3` — Cortinilla rosa · 🔵 `enseguida3` — Cortinilla azul · 🎬 Assets Era 2003
+
+</details>
 
 
 ---
