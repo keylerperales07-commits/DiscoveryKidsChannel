@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Release-2002.3.0.0-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2003.3.1.0.11-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Release-2003.3.1.0-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Era_Arcoiris-Completa-FF69B4?style=flat-square"/>
 </p>
 
 ---
@@ -156,32 +156,15 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🧪 Última beta — `v2003.3.1.0.11-beta` *(última beta)*
-> *Sub-rama 3.1.x · Era 2003 · Sistema de cortinillas completo*
+### 🚀 Última versión estable — `v2003.3.1.0` *(Era Arcoiris — completa)*
+> *Era 2003 · Sub-rama 3.1.x · Fase 2 — Parte 2 · RELEASE*
 
-- 💚 **`ya_regresa4` + `continuamos4`** — Cortinilla Discovery Kids **verde** (4.º par de transición comercial)
+- 🌸 **`ya_regresa3` + `continuamos3`** — Cortinilla Discovery Kids **rosa** (3.er par de transición)
+- 💚 **`ya_regresa4` + `continuamos4`** — Cortinilla Discovery Kids **verde** (4.º par de transición)
+- 🔵 **`enseguida3.mp4`** — Cortinilla Discovery Kids **azul** (3.ª enseguida post-programa)
 - 💛 **`enseguida4.mp4`** — Cortinilla Discovery Kids **amarillo** (4.ª enseguida post-programa)
 - 🔼 **`enseguida2.mp4`** — Cortinilla verde actualizada a mejor resolución
-
-<details>
-<summary>v2003.3.1.0.10-beta</summary>
-
-- 🌸 `ya_regresa3` + `continuamos3` — Cortinilla rosa · 🔵 `enseguida3` — Cortinilla azul · 🎬 Assets Era 2003
-
-</details>
-
-
----
-
-### Última versión estable — `v2002.3.0.0`
-> *Era 2002–2005 · Rama 3.x.x · RELEASE*
-
-- 📺 `StandaloneCommercial` en programación lineal 
-- 🗑️ Sistema de Tallas eliminado
-- 🔤 Videos renombrados (`continuamos1/2`, `ya_regresa1/2`)
-- 🎬 Enseguidas aleatorias
-- 🖼️ Assets Era 2002–2005
-
+- 🎬 Assets (`bumper`, `comercial1–4`) actualizados a la **Era 2003**
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas.
 

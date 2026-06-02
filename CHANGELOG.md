@@ -6,6 +6,48 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2003.3.1.0] — Release · Era 2003 · Fase 2 — Parte 2 · Era Arcoiris completa
+
+> *Segunda y última parte de la Gran Update de la Era Arcoiris. Consolida todos los cambios validados durante las betas `3.1.0.10` a `3.1.0.11`. Completa el sistema de cortinillas Discovery Kids con 4 pares de transición comercial y 4 enseguidas post-programa, cerrando definitivamente la sub-rama 3.1.x y la Era Arcoiris.*
+
+### Agregado
+
+**`ya_regresa3.mp4` + `continuamos3.mp4` — Cortinilla Discovery Kids Rosa**
+- Tercer par de transición comercial con la cortinilla de color rosa.
+- `ya_regresa3` se suma a la lista `YA_REGRESA` para selección aleatoria anti-repetición.
+- `continuamos3` queda mapeado a `ya_regresa3` en `YA_REGRESA_CONTINUAMOS_MAP`.
+- La lista de pares disponibles pasa de 2 a 3.
+
+**`ya_regresa4.mp4` + `continuamos4.mp4` — Cortinilla Discovery Kids Verde**
+- Cuarto par de transición comercial con la cortinilla en color verde.
+- `ya_regresa4` se suma a la lista `YA_REGRESA`; `continuamos4` queda mapeado en `YA_REGRESA_CONTINUAMOS_MAP`.
+- La lista de pares de transición pasa de 3 a 4 elementos.
+
+**`enseguida3.mp4` — Cortinilla Discovery Kids Azul**
+- Tercera enseguida post-programa con la cortinilla de color azul.
+- Se suma a `ENSEGUIDAS_POST_PROGRAMA` para selección aleatoria anti-repetición.
+- Con 3 enseguidas, la selección es verdaderamente aleatoria (siempre hay 2 candidatos).
+
+**`enseguida4.mp4` — Cortinilla Discovery Kids Amarillo**
+- Cuarta enseguida post-programa con la cortinilla en color amarillo.
+- Se suma a `ENSEGUIDAS_POST_PROGRAMA`. Con 4 elementos, la selección aleatoria anti-repetición tiene siempre 3 candidatos disponibles.
+
+### Modificado
+
+**Assets actualizados a la Era 2003**
+- `bumper.mp4` reemplazado por versión con footage original del año 2003.
+- `comercial1.mp4` a `comercial4.mp4` actualizados a la estética del año 2003.
+
+**`enseguida2.mp4` — Cortinilla Verde actualizada a mejor resolución**
+- La cortinilla verde existente fue reemplazada por una versión de mayor calidad visual.
+- Sin cambios en código; solo reemplazo del archivo en `res/raw/`.
+
+### Nota técnica
+
+> ⚠️ Los videos de programas (`pro1–4.mp4`) deben estar en **resolución 480p o inferior**. Resoluciones superiores (720p+) causan que el `VideoView` use aceleración de hardware (`SurfaceView`) que renderiza en una capa separada y tapa el ScreenBug. Esto es una limitación conocida del sistema actual; se resolverá en una versión futura con `TextureView`.
+
+---
+
 ## [2003.3.1.0.11-beta] — Beta · Era 2003 · Última beta de la sub-rama 3.1.x
 
 > *Última beta antes de la Release 3.1.0. Completa el sistema de cortinillas con los colores amarillo y verde, y mejora la resolución de la cortinilla verde existente.*
@@ -579,6 +621,11 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2003.3.1.0           | —          | 🚀 Release | Era Arcoiris completa (Fase 2 — Parte 2): 4 pares ya_regresa/continuamos, 4 enseguidas; assets Era 2003; enseguida2 mejorada |
+| 2003.3.1.0.11-beta   | —          | 🔧 Beta    | ya_regresa4/continuamos4 (verde), enseguida4 (amarillo), enseguida2 mejorada |
+| 2003.3.1.0.10-beta   | —          | 🔧 Beta    | ya_regresa3/continuamos3 (rosa), enseguida3 (azul), assets Era 2003 |
+| 2002.3.0.1           | —          | 🚀 Release | Bug fix: screenbug invisible tras eliminación de Tallas en 3.0.0 |
+| 2002.3.0.0           | —          | 🚀 Release | StandaloneCommercial; Tallas eliminadas; renombrado ya_volvemos→continuamos1/2, enseguida3/4→ya_regresa1/2; enseguidas aleatorias; assets Era 2002 |
 | 2002.3.0.0.4-beta    | 2026-05-26 | 🔧 Beta    | Tallas eliminadas; renombrado ya_volvemos→continuamos1/2, enseguida3/4→ya_regresa1/2; screenbug S/M/L eliminados |
 | 2001.2.5.2           | 2026-05-21 | 🚀 Release | Bug fix: posición incorrecta al volver de segundo plano durante un bloque comercial |
 | 2001.2.5.1           | —          | 🚀 Release | Bug fix: posición incorrecta al reanudar sesión después de un comercial; persistencia de `breakQueue` |
