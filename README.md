@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Release-2003.3.1.0-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2003.3.2.0.20-orange?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era_Arcoiris-Completa-FF69B4?style=flat-square"/>
 </p>
 
@@ -46,7 +46,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
 - 🆕 **Nuevo Screenbug** — Marca de agua con el logo del canal en pantalla
 - ⏸ **Pantalla "Ya Volvemos"** — Pantalla intersticial auténtica de "Volvemos en un momento"
-- 🎞️ **Transiciones FadeIn / FadeOut** — El video aparece y desaparece suavemente al entrar y salir de los comerciales
+- 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 2 segundos** y un **FadeIn de 1 segundo**, cubriendo enseguidas, bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
 
 ---
 
@@ -155,6 +155,14 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 ## 📋 Registro de Cambios
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
+
+### 🔧 Última beta — `v2003.3.2.0.20` *(Era 2003 · Sub-rama 3.2.x)*
+> *Era 2003 · Sub-rama 3.2.x · BETA*
+
+- 🎬 **Transiciones profesionales** — FadeOut de **2 segundos** + FadeIn de **1 segundo** en **todos** los cambios de video del canal
+- ✅ Aplicado a: enseguida, bumper, comercial standalone, ya_regresa, comercial, continuamos y retoma de programa
+- 🔧 Nuevo helper `playUriWithTransition()` centraliza la lógica de transición de forma uniforme
+- ⏱️ FadeIn del programa unificado a **1 segundo** (antes 500 ms)
 
 ### 🚀 Última versión estable — `v2003.3.1.0` *(Era Arcoiris — completa)*
 > *Era 2003 · Sub-rama 3.1.x · Fase 2 — Parte 2 · RELEASE*

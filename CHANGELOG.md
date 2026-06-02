@@ -6,6 +6,37 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2003.3.2.0.20-beta] — Beta — 2026-06-02 · Era 2003 · Inicio de la sub-rama 3.2.x
+
+> *Primera beta de la sub-rama 3.2.x. Eleva la calidad visual del canal con un sistema de transiciones profesionales aplicado de forma uniforme a cada cambio de video en toda la secuencia de programación.*
+
+### Agregado
+
+**Sistema de transiciones profesionales — `playUriWithTransition()`**
+- Nuevo helper `playUriWithTransition()` que centraliza la lógica de transición para todos los cambios de video del canal.
+- Ejecuta un **FadeOut de 2 segundos** sobre el `VideoView` antes de cada cambio, seguido de un **FadeIn de 1 segundo** al arrancar el nuevo clip.
+- Se aplica de forma uniforme a **todos** los eventos de cambio de video:
+  - Inicio de enseguida post-programa (`playEnseguida`)
+  - Inicio de bumper (`playBumper`)
+  - Inicio de comercial standalone (`playStandaloneCommercial`)
+  - Inicio de `ya_regresa` (pre-comercial) en `playCommercial`
+  - Inicio del comercial dentro del bloque publicitario
+  - Inicio del `continuamos` (post-comercial)
+  - Retoma del programa tras el bloque comercial (`beginProgramSegment`, FadeIn 1 s)
+- `playUri()` se conserva sin cambios para usos internos que no requieren transición.
+- Las constantes `TRANSITION_FADE_OUT_MS = 2000L` y `TRANSITION_FADE_IN_MS = 1000L` se agregan al `companion object` para control centralizado de duraciones.
+
+### Modificado
+
+**FadeIn del programa unificado a 1 segundo**
+- El FadeIn de `beginProgramSegment` (arranque de programa y retoma tras comercial) fue actualizado de **500 ms → 1000 ms** (`TRANSITION_FADE_IN_MS`), alineándolo con el estándar de todos los demás clips del canal.
+
+**FadeOut del bloque comercial actualizado de 500 ms a 2 segundos**
+- El FadeOut de 500 ms de `playCommercial()` introducido en la versión 2.4.1 fue reemplazado por el FadeOut estándar de `TRANSITION_FADE_OUT_MS` (2 s), consistente con el resto de las transiciones.
+- La corrección del BUG FIX 2001.2.5.0.52 (`videoView.alpha = 1f`) queda implícita en `playUriWithTransition()`, que siempre establece `alpha = 0f` antes del FadeIn.
+
+---
+
 ## [2003.3.1.0] — Release · Era 2003 · Fase 2 — Parte 2 · Era Arcoiris completa
 
 > *Segunda y última parte de la Gran Update de la Era Arcoiris. Consolida todos los cambios validados durante las betas `3.1.0.10` a `3.1.0.11`. Completa el sistema de cortinillas Discovery Kids con 4 pares de transición comercial y 4 enseguidas post-programa, cerrando definitivamente la sub-rama 3.1.x y la Era Arcoiris.*
@@ -621,6 +652,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2003.3.2.0.20-beta   | —          | 🔧 Beta    | Transiciones profesionales FadeOut 2s / FadeIn 1s en todos los cambios de video |
 | 2003.3.1.0           | —          | 🚀 Release | Era Arcoiris completa (Fase 2 — Parte 2): 4 pares ya_regresa/continuamos, 4 enseguidas; assets Era 2003; enseguida2 mejorada |
 | 2003.3.1.0.11-beta   | —          | 🔧 Beta    | ya_regresa4/continuamos4 (verde), enseguida4 (amarillo), enseguida2 mejorada |
 | 2003.3.1.0.10-beta   | —          | 🔧 Beta    | ya_regresa3/continuamos3 (rosa), enseguida3 (azul), assets Era 2003 |
