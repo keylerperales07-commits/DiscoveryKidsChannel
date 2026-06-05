@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2003.3.2.0.20-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Beta-2003.3.2.0.22-orange?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era_Arcoiris-Completa-FF69B4?style=flat-square"/>
 </p>
 
@@ -57,6 +57,9 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 **1. Descargá 4 videos a tu gusto**
 
 Pueden ser episodios de tu serie favorita, películas cortas, o cualquier contenido que quieras ver como si fuera un canal de TV. El formato recomendado es `.mp4`.
+## ⚠️ Nota técnica
+
+> Los videos de programas (`pro1–4.mp4`) deben estar en **resolución 480p o inferior**. De lo contrario tendras problemas de programación.
 
 **2. Renombrá los archivos exactamente así**
 
@@ -156,13 +159,11 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🔧 Última beta — `v2003.3.2.0.20` *(Era 2003 · Sub-rama 3.2.x)*
+### 🔧 Última beta — `v2003.3.2.0.22` *(Era 2003 · Sub-rama 3.2.x)*
 > *Era 2003 · Sub-rama 3.2.x · BETA*
 
-- 🎬 **Transiciones profesionales** — FadeOut de **2 segundos** + FadeIn de **1 segundo** en **todos** los cambios de video del canal
-- ✅ Aplicado a: enseguida, bumper, comercial standalone, ya_regresa, comercial, continuamos y retoma de programa
-- 🔧 Nuevo helper `playUriWithTransition()` centraliza la lógica de transición de forma uniforme
-- ⏱️ FadeIn del programa unificado a **1 segundo** (antes 500 ms)
+- ⏱️ **Cortes comerciales en intervalo fijo** — el primer corte ocurre siempre a los **9 minutos exactos**; cada corte subsiguiente, cada 9 minutos adicionales
+- 🎬 **FadeOut diferenciado por clip** — enseguida: **1 segundo** · bumper: **700 ms** · resto de transiciones: 2 s estándar
 
 ### 🚀 Última versión estable — `v2003.3.1.0` *(Era Arcoiris — completa)*
 > *Era 2003 · Sub-rama 3.1.x · Fase 2 — Parte 2 · RELEASE*

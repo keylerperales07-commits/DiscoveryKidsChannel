@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_height="match_parent"
+     android:layout_width="match_parent"
+     android:background="#000000">
+
+    <com.keyler.discoverykidschannel.AspectRatioFrameLayout
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:id="@+id/videoContainer"
+         android:layout_gravity="center">
+
+        <VideoView
+             android:layout_height="match_parent"
+             android:layout_width="wrap_content"
+             android:id="@+id/videoView"
+             android:layout_gravity="center" />
+
+        <!--
+            ScreenBug movido DENTRO del AspectRatioFrameLayout (release 1999.2.2.1.02).
+            Al estar dentro del contenedor 4:3, queda encima del video pero debajo del CRT.
+            El CrtOverlayView declarado después tiene mayor z-order → CRT encima del screenbug.
+        -->
+        <ImageView
+             android:layout_height="match_parent"
+             android:layout_width="match_parent"
+             android:src="@drawable/screenbug"
+             android:contentDescription="Channel watermark"
+             android:alpha="0"
+             android:id="@+id/screenBug" />
+
+        <!--
+            CrtOverlayView dentro del 4:3 y declarado DESPUÉS del screenBug → encima de todo.
+            Orden z: VideoView → screenBug → CrtOverlayView (CRT encima de screenbug).
+        -->
+        <com.keyler.discoverykidschannel.CrtOverlayView
+             android:id="@+id/crtOverlay"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             android:clickable="false"
+             android:focusable="false" />
+
+    </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
+
+    <TextView
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         android:gravity="center"
+         android:alpha="1"
+         android:textColor="#FFFFFF"
+         android:id="@+id/debugInfo"
+         android:fontFamily="@font/googlesans"
+         android:layout_gravity="center|top"
+         android:text="Espere..." />
+
+    <ImageButton
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         android:visibility="gone"
+         android:src="@drawable/btn_prev"
+         android:background="@android:color/transparent"
+         android:layout_marginStart="16dp"
+         android:id="@+id/btnPrevious"
+         android:layout_gravity="start|center_vertical" />
+
+    <ImageButton
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         android:visibility="gone"
+         android:src="@drawable/btn_next"
+         android:layout_marginEnd="16dp"
+         android:background="@android:color/transparent"
+         android:id="@+id/btnNext"
+         android:layout_gravity="end|center_vertical" />
+
+    <TextView
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         android:background="#000"
+         android:id="@+id/versionInfo"
+         android:fontFamily="@font/googlesans"
+         android:text="..."
+         android:layout_gravity="end|bottom" />
+
+</FrameLayout>

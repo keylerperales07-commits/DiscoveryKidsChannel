@@ -6,7 +6,56 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2003.3.2.0.20-beta] — Beta — 2026-06-02 · Era 2003 · Inicio de la sub-rama 3.2.x
+## [2003.3.2.0.22-beta] — Beta — 2026-06-04 · Era 2003 · Sub-rama 3.2.x
+
+> *Tercera beta de la sub-rama 3.2.x. Corrige la distribución de cortes comerciales para que el primero ocurra exactamente a los 9 minutos, e introduce duraciones de FadeOut diferenciadas por tipo de clip.*
+
+### Corregido
+
+**Distribución de cortes comerciales — intervalo fijo de 9 minutos**
+- La versión anterior de `calcBreaks()` distribuía los breaks de forma **equidistante** (`durationMs / (numBreaks + 1)`), lo que podía adelantar el primer corte a menos de 9 minutos dependiendo de la duración del programa.
+- **Fix:** `calcBreaks()` ahora coloca breaks exactamente en `[9 min, 18 min, 27 min, ...]` mediante un `while (breakPos < durationMs)` con incremento de `BREAK_INTERVAL_MS` por iteración. El primer corte ocurre **siempre a los 9 minutos exactos**; cada corte subsiguiente, cada 9 minutos adicionales.
+
+### Modificado
+
+**FadeOut diferenciado por tipo de clip**
+- `playUriWithTransition()` ahora acepta el parámetro `fadeOutMs: Long = TRANSITION_FADE_OUT_MS` para configurar la duración del FadeOut de salida por tipo de clip sin alterar la constante global.
+- Nuevas constantes en `companion object`:
+  - `ENSEGUIDA_FADE_OUT_MS = 1_000L` — transición más corta para mantener el ritmo entre programas.
+  - `BUMPER_FADE_OUT_MS = 700L` — transición ágil para clips de identidad de canal.
+  - `YA_REGRESA_FADE_OUT_MS = 500L` — salida rápida del ya_regresa hacia el comercial.
+  - `CONTINUAMOS_FADE_OUT_MS = 500L` — salida rápida del continuamos al retomar el programa.
+- `playEnseguida()` pasa `fadeOutMs = ENSEGUIDA_FADE_OUT_MS` (1 s).
+- `playBumper()` pasa `fadeOutMs = BUMPER_FADE_OUT_MS` (700 ms).
+- `playCommercial()` pasa `fadeOutMs = YA_REGRESA_FADE_OUT_MS` (500 ms) al lanzar el comercial, y `fadeOutMs = CONTINUAMOS_FADE_OUT_MS` (500 ms) al lanzar el continuamos.
+- `playStandaloneCommercial` y el comercial del bloque publicitario continúan usando el valor por defecto de 2 s.
+- El FadeOut del clip **entrante** (schedulado en `onPrepared`) también usa `fadeOutMs` para mantener simetría de duración en ambos extremos del clip.
+
+---
+
+
+
+> *Segunda beta de la sub-rama 3.2.x. Corrige el timing del FadeOut de transición e introduce un sistema de selección de ya_regresa por programa basado en shuffled pool, garantizando variedad sin repetición en cada ciclo de 4 programas.*
+
+### Corregido
+
+**BUG FIX: FadeOut de transición disparado al final del video en lugar de 2 segundos antes**
+- En la Beta 3.2.0.20 el FadeOut se ejecutaba en `onCompletion`, es decir, cuando el video **ya había terminado**. El resultado era un corte visual abrupto visible entre clips.
+- **Fix:** `playUriWithTransition()` ahora schedula el FadeOut mediante `post(duration - TRANSITION_FADE_OUT_MS)` justo cuando el video es preparado (`onPrepared`). La animación de 2 segundos comienza exactamente 2 segundos antes del fin real del clip.
+- `onCompletionListener` se conserva como **fallback** para clips más cortos que `TRANSITION_FADE_OUT_MS`. Una guardia `transitionCompleted` evita doble ejecución de `onComplete()`.
+
+### Agregado
+
+**Sistema de ya_regresa por programa — Shuffled Pool (Beta 3.2.0.21)**
+- Reemplaza la selección simple de anti-repetición por un mecanismo de **shuffled pool** de 4 slots.
+- Antes de cada ciclo de 4 programas se mezcla aleatoriamente la lista `ENSEGUIDAS_PRE_COMERCIAL` y se asigna un `ya_regresa` distinto a cada programa. Ningún slot se repite dentro del mismo ciclo.
+- Al agotarse los 4 slots (`yaRegresaPoolIndex >= 4`) el pool se regenera con un nuevo shuffle, garantizando variedad entre ciclos consecutivos.
+- Variables añadidas: `yaRegresaPool: MutableList<Int>` y `yaRegresaPoolIndex: Int`.
+- `lastEnseguidaPreComercialRes` se conserva por compatibilidad con `saveChannelState`.
+
+---
+
+
 
 > *Primera beta de la sub-rama 3.2.x. Eleva la calidad visual del canal con un sistema de transiciones profesionales aplicado de forma uniforme a cada cambio de video en toda la secuencia de programación.*
 
@@ -652,6 +701,8 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2003.3.2.0.22-beta   | 2026-06-04 | 🔧 Beta    | Cortes comerciales en intervalo fijo de 9 min; FadeOut diferenciado: enseguida 1 s, bumper 700 ms, ya_regresa 500 ms, continuamos 500 ms |
+| 2003.3.2.0.21-beta   | 2026-06-03 | 🔧 Beta    | BUG FIX: FadeOut disparado 2 s antes del fin del video; ya_regresa por shuffled pool sin repetición por ciclo |
 | 2003.3.2.0.20-beta   | —          | 🔧 Beta    | Transiciones profesionales FadeOut 2s / FadeIn 1s en todos los cambios de video |
 | 2003.3.1.0           | —          | 🚀 Release | Era Arcoiris completa (Fase 2 — Parte 2): 4 pares ya_regresa/continuamos, 4 enseguidas; assets Era 2003; enseguida2 mejorada |
 | 2003.3.1.0.11-beta   | —          | 🔧 Beta    | ya_regresa4/continuamos4 (verde), enseguida4 (amarillo), enseguida2 mejorada |
