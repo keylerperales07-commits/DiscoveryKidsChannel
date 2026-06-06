@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Beta-2003.3.2.0.22-orange?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Era_Arcoiris-Completa-FF69B4?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v3.2.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Era_2003-Sub--rama_3.2.x-blue?style=flat-square"/>
 </p>
 
 ---
@@ -159,23 +159,20 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🔧 Última beta — `v2003.3.2.0.22` *(Era 2003 · Sub-rama 3.2.x)*
+### 🚀 Última versión estable — `v3.2.0` *(Era 2003 · Sub-rama 3.2.x)*
+> *Era 2003 · Sub-rama 3.2.x · RELEASE*
+
+- 🎬 **Transiciones profesionales** — FadeOut + FadeIn en todos los cambios de video del canal mediante `playUriWithTransition()`
+- 🐛 **BUG FIX: FadeOut** — se dispara **2 segundos antes** del fin del video en lugar de esperar al `onCompletion`
+- 🎲 **ya_regresa por programa (Shuffled Pool)** — cada ciclo de 4 programas recibe un `ya_regresa` distinto, sin repetición
+- ⏱️ **Cortes comerciales en intervalo fijo** — el primer corte ocurre siempre a los **9 minutos exactos**
+- 🎚️ **FadeOut diferenciado por clip** — enseguida: **1 s** · bumper: **700 ms** · ya_regresa: **500 ms** · continuamos: **500 ms**
+
+### 🔧 Última beta — `v3.2.0.22` *(Era 2003 · Sub-rama 3.2.x)*
 > *Era 2003 · Sub-rama 3.2.x · BETA*
 
 - ⏱️ **Cortes comerciales en intervalo fijo** — el primer corte ocurre siempre a los **9 minutos exactos**; cada corte subsiguiente, cada 9 minutos adicionales
-- 🎬 **FadeOut diferenciado por clip** — enseguida: **1 segundo** · bumper: **700 ms** · resto de transiciones: 2 s estándar
-
-### 🚀 Última versión estable — `v2003.3.1.0` *(Era Arcoiris — completa)*
-> *Era 2003 · Sub-rama 3.1.x · Fase 2 — Parte 2 · RELEASE*
-
-- 🌸 **`ya_regresa3` + `continuamos3`** — Cortinilla Discovery Kids **rosa** (3.er par de transición)
-- 💚 **`ya_regresa4` + `continuamos4`** — Cortinilla Discovery Kids **verde** (4.º par de transición)
-- 🔵 **`enseguida3.mp4`** — Cortinilla Discovery Kids **azul** (3.ª enseguida post-programa)
-- 💛 **`enseguida4.mp4`** — Cortinilla Discovery Kids **amarillo** (4.ª enseguida post-programa)
-- 🔼 **`enseguida2.mp4`** — Cortinilla verde actualizada a mejor resolución
-- 🎬 Assets (`bumper`, `comercial1–4`) actualizados a la **Era 2003**
-
-Consultá [`CHANGELOG.md`](./CHANGELOG.md) para ver las notas completas.
+- 🎚️ **FadeOut diferenciado por clip** — enseguida: **1 s** · bumper: **700 ms** · ya_regresa: **500 ms** · continuamos: **500 ms**
 
 ---
 

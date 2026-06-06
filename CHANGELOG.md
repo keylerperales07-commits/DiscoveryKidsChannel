@@ -6,7 +6,64 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2003.3.2.0.22-beta] — Beta — 2026-06-04 · Era 2003 · Sub-rama 3.2.x
+## [2003.3.2.0] — Release · Era 2003 · Sub-rama 3.2.x — 2026-06-05
+
+> *Consolida las betas `3.2.0.20`, `3.2.0.21` y `3.2.0.22`. Introduce un sistema de transiciones profesionales aplicado uniformemente a toda la secuencia de canal, corrige el timing del FadeOut para que se dispare antes del fin del video, implementa la asignación de `ya_regresa` por programa mediante shuffled pool sin repetición, y establece duraciones de FadeOut diferenciadas por tipo de clip.*
+
+### Agregado
+
+**Sistema de transiciones profesionales — `playUriWithTransition()` (Beta 3.2.0.20)**
+- Nuevo helper `playUriWithTransition()` que centraliza la lógica de transición para todos los cambios de video del canal.
+- Ejecuta un **FadeOut de 2 segundos** sobre el `VideoView` antes de cada cambio, seguido de un **FadeIn de 1 segundo** al arrancar el nuevo clip.
+- Se aplica de forma uniforme a **todos** los eventos de cambio de video: enseguida post-programa, bumper, comercial standalone, `ya_regresa`, comercial del bloque publicitario, `continuamos` y retoma del programa tras el bloque comercial.
+- `playUri()` se conserva sin cambios para usos internos que no requieren transición.
+- Constantes `TRANSITION_FADE_OUT_MS = 2_000L` y `TRANSITION_FADE_IN_MS = 1_000L` agregadas al `companion object`.
+
+**Sistema de ya_regresa por programa — Shuffled Pool (Beta 3.2.0.21)**
+- Reemplaza la selección simple de anti-repetición por un mecanismo de **shuffled pool** de 4 slots.
+- Antes de cada ciclo de 4 programas, `ENSEGUIDAS_PRE_COMERCIAL` se mezcla aleatoriamente y cada programa consume un slot distinto. Ningún `ya_regresa` se repite dentro del mismo ciclo.
+- Al agotarse los 4 slots el pool se regenera con un nuevo shuffle, garantizando variedad entre ciclos consecutivos.
+- Variables añadidas: `yaRegresaPool: MutableList<Int>` e `yaRegresaPoolIndex: Int`.
+
+### Corregido
+
+**BUG FIX: FadeOut de transición disparado al final del video en lugar de 2 segundos antes (Beta 3.2.0.21)**
+- En la Beta 3.2.0.20 el FadeOut se ejecutaba en `onCompletion`, cuando el video ya había terminado, produciendo un corte visual abrupto.
+- **Fix:** `playUriWithTransition()` schedula el FadeOut mediante `post(duration - fadeOutMs)` desde `onPrepared`. La animación comienza exactamente `fadeOutMs` ms antes del fin real del clip.
+- `onCompletionListener` se conserva como fallback para clips más cortos que `fadeOutMs`. Una guardia `transitionCompleted` evita doble ejecución de `onComplete()`.
+
+**Distribución de cortes comerciales — intervalo fijo de 9 minutos (Beta 3.2.0.22)**
+- La versión anterior de `calcBreaks()` distribuía los breaks de forma equidistante (`durationMs / (numBreaks + 1)`), lo que podía adelantar el primer corte a menos de 9 minutos.
+- **Fix:** `calcBreaks()` ahora coloca breaks exactamente en `[9 min, 18 min, 27 min, ...]` mediante un `while (breakPos < durationMs)` con incremento de `BREAK_INTERVAL_MS`. El primer corte ocurre **siempre a los 9 minutos exactos**.
+
+### Modificado
+
+**FadeIn del programa unificado a 1 segundo (Beta 3.2.0.20)**
+- El FadeIn de `beginProgramSegment` fue actualizado de 500 ms → 1 000 ms (`TRANSITION_FADE_IN_MS`), alineándolo con el estándar de todos los demás clips.
+
+**FadeOut del bloque comercial actualizado de 500 ms a 2 segundos (Beta 3.2.0.20)**
+- El FadeOut de 500 ms de `playCommercial()` introducido en la versión 2.4.1 fue reemplazado por `TRANSITION_FADE_OUT_MS` (2 s).
+
+**FadeOut diferenciado por tipo de clip (Beta 3.2.0.22)**
+- `playUriWithTransition()` acepta el parámetro `fadeOutMs: Long = TRANSITION_FADE_OUT_MS` para configurar la duración del FadeOut por tipo de clip.
+- Nuevas constantes:
+  - `ENSEGUIDA_FADE_OUT_MS = 1_000L`
+  - `BUMPER_FADE_OUT_MS = 700L`
+  - `YA_REGRESA_FADE_OUT_MS = 500L`
+  - `CONTINUAMOS_FADE_OUT_MS = 500L`
+
+| Evento | FadeOut salida | FadeIn entrada |
+|--------|---------------|----------------|
+| Enseguida post-programa | 1 000 ms | 1 000 ms |
+| Bumper | 700 ms | 1 000 ms |
+| ya_regresa (pre-comercial) | 500 ms | 1 000 ms |
+| continuamos (post-comercial) | 500 ms | 1 000 ms |
+| Comercial standalone | 2 000 ms | 1 000 ms |
+| Comercial del bloque publicitario | 2 000 ms | 1 000 ms |
+
+---
+
+
 
 > *Tercera beta de la sub-rama 3.2.x. Corrige la distribución de cortes comerciales para que el primero ocurra exactamente a los 9 minutos, e introduce duraciones de FadeOut diferenciadas por tipo de clip.*
 
@@ -701,6 +758,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2003.3.2.0           | 2026-06-05 | 🚀 Release | Transiciones profesionales, FadeOut antes del fin, ya_regresa por shuffled pool, cortes a los 9 min, FadeOut diferenciado por clip |
 | 2003.3.2.0.22-beta   | 2026-06-04 | 🔧 Beta    | Cortes comerciales en intervalo fijo de 9 min; FadeOut diferenciado: enseguida 1 s, bumper 700 ms, ya_regresa 500 ms, continuamos 500 ms |
 | 2003.3.2.0.21-beta   | 2026-06-03 | 🔧 Beta    | BUG FIX: FadeOut disparado 2 s antes del fin del video; ya_regresa por shuffled pool sin repetición por ciclo |
 | 2003.3.2.0.20-beta   | —          | 🔧 Beta    | Transiciones profesionales FadeOut 2s / FadeIn 1s en todos los cambios de video |
