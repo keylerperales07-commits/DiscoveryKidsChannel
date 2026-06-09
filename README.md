@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v3.2.0-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Era_2003-Sub--rama_3.2.x-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v3.3.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Era_2004-Sub--rama_3.3.x-blue?style=flat-square"/>
 </p>
 
 ---
@@ -46,7 +46,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
 - 🆕 **Nuevo Screenbug** — Marca de agua con el logo del canal en pantalla
 - ⏸ **Pantalla "Ya Volvemos"** — Pantalla intersticial auténtica de "Volvemos en un momento"
-- 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 2 segundos** y un **FadeIn de 1 segundo**, cubriendo enseguidas, bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
+- 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo enseguidas, bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
 
 ---
 
@@ -159,14 +159,13 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v3.2.0` *(Era 2003 · Sub-rama 3.2.x)*
-> *Era 2003 · Sub-rama 3.2.x · RELEASE*
+### 🚀 Última versión estable — `v3.3.0` *(Era 2004 · Sub-rama 3.3.x)*
+> *Era 2004 · Sub-rama 3.3.x · RELEASE*
 
-- 🎬 **Transiciones profesionales** — FadeOut + FadeIn en todos los cambios de video del canal mediante `playUriWithTransition()`
-- 🐛 **BUG FIX: FadeOut** — se dispara **2 segundos antes** del fin del video en lugar de esperar al `onCompletion`
-- 🎲 **ya_regresa por programa (Shuffled Pool)** — cada ciclo de 4 programas recibe un `ya_regresa` distinto, sin repetición
-- ⏱️ **Cortes comerciales en intervalo fijo** — el primer corte ocurre siempre a los **9 minutos exactos**
-- 🎚️ **FadeOut diferenciado por clip** — enseguida: **1 s** · bumper: **700 ms** · ya_regresa: **500 ms** · continuamos: **500 ms**
+- ⏱️ **FadeOut unificado a 500 ms** — todos los cambios de video del canal usan la misma duración de FadeOut; constantes diferenciadas por clip eliminadas
+- 🎬 **`bumper2.mp4` reemplazado** — material original de la Era 2004
+- ➡️ **`enseguida1.mp4` actualizado** — el programa que anunciaba dejó de transmitirse en 2004
+- 🔁 **`ya_regresa4.mp4` y `continuamos4.mp4` reemplazados** — corregido defecto de edición en el inicio del clip
 
 ### 🔧 Última beta — `v3.2.0.22` *(Era 2003 · Sub-rama 3.2.x)*
 > *Era 2003 · Sub-rama 3.2.x · BETA*

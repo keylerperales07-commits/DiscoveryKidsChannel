@@ -6,6 +6,34 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2004.3.3.0] — Release · Era 2004 · Sub-rama 3.3.x — 2026-06-08
+
+> *Primera release de la Era 2004. Unifica todos los FadeOut de cambio de video a 500 ms, eliminando las constantes diferenciadas por tipo de clip de la 3.2.x. Incorpora tres reemplazos de assets: `bumper2.mp4` con material original, `enseguida1.mp4` actualizado por cambios de parrilla, y el par `ya_regresa4`/`continuamos4` corregido por un defecto de edición.*
+
+### Modificado
+
+**FadeOut unificado a 500 ms para todos los clips**
+- `TRANSITION_FADE_OUT_MS` establecido en `500L`. Todos los cambios de video del canal (enseguida, bumper, comercial standalone, ya_regresa, comercial del bloque, continuamos) usan ahora la misma duración de FadeOut de salida.
+- Constantes `ENSEGUIDA_FADE_OUT_MS`, `BUMPER_FADE_OUT_MS`, `YA_REGRESA_FADE_OUT_MS` y `CONTINUAMOS_FADE_OUT_MS` eliminadas del `companion object`.
+- Todos los callers de `playUriWithTransition()` usan el valor por defecto; el parámetro `fadeOutMs` se conserva en la firma para posibles ajustes futuros.
+
+### Assets reemplazados
+
+**`bumper2.mp4` reemplazado por material original Era 2004**
+- El archivo `bumper2.mp4` fue reemplazado por una versión con material original correspondiente a la Era 2004.
+- No hay cambios en la lógica de reproducción.
+
+**`enseguida1.mp4` actualizado — programa descontinuado en 2004**
+- El archivo `enseguida1.mp4` fue reemplazado. El avance que contenía anunciaba un programa que dejó de transmitirse en Discovery Kids Latin America en 2004, resultando anacrónico dentro de la era simulada.
+- La nueva versión es coherente con la parrilla de la Era 2004.
+
+**`ya_regresa4.mp4` y `continuamos4.mp4` reemplazados — defecto de edición corregido**
+- La versión anterior de `ya_regresa4.mp4` presentaba un defecto de edición: el inicio del clip estaba mezclado con audio e imagen del programa de origen.
+- Ambos archivos del par (`ya_regresa4` / `continuamos4`) fueron reemplazados por versiones limpias sin artefactos.
+
+---
+
+
 ## [2003.3.2.0] — Release · Era 2003 · Sub-rama 3.2.x — 2026-06-05
 
 > *Consolida las betas `3.2.0.20`, `3.2.0.21` y `3.2.0.22`. Introduce un sistema de transiciones profesionales aplicado uniformemente a toda la secuencia de canal, corrige el timing del FadeOut para que se dispare antes del fin del video, implementa la asignación de `ya_regresa` por programa mediante shuffled pool sin repetición, y establece duraciones de FadeOut diferenciadas por tipo de clip.*
@@ -758,6 +786,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2004.3.3.0           | 2026-06-08 | 🚀 Release | FadeOut unificado a 500 ms; bumper2.mp4, enseguida1.mp4, ya_regresa4/continuamos4 reemplazados (Era 2004) |
 | 2003.3.2.0           | 2026-06-05 | 🚀 Release | Transiciones profesionales, FadeOut antes del fin, ya_regresa por shuffled pool, cortes a los 9 min, FadeOut diferenciado por clip |
 | 2003.3.2.0.22-beta   | 2026-06-04 | 🔧 Beta    | Cortes comerciales en intervalo fijo de 9 min; FadeOut diferenciado: enseguida 1 s, bumper 700 ms, ya_regresa 500 ms, continuamos 500 ms |
 | 2003.3.2.0.21-beta   | 2026-06-03 | 🔧 Beta    | BUG FIX: FadeOut disparado 2 s antes del fin del video; ya_regresa por shuffled pool sin repetición por ciclo |
