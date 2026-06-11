@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v3.3.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v3.3.1-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era_2004-Sub--rama_3.3.x-blue?style=flat-square"/>
 </p>
 
@@ -38,7 +38,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 
 - 📺 **Reproducción Lineal Continua** — Los programas se reproducen automáticamente en secuencia, igual que un canal de TV real
 - 🎬 **Bumpers** — Clips de identidad del canal entre programas, ahora en resolución mejorada
-- 📣 **Comerciales Dinámicos** — Bloques de publicidad que rotan durante la programación, incluyendo contenido de la era Y2K
+- 📣 **Comerciales Dinámicos** — Bloques de publicidad que rotan durante la programación con intervalos aleatorios entre 3 y 9 minutos, incluyendo contenido de la era Y2K
 - ➡️ **Enseguidas** — Clips de transición "a continuación" entre programas
 - 🎵 **Música de Fondo** — Música ambiente durante la reproducción de programas (volumen al 8%)
 - 🖥️ **Modo Pantalla Completa Inmersivo** — Sin distracciones de interfaz, experiencia TV pura
@@ -159,19 +159,19 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v3.3.0` *(Era 2004 · Sub-rama 3.3.x)*
-> *Era 2004 · Sub-rama 3.3.x · RELEASE*
+### 🚀 Última versión estable — `v3.3.1` *(Era 2004 · Sub-rama 3.3.x)*
+> *Era 2004 · Sub-rama 3.3.x · RELEASE — Bug Fix*
 
-- ⏱️ **FadeOut unificado a 500 ms** — todos los cambios de video del canal usan la misma duración de FadeOut; constantes diferenciadas por clip eliminadas
-- 🎬 **`bumper2.mp4` reemplazado** — material original de la Era 2004
-- ➡️ **`enseguida1.mp4` actualizado** — el programa que anunciaba dejó de transmitirse en 2004
-- 🔁 **`ya_regresa4.mp4` y `continuamos4.mp4` reemplazados** — corregido defecto de edición en el inicio del clip
+- 🔧 **`comercial1.mp4` corregido** — el video contenía un clip de `ya_regresa` embebido; asset reemplazado por el usuario
+- ⏱️ **Cortes comerciales con intervalo aleatorio** — entre **3 y 9 minutos**; ya no ocurren a intervalos fijos predecibles
+- ⏸ **Pausa y reanudación simplificada** — al salir se pausa inmediatamente; al volver se reanuda 3 segundos después
 
-### 🔧 Última beta — `v3.2.0.22` *(Era 2003 · Sub-rama 3.2.x)*
-> *Era 2003 · Sub-rama 3.2.x · BETA*
+### 🔧 Última beta — `v3.4.0.40` *(Era 2004 · Sub-rama 3.4.x)*
+> *Era 2004 · Sub-rama 3.4.x · BETA*
 
-- ⏱️ **Cortes comerciales en intervalo fijo** — el primer corte ocurre siempre a los **9 minutos exactos**; cada corte subsiguiente, cada 9 minutos adicionales
-- 🎚️ **FadeOut diferenciado por clip** — enseguida: **1 s** · bumper: **700 ms** · ya_regresa: **500 ms** · continuamos: **500 ms**
+- 🐛 **Bug fix de pausa/reanudación** — corrige el bug presente desde la 2.4.0; estrategia diferenciada por tipo de ítem: programa reanuda desde la posición exacta, clips cortos (bumper, enseguida, comercial) se reinician desde el principio
+- ⚙️ **R8 habilitado en debug** — el build de beta compila con las mismas optimizaciones que Release, manteniendo logs activos vía `proguard-debug.pro`
+- Incluye todos los cambios de la Release 3.3.1
 
 ---
 

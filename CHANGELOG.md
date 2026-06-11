@@ -6,7 +6,57 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2004.3.3.0] — Release · Era 2004 · Sub-rama 3.3.x — 2026-06-08
+## [2004.3.4.0.40] — Beta · Era 2004 · Sub-rama 3.4.x — 2026-06-10
+
+> *Primera beta de la sub-rama 3.4.x. Habilita R8 en el build type debug para paridad de compilación con Release, manteniendo los logs activos. Incluye todos los cambios de la Release 3.3.1.*
+
+### Agregado
+
+**R8 habilitado en el build type debug**
+- El bloque `debug` en `build.gradle` ahora tiene `minifyEnabled true` y `shrinkResources true`, idéntico al bloque `release`.
+- Se agrega `proguard-debug.pro` como tercer archivo de reglas en el tipo debug. Esta regla hace `-keep class android.util.Log { *; }` y `-keep class com.keyler.discoverykidschannel.** { *; }`, preservando todos los llamados a `Log.d/i/w/e` y los nombres de clase propios del proyecto en stack traces.
+- `applicationIdSuffix ".beta"` y `versionNameSuffix ".beta"` permiten instalar el APK de beta junto al de release en el mismo dispositivo sin conflictos.
+- `signingConfig signingConfigs.release` aplicado al build debug para que el APK beta pueda instalarse sin necesidad de una clave de debug separada.
+
+### Corregido / Modificado
+
+*Mismos cambios que la Release 2004.3.3.1 — ver entrada correspondiente.*
+
+---
+
+
+## [2004.3.3.1] — Release · Era 2004 · Sub-rama 3.3.x — 2026-06-10
+
+> *Bug fix de la Era 2004. Corrige el bug de pausa/reanudación presente desde la 2.4.0, el asset `comercial1.mp4` y cambia el intervalo de cortes comerciales a aleatorio entre 3 y 9 minutos.*
+
+### Corregido
+
+**onPause() / onResume() — estrategia diferenciada por tipo de ítem (bug desde 2.4.0)**
+
+Diagnóstico de por qué todas las versiones anteriores fallaban:
+- `cancelAllTasks()` en `onPause()` destruía los listeners configurados por `playUriWithTransition()`. Al volver, el video reanudaba pero al terminar el clip el canal se congelaba porque no había `onCompletionListener` activo.
+- `seekTo()` directo en `onResume()` fallaba silenciosamente cuando Android liberó el surface del `VideoView` en segundo plano.
+- El tracker corría desde `onCreate()` antes de que hubiera video, sobreescribiendo posiciones válidas con 0.
+
+Nueva estrategia:
+- **PROGRAMA** → `beginProgramSegment(uri, pausedPositionMs, isFirstPlay=false)`. El `seekTo` ocurre dentro de `onPrepared`, cuando el MediaPlayer está garantizadamente listo.
+- **NO-PROGRAMA** (bumper, enseguida, comercial, ya_regresa, continuamos) → `advance()` reinicia el ítem desde el principio. Los listeners se reconfiguran desde cero.
+- **COMERCIAL EN CURSO** → retoma el programa en `commercialResumeMs` (salta el comercial).
+- Se eliminaron `wasPlayingBeforePause`, `lastVideoPositionMs` y el alias. Nueva variable `pausedByLifecycle`.
+
+**`comercial1.mp4` — clip de ya_regresa embebido al inicio**
+- El archivo presentaba un defecto de edición: los primeros segundos contenían imágenes y audio de un clip de `ya_regresa`. Asset reemplazado por el usuario.
+
+### Modificado
+
+**Intervalo de cortes comerciales — de fijo a aleatorio entre 3 y 9 minutos**
+- `BREAK_INTERVAL_MS` reemplazada por `BREAK_INTERVAL_MIN_MS = 3 min` y `BREAK_INTERVAL_MAX_MS = 9 min`.
+- `calcBreaks()` elige un intervalo aleatorio para cada corte usando `Math.random()`.
+
+---
+
+
+
 
 > *Primera release de la Era 2004. Unifica todos los FadeOut de cambio de video a 500 ms, eliminando las constantes diferenciadas por tipo de clip de la 3.2.x. Incorpora tres reemplazos de assets: `bumper2.mp4` con material original, `enseguida1.mp4` actualizado por cambios de parrilla, y el par `ya_regresa4`/`continuamos4` corregido por un defecto de edición.*
 
