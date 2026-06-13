@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v3.3.1-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Era_2004-Sub--rama_3.3.x-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v3.4.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Era_2004-Sub--rama_3.4.x-blue?style=flat-square"/>
 </p>
 
 ---
@@ -44,9 +44,10 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 🖥️ **Modo Pantalla Completa Inmersivo** — Sin distracciones de interfaz, experiencia TV pura
 - 📡 **Overlay Visual CRT** — Efectos de scanlines y pantalla para esa sensación retro de televisor
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
-- 🆕 **Nuevo Screenbug** — Marca de agua con el logo del canal en pantalla
+- 🆕 **Nuevo Screenbug** — Marca de agua con el logo del canal en pantalla, con aparición y ocultado adaptativos al reanudar
 - ⏸ **Pantalla "Ya Volvemos"** — Pantalla intersticial auténtica de "Volvemos en un momento"
 - 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo enseguidas, bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
+- ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Enseguida → StandaloneCommercial → Bumper → Programa), igual que cambiar de canal en TV real
 
 ---
 
@@ -159,19 +160,12 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v3.3.1` *(Era 2004 · Sub-rama 3.3.x)*
-> *Era 2004 · Sub-rama 3.3.x · RELEASE — Bug Fix*
+### 🚀 Última versión estable — `v3.4.0` *(Era 2004 · Sub-rama 3.4.x)*
+> *Era 2004 · Sub-rama 3.4.x · RELEASE — Corrección de bugs críticos de segundo plano + navegación por bloque*
 
-- 🔧 **`comercial1.mp4` corregido** — el video contenía un clip de `ya_regresa` embebido; asset reemplazado por el usuario
-- ⏱️ **Cortes comerciales con intervalo aleatorio** — entre **3 y 9 minutos**; ya no ocurren a intervalos fijos predecibles
-- ⏸ **Pausa y reanudación simplificada** — al salir se pausa inmediatamente; al volver se reanuda 3 segundos después
-
-### 🔧 Última beta — `v3.4.0.40` *(Era 2004 · Sub-rama 3.4.x)*
-> *Era 2004 · Sub-rama 3.4.x · BETA*
-
-- 🐛 **Bug fix de pausa/reanudación** — corrige el bug presente desde la 2.4.0; estrategia diferenciada por tipo de ítem: programa reanuda desde la posición exacta, clips cortos (bumper, enseguida, comercial) se reinician desde el principio
-- ⚙️ **R8 habilitado en debug** — el build de beta compila con las mismas optimizaciones que Release, manteniendo logs activos vía `proguard-debug.pro`
-- Incluye todos los cambios de la Release 3.3.1
+- 🐛 **ScreenBug corregido** — al volver de segundo plano, el screenbug ya no reinicia su counter de 20 s; aparece inmediatamente si ya debía estar visible
+- 🎥 **FadeIn limpio al reanudar** — se cancela cualquier animación pendiente del VideoView antes de reanudar, eliminando el parpadeo al volver del fondo
+- ⏭️ **Prev / Next por bloque completo** — los botones ahora navegan al bloque entero (Enseguida → Comercial standalone → Bumper → Programa)
 
 ---
 

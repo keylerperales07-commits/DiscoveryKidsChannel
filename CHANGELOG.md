@@ -6,6 +6,65 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2004.3.4.0] — Release · Era 2004 · Sub-rama 3.4.x — 2026-06-12
+
+> *Release 3.4.0. Corrige dos bugs críticos de segundo plano y agrega navegación por bloque completo en los botones Prev/Next.*
+
+### Corregido
+
+**ScreenBug — reinicio del counter de 20 s al volver de segundo plano**
+- `scheduleSegmentLogic()` usaba `BUG_SHOW_DELAY` (20 s) fijo desde el momento de reanudación, ignorando cuántos ms del segmento ya habían transcurrido antes de pausar. Al volver de segundo plano, el screenbug siempre esperaba 20 s desde cero aunque ya debiera estar visible.
+- Nueva variable `currentSegmentStartMs` guarda la posición del programa al inicio de cada segmento.
+- `scheduleSegmentLogic()` calcula `elapsed = segmentStartMs - currentSegmentStartMs` y ajusta: `bugShowDelay = max(0, BUG_SHOW_DELAY - elapsed)`.
+- Si `elapsed >= BUG_SHOW_DELAY`, el screenbug aparece inmediatamente con `setBugAlpha(1f)` sin animación redundante.
+- El delay de `fadeOutBug()` se ajusta igualmente para mantener coherencia temporal.
+
+**VideoView — FadeIn redundante al volver de segundo plano**
+- `beginProgramSegment()` podía recibir una animación de alpha a medias (FadeOut interrumpido al ir al fondo) que dejaba el `VideoView` en un estado de alpha indefinido.
+- Se agrega `videoView.animate().cancel()` y `videoView.alpha = 0f` antes de `setVideoURI()` para garantizar estado limpio antes de cada reanudación.
+
+### Agregado
+
+**Botones Prev / Next — navegación por bloque completo (Enseguida → StandaloneCommercial → Bumper → Programa)**
+- Antes, los botones saltaban directamente al `PlayItem.Program` destino, omitiendo la Enseguida, el StandaloneCommercial y el Bumper que preceden a cada programa en el playlist.
+- `goToAdjacentProgram()` ahora calcula `blockStartIdx`: busca el `PlayItem.Enseguida` en `programIdx - 3` y, si existe, posiciona `playlistIndex` allí para que `advance()` arranque el bloque completo.
+- Si no hay Enseguida antes del programa (e.g. primer ítem del playlist), el fallback cae al Bumper o al propio programa.
+
+---
+
+
+## [2004.3.4.0.41] — Beta · Era 2004 · Sub-rama 3.4.x — 2026-06-11
+
+> *Beta de corrección de screenbug. Corrige el fadeIn redundante del screenbug al reanudar desde segundo plano.*
+
+### Corregido
+
+**Screenbug — fadeIn redundante al reanudar desde segundo plano**
+- `scheduleSegmentLogic()` siempre programaba `fadeInBug()` con `BUG_SHOW_DELAY` (20 s) fijo desde el momento de reanudación, sin considerar cuántos ms del segmento ya habían transcurrido antes de pausar.
+- Nueva variable `currentSegmentStartMs` guarda el inicio del segmento activo en tiempo de programa. `scheduleSegmentLogic` calcula `elapsed = pausedPositionMs - currentSegmentStartMs` y ajusta el delay: `bugShowDelay = max(0, BUG_SHOW_DELAY - elapsed)`.
+- Si `elapsed >= BUG_SHOW_DELAY`, el screenbug aparece inmediatamente con `setBugAlpha(1f)` sin animación.
+- El delay de `fadeOutBug()` también se ajusta con `elapsed` para mantener coherencia.
+
+*Mismos cambios de compilación que la 3.4.0.40 — ver entrada correspondiente.*
+
+---
+
+
+## [2004.3.3.2] — Release · Era 2004 · Sub-rama 3.3.x — 2026-06-11
+
+> *Bug fix del screenbug al reanudar desde segundo plano.*
+
+### Corregido
+
+**Screenbug — fadeIn redundante al reanudar desde segundo plano**
+- Al volver de segundo plano, `scheduleSegmentLogic()` siempre programaba `fadeInBug()` con `BUG_SHOW_DELAY` (20 s) fijo desde el momento de reanudación, ignorando cuántos ms del segmento ya habían transcurrido. Si el screenbug ya debía estar visible, aparecía 20 s tarde o hacía un fadeIn innecesario.
+- Nueva variable `currentSegmentStartMs` guarda el inicio del segmento activo en tiempo de programa. `scheduleSegmentLogic` calcula `elapsed = pausedPositionMs - currentSegmentStartMs` y ajusta el delay real: `bugShowDelay = max(0, BUG_SHOW_DELAY - elapsed)`.
+- Si `elapsed >= BUG_SHOW_DELAY`, el screenbug aparece inmediatamente con `setBugAlpha(1f)` sin animación redundante.
+- El delay de `fadeOutBug()` también se ajusta con `elapsed` para mantener coherencia temporal.
+
+---
+
+
 ## [2004.3.4.0.40] — Beta · Era 2004 · Sub-rama 3.4.x — 2026-06-10
 
 > *Primera beta de la sub-rama 3.4.x. Habilita R8 en el build type debug para paridad de compilación con Release, manteniendo los logs activos. Incluye todos los cambios de la Release 3.3.1.*
@@ -836,6 +895,11 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2004.3.4.0           | 2026-06-12 | 🚀 Release | BUG FIX: screenbug counter, fadeIn videoView; Prev/Next navegan por bloque completo |
+| 2004.3.4.0.41        | 2026-06-11 | 🔧 Beta    | BUG FIX: screenbug fadeIn redundante al reanudar desde segundo plano    |
+| 2004.3.3.2           | 2026-06-11 | 🚀 Release | BUG FIX: screenbug fadeIn redundante al reanudar desde segundo plano    |
+| 2004.3.4.0.40        | 2026-06-10 | 🔧 Beta    | R8 en debug; paridad con release; applicationIdSuffix .beta             |
+| 2004.3.3.1           | 2026-06-10 | 🚀 Release | BUG FIX pausa/reanudación; comercial1.mp4 corregido; cortes aleatorios 3-9 min |
 | 2004.3.3.0           | 2026-06-08 | 🚀 Release | FadeOut unificado a 500 ms; bumper2.mp4, enseguida1.mp4, ya_regresa4/continuamos4 reemplazados (Era 2004) |
 | 2003.3.2.0           | 2026-06-05 | 🚀 Release | Transiciones profesionales, FadeOut antes del fin, ya_regresa por shuffled pool, cortes a los 9 min, FadeOut diferenciado por clip |
 | 2003.3.2.0.22-beta   | 2026-06-04 | 🔧 Beta    | Cortes comerciales en intervalo fijo de 9 min; FadeOut diferenciado: enseguida 1 s, bumper 700 ms, ya_regresa 500 ms, continuamos 500 ms |
