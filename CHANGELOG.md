@@ -6,6 +6,32 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2005.4.0.0.1] — Beta · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-13
+
+> *Primera beta de la Era Doki 1.0 (2005–2009). Agrega 8 bumpers originales de la era.*
+
+### Agregado
+
+**8 bumpers de la Era Doki 1.0 (2005–2009)**
+- Se incorporan `bumper1.mp4` a `bumper8.mp4` basados en material original de Discovery Kids de la Era Doki 1.0, período 2005–2009.
+- Estos bumpers reemplazan la identidad visual de la Era 2004 por la estética característica de Doki como mascota del canal.
+
+---
+
+
+## [2005.3.4.1] — Release · Era 2004 · Sub-rama 3.4.x — 2026-06-13
+
+> *Micro-release de transición hacia la Era Doki. Agrega bumper6.mp4 como aviso de la próxima actualización.*
+
+### Agregado
+
+**`bumper6.mp4` — aviso de proximidad de la Era Doki**
+- Se agrega `bumper6.mp4`: clip de aviso de que se acerca la actualización de la Era Doki al canal.
+- Funciona como puente visual entre la Era 2004 y la próxima Era Doki 1.0.
+
+---
+
+
 ## [2004.3.4.0] — Release · Era 2004 · Sub-rama 3.4.x — 2026-06-12
 
 > *Release 3.4.0. Corrige dos bugs críticos de segundo plano y agrega navegación por bloque completo en los botones Prev/Next.*
