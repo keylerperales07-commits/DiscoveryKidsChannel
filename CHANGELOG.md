@@ -6,6 +6,27 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2005.4.0.0.2] — Beta · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-14
+
+> *Segunda beta de la Era Doki 1.0. Reemplaza los 4 comerciales por versiones de la fase 3.0 (2005), reduce la duración de `bg_music` y actualiza el logo al estilo de la fase 3.0.*
+
+### Modificado
+
+**4 comerciales reemplazados por versiones de la fase 3.0 (2005)**
+- Los archivos `comercial1.mp4`, `comercial2.mp4`, `comercial3.mp4` y `comercial4.mp4` fueron reemplazados por versiones basadas en el estilo publicitario de la fase 3.0 (período 2005).
+- El contenido comercial ahora es coherente con la estética de la Era Doki 1.0.
+
+**`bg_music` — duración reducida de 1:00:54 h a 10:02 min**
+- El archivo de música de fondo fue reemplazado por una versión más corta (10:02 min), eliminando el loop de una hora que se usaba desde eras anteriores.
+- No hay cambios en el volumen ni en la lógica de reproducción.
+
+**Logo actualizado al estilo de la fase 3.0 (2005–2009)**
+- El logo del canal fue reemplazado por la versión correspondiente a la fase 3.0 del período 2005–2009.
+- El nuevo logo es coherente con la identidad visual de la Era Doki 1.0.
+
+---
+
+
 ## [2005.4.0.0.1] — Beta · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-13
 
 > *Primera beta de la Era Doki 1.0 (2005–2009). Agrega 8 bumpers originales de la era.*
@@ -921,6 +942,8 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2005.4.0.0.2         | 2026-06-14 | 🔧 Beta    | 4 comerciales fase 3.0 (2005); bg_music reducido a 10:02 min; logo fase 3.0 |
+| 2005.4.0.0.1         | 2026-06-13 | 🔧 Beta    | 8 bumpers Era Doki 1.0 (2005–2009)                                      |
 | 2004.3.4.0           | 2026-06-12 | 🚀 Release | BUG FIX: screenbug counter, fadeIn videoView; Prev/Next navegan por bloque completo |
 | 2004.3.4.0.41        | 2026-06-11 | 🔧 Beta    | BUG FIX: screenbug fadeIn redundante al reanudar desde segundo plano    |
 | 2004.3.3.2           | 2026-06-11 | 🚀 Release | BUG FIX: screenbug fadeIn redundante al reanudar desde segundo plano    |
