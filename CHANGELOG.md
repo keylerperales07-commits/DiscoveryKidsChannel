@@ -162,7 +162,7 @@ Nueva estrategia:
 ---
 
 
-
+## [2004.3.3.0] — Release · Era 2004 · Sub-rama 3.3.x — 2026-06-08
 
 > *Primera release de la Era 2004. Unifica todos los FadeOut de cambio de video a 500 ms, eliminando las constantes diferenciadas por tipo de clip de la 3.2.x. Incorpora tres reemplazos de assets: `bumper2.mp4` con material original, `enseguida1.mp4` actualizado por cambios de parrilla, y el par `ya_regresa4`/`continuamos4` corregido por un defecto de edición.*
 
@@ -248,6 +248,7 @@ Nueva estrategia:
 ---
 
 
+## [2003.3.2.0.22-beta] — Beta · Era 2003 · Sub-rama 3.2.x
 
 > *Tercera beta de la sub-rama 3.2.x. Corrige la distribución de cortes comerciales para que el primero ocurra exactamente a los 9 minutos, e introduce duraciones de FadeOut diferenciadas por tipo de clip.*
 
@@ -275,6 +276,7 @@ Nueva estrategia:
 ---
 
 
+## [2003.3.2.0.21-beta] — Beta · Era 2003 · Sub-rama 3.2.x
 
 > *Segunda beta de la sub-rama 3.2.x. Corrige el timing del FadeOut de transición e introduce un sistema de selección de ya_regresa por programa basado en shuffled pool, garantizando variedad sin repetición en cada ciclo de 4 programas.*
 
@@ -297,6 +299,7 @@ Nueva estrategia:
 ---
 
 
+## [2003.3.2.0.20-beta] — Beta · Era 2003 · Sub-rama 3.2.x
 
 > *Primera beta de la sub-rama 3.2.x. Eleva la calidad visual del canal con un sistema de transiciones profesionales aplicado de forma uniforme a cada cambio de video en toda la secuencia de programación.*
 
