@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v4.0.0.2--beta-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v4.0.0.3--beta-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era_2004_→_Doki-Sub--ramas_3.4.x_%2F_4.0.x-blue?style=flat-square"/>
 </p>
 
@@ -165,12 +165,13 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 - 📺 **`bumper6.mp4` agregado** — aviso de que se acerca la actualización de la Era Doki al canal
 
-### 🔧 Última beta — `v4.0.0.2` *(Era Doki 1.0 · Sub-rama 4.0.x)* — 2026-06-14
-> *Era Doki 1.0 · Sub-rama 4.0.x · BETA — Segunda beta de la Era Doki*
+### 🔧 Última beta — `v4.0.0.3` *(Era Doki 1.0 · Sub-rama 4.0.x)* — 2026-06-15
+> *Era Doki 1.0 · Sub-rama 4.0.x · BETA — Tercera beta de la Era Doki*
 
-- 📣 **4 comerciales reemplazados** — versiones basadas en el estilo publicitario de la fase 3.0 (2005)
-- 🎵 **`bg_music` reducido** — duración recortada de 1:00:54 h a 10:02 min
-- 🖼️ **Logo actualizado** — nuevo logo al estilo de la fase 3.0 (2005–2009)
+- 🗑️ **`enseguida3` y `enseguida4` eliminadas** — clips de eras anteriores removidos del proyecto
+- 🎬 **`enseguida1` y `enseguida2` actualizadas** — reemplazadas por versiones de la Era Doki 1.0
+- 📛 **Nombre de app actualizado** — `Discovery Kids` → `Discovery Kids LA` (y `Discovery Kids LA Beta` para betas)
+- ⚗️ **FadeIn experimental a 1 s** — ajuste de `TRANSITION_FADE_IN_MS` para evaluar ritmo visual (no definitivo)
 
 ### 📦 Versión anterior — `v3.4.0` *(Era 2004 · Sub-rama 3.4.x)*
 > *Era 2004 · Sub-rama 3.4.x · RELEASE*

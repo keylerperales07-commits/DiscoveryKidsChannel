@@ -6,6 +6,34 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2005.4.0.0.3] — Beta · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-15
+
+> *Tercera beta de la Era Doki 1.0. Actualiza el sistema de enseguidas a la Era Doki, cambia el nombre de la app a Discovery Kids LA y ajusta el FadeIn experimentalmente a 1 s.*
+
+### Eliminado
+
+**`enseguida3.mp4` y `enseguida4.mp4` — eliminados**
+- Los clips de enseguida 3 y 4, correspondientes a eras anteriores, fueron eliminados del proyecto.
+- `ENSEGUIDAS_POST_PROGRAMA` ahora contiene únicamente los clips 1 y 2.
+
+### Modificado
+
+**`enseguida1.mp4` y `enseguida2.mp4` — reemplazados por versiones Era Doki**
+- Los archivos `enseguida1.mp4` y `enseguida2.mp4` fueron reemplazados por versiones basadas en la estética de la Era Doki 1.0 (2005–2009).
+- El sistema de enseguidas queda reducido a 2 clips, ambos coherentes con la identidad visual de la era actual.
+
+**Nombre de la aplicación actualizado a Discovery Kids LA**
+- Build type release: `Discovery Kids` → `Discovery Kids LA`
+- Build type beta/debug: `Discovery Kids Beta` → `Discovery Kids LA Beta`
+- Cambio aplicado en `app_name` / `app_name_beta` en `res/values/strings.xml`. Sin cambios en `applicationId`.
+
+**`TRANSITION_FADE_IN_MS` — ajustado experimentalmente a 1 segundo**
+- Ajuste experimental del FadeIn de transición para evaluar el impacto visual en el ritmo de las transiciones de la Era Doki.
+- ⚠️ Este cambio no es definitivo y puede revertirse o ajustarse en versiones futuras.
+
+---
+
+
 ## [2005.4.0.0.2] — Beta · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-14
 
 > *Segunda beta de la Era Doki 1.0. Reemplaza los 4 comerciales por versiones de la fase 3.0 (2005), reduce la duración de `bg_music` y actualiza el logo al estilo de la fase 3.0.*
@@ -945,6 +973,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2005.4.0.0.3         | 2026-06-15 | 🔧 Beta    | enseguida3/4 eliminadas; enseguida1/2 Era Doki; nombre app → Discovery Kids LA; FadeIn 1 s (experimental) |
 | 2005.4.0.0.2         | 2026-06-14 | 🔧 Beta    | 4 comerciales fase 3.0 (2005); bg_music reducido a 10:02 min; logo fase 3.0 |
 | 2005.4.0.0.1         | 2026-06-13 | 🔧 Beta    | 8 bumpers Era Doki 1.0 (2005–2009)                                      |
 | 2004.3.4.0           | 2026-06-12 | 🚀 Release | BUG FIX: screenbug counter, fadeIn videoView; Prev/Next navegan por bloque completo |
