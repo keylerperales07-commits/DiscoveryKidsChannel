@@ -6,6 +6,48 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2005.3.4.2] — Release · Era 2004 → Era Doki · Sub-rama 3.4.x — 2026-06-16
+
+> *Micro-release de corrección. Corrige el intervalo de comerciales de fijo 9 min a aleatorio 3–9 min, y reemplaza bumper6 por el nuevo bumper de aviso de la Era Doki.*
+
+### Corregido
+
+**Intervalo de comerciales — corregido de fijo 9 min a aleatorio entre 3 y 9 min**
+- `BREAK_INTERVAL_MS` (constante fija de 9 min) fue reemplazado por un rango dinámico: `BREAK_INTERVAL_MIN_MS` (3 min) y `BREAK_INTERVAL_MAX_MS` (9 min).
+- `calcBreaks()` ahora genera cada intervalo de forma aleatoria e independiente usando `Math.random()` entre los dos límites.
+- El primer corte puede ocurrir en cualquier punto entre los 3 y los 9 minutos del programa; cada corte subsiguiente elige su propio intervalo aleatoriamente.
+- Esto corrige el comportamiento anterior donde los comerciales aparecían siempre exactamente a los 9, 18, 27 min, etc.
+
+### Modificado
+
+**`bumper6.mp4` — reemplazado por bumper de aviso de la Actualización La Era Doki**
+- El archivo `bumper6.mp4` fue reemplazado por un nuevo clip que anuncia la próxima actualización al nuevo Discovery Kids de la Era Doki.
+- Funciona como puente visual entre la Era 2004 y la próxima Era Doki 1.0.
+
+---
+
+
+## [2005.4.0.0.4] — Beta · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-16
+
+> *Cuarta beta de la Era Doki 1.0. Reemplaza los 4 clips ya_regresa y los 4 clips continuamos por versiones de la Era Doki. Incluye el intervalo de comerciales aleatorio 3–9 min portado desde la Release 2005.3.4.2.*
+
+### Modificado
+
+**`ya_regresa1.mp4` a `ya_regresa4.mp4` — reemplazados por versiones Era Doki**
+- Los 4 clips pre-comercial (`ya_regresa1`, `ya_regresa2`, `ya_regresa3`, `ya_regresa4`) fueron reemplazados por versiones basadas en la estética de la Era Doki 1.0 (2005–2009).
+- El sistema de transición pre-comercial queda completamente actualizado a la identidad visual de la era actual.
+
+**`continuamos1.mp4` a `continuamos4.mp4` — reemplazados por versiones Era Doki**
+- Los 4 clips post-comercial (`continuamos1`, `continuamos2`, `continuamos3`, `continuamos4`) fueron reemplazados por versiones basadas en la estética de la Era Doki 1.0 (2005–2009).
+- El mapeo `ya_regresa → continuamos` se mantiene intacto; solo se actualizó el contenido visual de los clips.
+
+**Intervalo de comerciales — corregido de fijo 9 min a aleatorio entre 3 y 9 min**
+- `BREAK_INTERVAL_MS` (constante fija de 9 min) reemplazado por `BREAK_INTERVAL_MIN_MS` (3 min) y `BREAK_INTERVAL_MAX_MS` (9 min).
+- `calcBreaks()` ahora genera cada intervalo de forma aleatoria e independiente entre los dos límites.
+
+---
+
+
 ## [2005.4.0.0.3] — Beta · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-15
 
 > *Tercera beta de la Era Doki 1.0. Actualiza el sistema de enseguidas a la Era Doki, cambia el nombre de la app a Discovery Kids LA y ajusta el FadeIn experimentalmente a 1 s.*
@@ -973,6 +1015,8 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2005.4.0.0.4         | 2026-06-16 | 🔧 Beta    | ya_regresa1-4 y continuamos1-4 actualizados a Era Doki; intervalo comerciales aleatorio 3–9 min |
+| 2005.3.4.2           | 2026-06-16 | 🚀 Release | BUG FIX: intervalo comerciales fijo 9 min → aleatorio 3–9 min; bumper6 reemplazado por aviso Era Doki |
 | 2005.4.0.0.3         | 2026-06-15 | 🔧 Beta    | enseguida3/4 eliminadas; enseguida1/2 Era Doki; nombre app → Discovery Kids LA; FadeIn 1 s (experimental) |
 | 2005.4.0.0.2         | 2026-06-14 | 🔧 Beta    | 4 comerciales fase 3.0 (2005); bg_music reducido a 10:02 min; logo fase 3.0 |
 | 2005.4.0.0.1         | 2026-06-13 | 🔧 Beta    | 8 bumpers Era Doki 1.0 (2005–2009)                                      |

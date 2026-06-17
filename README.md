@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v4.0.0.3--beta-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v4.0.0.4--beta-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era_2004_→_Doki-Sub--ramas_3.4.x_%2F_4.0.x-blue?style=flat-square"/>
 </p>
 
@@ -160,18 +160,18 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v3.4.1` *(Era 2004 · Sub-rama 3.4.x)*
-> *Era 2004 · Sub-rama 3.4.x · RELEASE — Transición hacia la Era Doki*
+### 🚀 Última versión estable — `v3.4.2` *(Era 2004 → Doki · Sub-rama 3.4.x)*
+> *Era 2004 → Era Doki · Sub-rama 3.4.x · RELEASE — Corrección de comerciales y bumper6*
 
-- 📺 **`bumper6.mp4` agregado** — aviso de que se acerca la actualización de la Era Doki al canal
+- 🐛 **Intervalo de comerciales corregido** — los comerciales ahora aparecen en intervalos aleatorios entre **3 y 9 minutos** (antes era fijo a los 9 minutos exactos)
+- 🎬 **`bumper6.mp4` actualizado** — reemplazado por nuevo bumper de aviso de la Actualización La Era Doki / nuevo Discovery Kids
 
-### 🔧 Última beta — `v4.0.0.3` *(Era Doki 1.0 · Sub-rama 4.0.x)* — 2026-06-15
-> *Era Doki 1.0 · Sub-rama 4.0.x · BETA — Tercera beta de la Era Doki*
+### 🔧 Última beta — `v4.0.0.4` *(Era Doki 1.0 · Sub-rama 4.0.x)* — 2026-06-16
+> *Era Doki 1.0 · Sub-rama 4.0.x · BETA — Cuarta beta de la Era Doki*
 
-- 🗑️ **`enseguida3` y `enseguida4` eliminadas** — clips de eras anteriores removidos del proyecto
-- 🎬 **`enseguida1` y `enseguida2` actualizadas** — reemplazadas por versiones de la Era Doki 1.0
-- 📛 **Nombre de app actualizado** — `Discovery Kids` → `Discovery Kids LA` (y `Discovery Kids LA Beta` para betas)
-- ⚗️ **FadeIn experimental a 1 s** — ajuste de `TRANSITION_FADE_IN_MS` para evaluar ritmo visual (no definitivo)
+- 🎬 **`ya_regresa1–4` actualizados** — los 4 clips pre-comercial reemplazados por versiones Era Doki 1.0
+- 🎬 **`continuamos1–4` actualizados** — los 4 clips post-comercial reemplazados por versiones Era Doki 1.0
+- 🐛 **Intervalo de comerciales corregido** — aleatorio entre 3 y 9 minutos (antes fijo a 9 min)
 
 ### 📦 Versión anterior — `v3.4.0` *(Era 2004 · Sub-rama 3.4.x)*
 > *Era 2004 · Sub-rama 3.4.x · RELEASE*

@@ -34,7 +34,7 @@ import androidx.core.content.ContextCompat
 import java.io.File
 
 /**
- * Release 2004.3.4.1
+ * Beta 2005.4.0.0.4
  *
  * Discovery Kids - TV Simulator • Era 2005
  *
@@ -47,7 +47,7 @@ import java.io.File
  *
  * Programs (pro1..pro4.mp4) are read from the user's Movies folder.
  * Bumpers (bumper.mp4–bumper5.mp4) son aleatorios, sin repetir el mismo dos veces seguidas.
- * Commercial scheduling: 1 break per every 9 minutes of program content, at fixed intervals.
+ * Commercial scheduling: 1 break per every 3–9 minutes of program content, at random intervals.
  * Missing programs are skipped automatically.
  */
 class LiveDiscoveryKids : AppCompatActivity() {
@@ -189,8 +189,9 @@ class LiveDiscoveryKids : AppCompatActivity() {
         /** Screenbug hides this many ms before segment end or commercial start. */
         private const val BUG_HIDE_EARLY = 20_000L
 
-        /** One commercial break is inserted for every this many ms of program. */
-        private const val BREAK_INTERVAL_MS = 9 * 60 * 1_000L   // 9 min
+        /** One commercial break is inserted at a random interval between these two values. */
+        private const val BREAK_INTERVAL_MIN_MS = 3 * 60 * 1_000L   // 3 min
+        private const val BREAK_INTERVAL_MAX_MS = 9 * 60 * 1_000L   // 9 min
 
         /** Programs shorter than this have zero commercial breaks. */
         private const val MIN_DURATION_FOR_BREAKS = 3 * 60 * 1_000L  // 3 min
@@ -202,7 +203,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
         private const val TRANSITION_FADE_OUT_MS = 500L
 
         /** FadeIn duration for video transitions (ms). Applied when the new video starts. */
-        private const val TRANSITION_FADE_IN_MS = 1_000L
+        private const val TRANSITION_FADE_IN_MS = 500L
 
         private const val PERM_REQUEST = 42
 
@@ -223,6 +224,8 @@ class LiveDiscoveryKids : AppCompatActivity() {
         /**
          * Lista de bumpers disponibles.
          * Se elige uno al azar antes de cada programa, evitando repetir el mismo dos veces seguidas.
+         * Beta 2005.4.0.0.4: bumper6 reemplazado por nuevo bumper de aviso de la Era Doki
+         * (Actualización La Era Doki / nuevo Discovery Kids).
          */
         private val BUMPERS = listOf(
             R.raw.bumper,
@@ -938,23 +941,24 @@ class LiveDiscoveryKids : AppCompatActivity() {
     /**
      * Returns a list of program positions (in ms) where commercial breaks occur.
      *
-     * Beta 3.2.0.22 — Distribución de intervalo fijo:
-     *   Los breaks se colocan exactamente en [BREAK_INTERVAL_MS, 2×BREAK_INTERVAL_MS, ...]
-     *   hasta que no quede tiempo suficiente. El primer corte siempre ocurre a los 9 minutos;
-     *   cada corte subsiguiente, cada 9 minutos adicionales.
+     * Beta 2005.4.0.0.4 — Distribución de intervalo aleatorio:
+     *   Los breaks se colocan en posiciones acumuladas usando un intervalo aleatorio
+     *   entre [BREAK_INTERVAL_MIN_MS] (3 min) y [BREAK_INTERVAL_MAX_MS] (9 min).
+     *   Cada corte elige su propio intervalo independientemente, generando una
+     *   programación publicitaria variable más parecida a la TV real.
      *
-     * Distribución anterior (≤3.2.0.21): equidistante — dividía la duración total
-     *   entre (numBreaks + 1), lo que podía adelantar el primer corte por debajo de 9 min.
+     * Distribución anterior (≤3.4.1): intervalo fijo de 9 minutos exactos —
+     *   los breaks siempre ocurrían a los 9 min, 18 min, 27 min, etc.
      *
      * Programs shorter than [MIN_DURATION_FOR_BREAKS] get no breaks.
      */
     private fun calcBreaks(durationMs: Int): List<Int> {
         if (durationMs < MIN_DURATION_FOR_BREAKS) return emptyList()
         val breaks = mutableListOf<Int>()
-        var breakPos = BREAK_INTERVAL_MS
+        var breakPos = (BREAK_INTERVAL_MIN_MS + (Math.random() * (BREAK_INTERVAL_MAX_MS - BREAK_INTERVAL_MIN_MS)).toLong())
         while (breakPos < durationMs) {
             breaks.add(breakPos.toInt())
-            breakPos += BREAK_INTERVAL_MS
+            breakPos += (BREAK_INTERVAL_MIN_MS + (Math.random() * (BREAK_INTERVAL_MAX_MS - BREAK_INTERVAL_MIN_MS)).toLong())
         }
         return breaks
     }
