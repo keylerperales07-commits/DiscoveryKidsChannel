@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v4.0.0.4--beta-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v4.0.0--release-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era_2004_→_Doki-Sub--ramas_3.4.x_%2F_4.0.x-blue?style=flat-square"/>
 </p>
 
@@ -160,25 +160,27 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v3.4.2` *(Era 2004 → Doki · Sub-rama 3.4.x)*
-> *Era 2004 → Era Doki · Sub-rama 3.4.x · RELEASE — Corrección de comerciales y bumper6*
+### 🚀 Última versión estable — `v4.0.0` *(Era Doki 1.0 · Sub-rama 4.0.x)*
+> *Primera release estable de la Era Doki 1.0 (2005–2009)*
 
-- 🐛 **Intervalo de comerciales corregido** — los comerciales ahora aparecen en intervalos aleatorios entre **3 y 9 minutos** (antes era fijo a los 9 minutos exactos)
-- 🎬 **`bumper6.mp4` actualizado** — reemplazado por nuevo bumper de aviso de la Actualización La Era Doki / nuevo Discovery Kids
+- 🎬 **8 bumpers Era Doki 1.0** — `bumper1–8` basados en material original de la Era Doki (2005–2009)
+- 🖼️ **Logo y 4 comerciales** — actualizados al estilo de la fase 3.0 (2005)
+- 🎵 **`bg_music` reducido** — de 1:00:54 h a 10:02 min
+- 🎬 **Enseguidas, `ya_regresa1–4` y `continuamos1–4`** — todos reemplazados por versiones Era Doki
+- 📛 **Nombre app** — `Discovery Kids` → `Discovery Kids LA`
+- 🐛 **Intervalo de comerciales** — aleatorio entre 3 y 9 minutos
 
-### 🔧 Última beta — `v4.0.0.4` *(Era Doki 1.0 · Sub-rama 4.0.x)* — 2026-06-16
-> *Era Doki 1.0 · Sub-rama 4.0.x · BETA — Cuarta beta de la Era Doki*
+### 🔧 Última beta — `v4.0.0.4` *(Era Doki 1.0 · Sub-rama 4.0.x)*
+> *Cuarta y última beta antes de la Release 4.0.0*
 
-- 🎬 **`ya_regresa1–4` actualizados** — los 4 clips pre-comercial reemplazados por versiones Era Doki 1.0
-- 🎬 **`continuamos1–4` actualizados** — los 4 clips post-comercial reemplazados por versiones Era Doki 1.0
+- 🎬 **`ya_regresa1–4` y `continuamos1–4`** — reemplazados por versiones Era Doki 1.0
+- 🐛 **Intervalo de comerciales** — aleatorio entre 3 y 9 minutos
+
+### 📦 Versión anterior — `v3.4.2` *(Era 2004 → Doki · Sub-rama 3.4.x)*
+> *Micro-release de corrección — intervalo de comerciales y bumper6*
+
 - 🐛 **Intervalo de comerciales corregido** — aleatorio entre 3 y 9 minutos (antes fijo a 9 min)
-
-### 📦 Versión anterior — `v3.4.0` *(Era 2004 · Sub-rama 3.4.x)*
-> *Era 2004 · Sub-rama 3.4.x · RELEASE*
-
-- 🐛 **ScreenBug corregido** — al volver de segundo plano, el screenbug ya no reinicia su counter de 20 s
-- 🎥 **FadeIn limpio al reanudar** — elimina el parpadeo al volver del fondo
-- ⏭️ **Prev / Next por bloque completo** — navega al bloque entero (Enseguida → Comercial standalone → Bumper → Programa)
+- 🎬 **`bumper6.mp4`** — reemplazado por nuevo bumper de aviso de la Actualización La Era Doki
 
 ---
 

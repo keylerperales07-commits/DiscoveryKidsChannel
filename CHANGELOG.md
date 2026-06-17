@@ -6,6 +6,55 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2005.4.0.0] — Release · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-16
+
+> *Primera release estable de la Era Doki 1.0. Consolida todos los cambios de las betas 4.0.0.1 → 4.0.0.4: 8 bumpers Era Doki, logo y comerciales fase 3.0, bg_music reducido, enseguidas actualizadas, nombre app → Discovery Kids LA, ya_regresa1–4 y continuamos1–4 Era Doki, intervalo de comerciales aleatorio 3–9 min.*
+
+### Agregado
+
+**8 bumpers de la Era Doki 1.0 — `bumper1.mp4` a `bumper8.mp4`**
+- Se incorporan `bumper1.mp4` a `bumper8.mp4` basados en material original de Discovery Kids de la Era Doki 1.0, período 2005–2009.
+- Reemplazan la identidad visual de la Era 2004 por la estética característica de Doki como mascota del canal.
+
+### Eliminado
+
+**`enseguida3.mp4` y `enseguida4.mp4` — eliminados**
+- Los clips de enseguida 3 y 4, correspondientes a eras anteriores, fueron eliminados del proyecto.
+- `ENSEGUIDAS_POST_PROGRAMA` ahora contiene únicamente los clips 1 y 2.
+
+### Modificado
+
+**Logo actualizado al estilo de la fase 3.0 (2005–2009)**
+- El logo del canal fue reemplazado por la versión correspondiente a la fase 3.0 del período 2005–2009.
+
+**4 comerciales reemplazados por versiones de la fase 3.0 (2005)**
+- `comercial1.mp4` a `comercial4.mp4` reemplazados por versiones del estilo publicitario de la fase 3.0.
+
+**`bg_music` — duración reducida de 1:00:54 h a 10:02 min**
+- El archivo de música de fondo fue reemplazado por una versión más corta (10:02 min).
+
+**`enseguida1.mp4` y `enseguida2.mp4` — reemplazados por versiones Era Doki**
+- Reemplazados por versiones basadas en la estética de la Era Doki 1.0 (2005–2009).
+
+**Nombre de la aplicación actualizado a Discovery Kids LA**
+- Build type release: `Discovery Kids` → `Discovery Kids LA`
+- Build type beta/debug: `Discovery Kids Beta` → `Discovery Kids LA Beta`
+
+**`ya_regresa1.mp4` a `ya_regresa4.mp4` — reemplazados por versiones Era Doki**
+- Los 4 clips pre-comercial reemplazados por versiones de la Era Doki 1.0.
+
+**`continuamos1.mp4` a `continuamos4.mp4` — reemplazados por versiones Era Doki**
+- Los 4 clips post-comercial reemplazados por versiones de la Era Doki 1.0.
+
+### Corregido
+
+**Intervalo de comerciales — aleatorio entre 3 y 9 minutos**
+- `BREAK_INTERVAL_MS` reemplazado por `BREAK_INTERVAL_MIN_MS` (3 min) y `BREAK_INTERVAL_MAX_MS` (9 min).
+- `calcBreaks()` genera cada intervalo de forma aleatoria e independiente entre los dos límites.
+
+---
+
+
 ## [2005.3.4.2] — Release · Era 2004 → Era Doki · Sub-rama 3.4.x — 2026-06-16
 
 > *Micro-release de corrección. Corrige el intervalo de comerciales de fijo 9 min a aleatorio 3–9 min, y reemplaza bumper6 por el nuevo bumper de aviso de la Era Doki.*
@@ -1015,6 +1064,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2005.4.0.0           | 2026-06-16 | 🚀 Release | Primera release Era Doki 1.0: bumpers1–8, logo/comerciales fase 3.0, enseguidas/ya_regresa/continuamos Era Doki, Discovery Kids LA, intervalo comerciales aleatorio 3–9 min |
 | 2005.4.0.0.4         | 2026-06-16 | 🔧 Beta    | ya_regresa1-4 y continuamos1-4 actualizados a Era Doki; intervalo comerciales aleatorio 3–9 min |
 | 2005.3.4.2           | 2026-06-16 | 🚀 Release | BUG FIX: intervalo comerciales fijo 9 min → aleatorio 3–9 min; bumper6 reemplazado por aviso Era Doki |
 | 2005.4.0.0.3         | 2026-06-15 | 🔧 Beta    | enseguida3/4 eliminadas; enseguida1/2 Era Doki; nombre app → Discovery Kids LA; FadeIn 1 s (experimental) |
