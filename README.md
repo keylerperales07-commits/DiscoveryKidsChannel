@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Última_versión-v4.0.0--release-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Era_2005_fase_3-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Era-2005-blue?style=flat-square"/>
 </p>
 
 ---
