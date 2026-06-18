@@ -6,7 +6,26 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2005.4.0.0] — Release · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-16
+## [2005.4.0.1] — Release · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-18
+
+> *Release de corrección. Corrige la asignación de ya_regresa/continuamos para que sea determinística por programa en lugar de aleatoria.*
+
+### Corregido
+
+**`ya_regresa` / `continuamos` — asignación determinística por programa**
+- El sistema anterior usaba un "shuffled pool" de 4 slots que se consumía en orden a lo largo de todos los programas, causando que el par ya_regresa/continuamos mostrado no correspondiera al programa en reproducción.
+- Se elimina el pool (`yaRegresaPool`, `yaRegresaPoolIndex`) y se reemplaza por indexación directa: `ENSEGUIDAS_PRE_COMERCIAL[currentProgramIndex % size]`.
+- Asignación resultante: programa 1 → ya_regresa1/continuamos1 · programa 2 → ya_regresa2/continuamos2 · programa 3 → ya_regresa3/continuamos3 · programa 4 → ya_regresa4/continuamos4.
+- Esta asignación es fija y no varía entre sesiones ni ciclos.
+
+**`calcBreaks()` — zona de protección de 3 minutos al final del programa**
+- Se agrega la constante `BREAK_CUTOFF_MS = 3 * 60 * 1_000L` (3 min).
+- `calcBreaks()` ahora compara cada posición de corte contra `durationMs - BREAK_CUTOFF_MS` en lugar de `durationMs`.
+- Ningún corte comercial se programa dentro de los últimos 3 minutos del programa, garantizando que el final nunca sea interrumpido por un bloque publicitario.
+
+---
+
+
 
 > *Primera release estable de la Era Doki 1.0. Consolida todos los cambios de las betas 4.0.0.1 → 4.0.0.4: 8 bumpers Era Doki, logo y comerciales fase 3.0, bg_music reducido, enseguidas actualizadas, nombre app → Discovery Kids LA, ya_regresa1–4 y continuamos1–4 Era Doki, intervalo de comerciales aleatorio 3–9 min.*
 
