@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Última_versión-v4.0.1--release-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Ultima Beta-v4.0.0.4--beta-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_Preview-v4.1.0.10--preview-blueviolet?style=flat-square"/>
 </p>
 
 ---
@@ -160,21 +160,19 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v4.0.0` *(Era Doki 1.0 · Sub-rama 4.0.x)*
-> *Primera release estable de la Era Doki 1.0 (2005–2009)*
+### 🚀 Última versión estable — `v4.0.1` *(Era Doki 1.0 · Sub-rama 4.0.x)*
+> *Release de corrección. Asignación determinística de ya_regresa/continuamos por programa y zona de protección de 3 min al final del programa.*
 
-- 🎬 **8 bumpers Era Doki 1.0** — `bumper1–8` basados en material original de la Era Doki (2005–2009)
-- 🖼️ **Logo y 4 comerciales** — actualizados al estilo de la fase 3.0 (2005)
-- 🎵 **`bg_music` reducido** — de 1:00:54 h a 10:02 min
-- 🎬 **Enseguidas, `ya_regresa1–4` y `continuamos1–4`** — todos reemplazados por versiones Era Doki
-- 📛 **Nombre app** — `Discovery Kids` → `Discovery Kids LA`
-- 🐛 **Intervalo de comerciales** — aleatorio entre 3 y 9 minutos
+- 🐛 **`ya_regresa` / `continuamos`** — asignación ahora determinística por programa (antes pool aleatorio)
+- 🐛 **`calcBreaks()`** — zona de protección de 3 minutos al final del programa, sin cortes comerciales en ese tramo
+- 🎬 **8 bumpers Era Doki 1.0**, logo y comerciales fase 3.0, `bg_music` reducido, enseguidas/ya_regresa/continuamos Era Doki, app renombrada a `Discovery Kids LA`, intervalo de comerciales aleatorio 3–9 min *(consolidado de la release 4.0.0)*
 
-### 🔧 Última beta — `v4.0.0.4` *(Era Doki 1.0 · Sub-rama 4.0.x)*
-> *Cuarta y última beta antes de la Release 4.0.0*
+### 🧪 Última Preview — `v4.1.0.10-preview` *(Era Doki 1.0 · Preview Era 2006)*
+> *Preview del 19 de junio de 2026*
 
-- 🎬 **`ya_regresa1–4` y `continuamos1–4`** — reemplazados por versiones Era Doki 1.0
-- 🐛 **Intervalo de comerciales** — aleatorio entre 3 y 9 minutos
+- 📡 **`CrtOverlayView` evolucionado a la Era 2006** — scanlines, vignette, flicker y bordes más sutiles, reflejando los TV CRT más limpios de mediados/fines de los 2000
+- 📺 **Comerciales 1 y 2 actualizados** — reemplazados por versiones de la Era 2006
+- 🆕 **Screenbug 10 semanas (planeado)** — conmemorativo por las 10 semanas desde el lanzamiento de la app (`1996.1.0`), coincidiendo con el lanzamiento de `2006.4.1.0` el 22 de junio
 
 ### 📦 Versión anterior — `v3.4.2` *(Era 2004 → Doki · Sub-rama 3.4.x)*
 > *Micro-release de corrección — intervalo de comerciales y bumper6*

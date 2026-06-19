@@ -6,7 +6,39 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2005.4.0.1] — Release · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-18
+## [2006.4.1.0.10-preview] — Preview · Era Doki 1.0 — 2026-06-19
+
+> *Preview para el 19 de junio de 2026. Evoluciona el `CrtOverlayView` al estándar visual de la era 2006, reemplaza los comerciales 1 y 2 por versiones de esa era, y documenta el Screenbug especial por las 10 semanas de la app (lanzamiento 22 de junio).*
+
+### Modificado
+
+**`CrtOverlayView` — evolucionado al estándar visual de la Era 2006**
+- Los televisores CRT de mediados/fines de los 2000 tenían tubos más planos, barrido más fino y fuentes de alimentación más estables que los de los 90, por lo que el overlay se vuelve más limpio sin perder identidad retro.
+- `scanlineAlpha`: `100` → `65`.
+- `scanlineGlowAlpha`: `25` → `16`.
+- `scanlineSpacing`: `2px` → `3px` (barrido menos denso).
+- `phosphorAlpha`: `30` → `18` (máscara RGB más discreta).
+- `vignetteAlpha`: `210` → `150` (menor oscurecimiento de bordes).
+- `flickerIntensity`: `0.065` → `0.035` (parpadeo casi imperceptible).
+- `borderWidth`: `18dp` → `12dp` (marco casi imperceptible, propio de TV de pantalla plana CRT).
+- `borderAlpha`: `210` → `150` (borde más tenue).
+- `scanlineScrollSpeed` se mantiene sin cambios (`0.5f`).
+
+**`comercial1.mp4` y `comercial2.mp4` — reemplazados por versiones de la Era 2006**
+- Ambos comerciales fueron actualizados al estilo publicitario de la Era 2006, continuando el reemplazo iniciado en `comercial3` y `comercial4` con la Release 2005.4.0.1.
+
+### Planeado
+
+**Screenbug especial — 10 semanas de la app (sin código todavía)**
+- Se documenta la intención de mostrar un Screenbug conmemorativo por las 10 semanas desde el lanzamiento de la primera versión de la app (`1996.1.0`).
+- Coincide con el lanzamiento de la versión menor `2006.4.1.0`, programado para el **22 de junio de 2026**, fecha en la que se cumplen exactamente las 10 semanas.
+- Pendiente de implementación: lógica de activación, asset del nuevo screenbug y ventana de visibilidad.
+
+---
+
+
+
+## [2005.4.0.1] — Release · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-17
 
 > *Release de corrección. Corrige la asignación de ya_regresa/continuamos para que sea determinística por programa en lugar de aleatoria.*
 
@@ -26,6 +58,8 @@ y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org
 ---
 
 
+
+## [2005.4.0.0] — Release · Era Doki 1.0 · Sub-rama 4.0.x — 2026-06-16
 
 > *Primera release estable de la Era Doki 1.0. Consolida todos los cambios de las betas 4.0.0.1 → 4.0.0.4: 8 bumpers Era Doki, logo y comerciales fase 3.0, bg_music reducido, enseguidas actualizadas, nombre app → Discovery Kids LA, ya_regresa1–4 y continuamos1–4 Era Doki, intervalo de comerciales aleatorio 3–9 min.*
 
@@ -1083,6 +1117,8 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2006.4.1.0.10-preview| 2026-06-19 | 🧪 Preview | CrtOverlayView evolucionado a Era 2006 (scanlines/vignette/flicker/borde reducidos); comercial1/2 a Era 2006; Screenbug 10 semanas planeado para 22/06 |
+| 2005.4.0.1           | 2026-06-17 | 🚀 Release | BUG FIX: ya_regresa/continuamos ahora determinístico por programa (antes shuffled pool); zona de protección de 3 min sin cortes al final del programa |
 | 2005.4.0.0           | 2026-06-16 | 🚀 Release | Primera release Era Doki 1.0: bumpers1–8, logo/comerciales fase 3.0, enseguidas/ya_regresa/continuamos Era Doki, Discovery Kids LA, intervalo comerciales aleatorio 3–9 min |
 | 2005.4.0.0.4         | 2026-06-16 | 🔧 Beta    | ya_regresa1-4 y continuamos1-4 actualizados a Era Doki; intervalo comerciales aleatorio 3–9 min |
 | 2005.3.4.2           | 2026-06-16 | 🚀 Release | BUG FIX: intervalo comerciales fijo 9 min → aleatorio 3–9 min; bumper6 reemplazado por aviso Era Doki |
