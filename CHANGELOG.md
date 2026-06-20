@@ -6,6 +6,50 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2006.4.1.0.11-preview] — Preview · Era Doki 1.0 — 2026-06-20
+
+> *Preview para el 20 de junio de 2026. Agrega una pantalla de Configuración nueva (`SettingsActivity`) con modos Completa y Profesional, e incorpora `comercial3`/`comercial4` de la Era 2006 a la rotación de comerciales standalone.*
+
+### Agregado
+
+**Pantalla de Configuración (`SettingsActivity`) — nueva**
+- Nueva Activity accesible desde un botón ⚙️ en la esquina superior derecha del canal (mismo patrón de autohide que los botones Prev/Next, visible 3 s tras tocar la pantalla).
+- Diseño tipo menú OSD ("On-Screen Display") de un TV CRT de configuración: fondo casi negro, acento verde fósforo P1, tipografía monoespaciada en rótulos de sección — coherente con el lenguaje visual de `CrtOverlayView`.
+- Dos modos de visualización, alternables desde la propia pantalla:
+  - **Completa** — muestra todas las opciones disponibles (secciones "General" y "Avanzado").
+  - **Profesional** *(modo por defecto)* — muestra únicamente la sección "General" (música de fondo), ocultando los controles más técnicos.
+  - El modo solo afecta qué se muestra; los valores guardados son los mismos en ambos modos.
+- Tres opciones configurables, persistidas vía `SettingsManager` (wrapper sobre `SharedPreferences`, key `dk_settings`):
+  - **Música de fondo** (on/off) — sección General.
+  - **Modo debug** (on/off) — sección Avanzada. Controla la visibilidad del overlay de FPS/RAM/versión, que antes era siempre visible en Preview.
+  - **Brillo del CRT** (0–100%, control deslizante) — sección Avanzada. Escala la intensidad de `CrtOverlayView` (scanlines, phosphor mask, vignette, flicker y bordes) sin modificar los valores base definidos por la Era.
+
+**`SettingsManager` — nuevo objeto singleton**
+- Único punto de lectura/escritura de configuración; tanto `LiveDiscoveryKids` como `SettingsActivity` pasan siempre por aquí.
+- Valores por defecto: música de fondo `true`, modo debug `false`, brillo CRT `1.0f` (100%), modo de pantalla `PROFESIONAL`.
+
+**`CrtOverlayView.brightnessMultiplier` — nueva propiedad (0.0–1.0)**
+- Escala todos los alphas (`scanlineAlpha`, `scanlineGlowAlpha`, `phosphorAlpha`, `vignetteAlpha`, `borderAlpha`) y la intensidad del flicker en `onDraw()`, sin tocar los valores base de la Era 2006.
+- El caché de shaders de vignette/borde ahora también se invalida cuando cambia el brillo, no solo cuando cambia el tamaño de la vista.
+- Se aplica desde `LiveDiscoveryKids` en `onCreate()` y se refresca en cada `onResume()`, por si el usuario volvió de `SettingsActivity` con un valor nuevo.
+
+**`comercial3.mp4` y `comercial4.mp4` — agregados a la rotación de la Era 2006**
+- Se suman a `comercial1`/`comercial2` (ya actualizados en la Preview 4.1.0.10) en la lista `COMMERCIALS` de `LiveDiscoveryKids.kt`.
+- Los 4 comerciales ahora rotan aleatoriamente en los bloques `StandaloneCommercial`, sin repetir el mismo dos veces seguidas — mismo mecanismo ya usado para bumpers.
+
+### Modificado
+
+**`setupDebugInfo()` — ahora condicional al setting de modo debug**
+- Si el modo debug está deshabilitado en Configuración, el `TextView` de debug se oculta y no se inicia el monitor de FPS/RAM.
+- Se agrega `refreshDebugVisibility()`, llamada en `onResume()`, que limpia el handler antes de reevaluar el estado para evitar monitores duplicados al entrar y salir de Configuración repetidamente.
+
+**`startBgMusic()` — ahora condicional al setting de música de fondo**
+- Si la música de fondo está deshabilitada en Configuración, la función no inicia el `MediaPlayer` y registra el motivo en el log.
+
+---
+
+
+
 ## [2006.4.1.0.10-preview] — Preview · Era Doki 1.0 — 2026-06-19
 
 > *Preview para el 19 de junio de 2026. Evoluciona el `CrtOverlayView` al estándar visual de la era 2006, reemplaza los comerciales 1 y 2 por versiones de esa era, y documenta el Screenbug especial por las 10 semanas de la app (lanzamiento 22 de junio).*
@@ -1117,6 +1161,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2006.4.1.0.11-preview| 2026-06-20 | 🧪 Preview | SettingsActivity nueva (modos Completa/Profesional: música, debug, brillo CRT); comercial3/4 agregados a rotación Era 2006 |
 | 2006.4.1.0.10-preview| 2026-06-19 | 🧪 Preview | CrtOverlayView evolucionado a Era 2006 (scanlines/vignette/flicker/borde reducidos); comercial1/2 a Era 2006; Screenbug 10 semanas planeado para 22/06 |
 | 2005.4.0.1           | 2026-06-17 | 🚀 Release | BUG FIX: ya_regresa/continuamos ahora determinístico por programa (antes shuffled pool); zona de protección de 3 min sin cortes al final del programa |
 | 2005.4.0.0           | 2026-06-16 | 🚀 Release | Primera release Era Doki 1.0: bumpers1–8, logo/comerciales fase 3.0, enseguidas/ya_regresa/continuamos Era Doki, Discovery Kids LA, intervalo comerciales aleatorio 3–9 min |

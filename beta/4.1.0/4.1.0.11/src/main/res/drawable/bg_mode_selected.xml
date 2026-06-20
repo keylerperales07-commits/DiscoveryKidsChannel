@@ -1,0 +1,8 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/dk_phosphor_green_dim" />
+    <stroke
+        android:width="1.5dp"
+        android:color="@color/dk_phosphor_green" />
+    <corners android:radius="4dp" />
+</shape>
