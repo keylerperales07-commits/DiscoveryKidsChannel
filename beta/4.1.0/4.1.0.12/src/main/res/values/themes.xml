@@ -1,0 +1,22 @@
+<resources>
+    <!-- Full-screen, no action bar, black background -->
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+        <item name="android:fontFamily">@font/googlesans</item>
+    </style>
+
+    <!-- ══ SettingsActivity (Preview 2006.4.1.0.12) ══
+         Rediseño a lista simple neutra. Ya no usa el acento verde fósforo
+         de la versión anterior (menú OSD); los switches usan el color de
+         control por defecto del sistema, igual que la referencia de diseño. -->
+    <style name="SettingsTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/dk_bg</item>
+        <item name="android:statusBarColor">@color/dk_bg</item>
+        <item name="android:navigationBarColor">@color/dk_bg</item>
+        <item name="android:fontFamily">@font/googlesans</item>
+    </style>
+</resources>

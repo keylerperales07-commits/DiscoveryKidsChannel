@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Última_versión-v4.0.1--release-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_Preview-v4.1.0.11--preview-blueviolet?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_Preview-v4.1.0.12--preview-blueviolet?style=flat-square"/>
 </p>
 
 ---
@@ -48,7 +48,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - ⏸ **Pantalla "Ya Volvemos"** — Pantalla intersticial auténtica de "Volvemos en un momento"
 - 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo enseguidas, bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
 - ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Enseguida → StandaloneCommercial → Bumper → Programa), igual que cambiar de canal en TV real
-- ⚙️ **Pantalla de Configuración** — Accesible desde el botón de ajustes, con dos modos: **Completa** (todas las opciones) y **Profesional** (solo lo esencial). Permite alternar música de fondo, modo debug y ajustar el brillo del overlay CRT
+- ⚙️ **Pantalla de Configuración** — Accesible desde el botón de ajustes, con lista simple estilo Android Settings. Permite alternar música de fondo, efecto CRT y Forzar 4:3, y ajustar la duración del Screenbug y el intervalo entre comerciales — cada opción muestra su valor predeterminado
 
 ---
 
@@ -168,22 +168,24 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 - 🐛 **`calcBreaks()`** — zona de protección de 3 minutos al final del programa, sin cortes comerciales en ese tramo
 - 🎬 **8 bumpers Era Doki 1.0**, logo y comerciales fase 3.0, `bg_music` reducido, enseguidas/ya_regresa/continuamos Era Doki, app renombrada a `Discovery Kids LA`, intervalo de comerciales aleatorio 3–9 min *(consolidado de la release 4.0.0)*
 
-### 🧪 Última Preview — `v4.1.0.11-preview` *(Era Doki 1.0 · Preview Era 2006)*
+### 🧪 Última Preview — `v4.1.0.12-preview` *(Era Doki 1.0 · Preview Era 2006)*
+> *Preview del 21 de junio de 2026*
+
+- 🎨 **Configuración rediseñada** — pantalla simplificada a lista estilo Android Settings (antes: menú OSD de TV CRT), sin tarjetas ni modos Completa/Profesional
+- ➖ **Modo debug eliminado de Configuración** — el overlay de FPS/RAM/versión vuelve a ser automático en builds Preview, sin opción de usuario
+- 🔁 **Brillo del CRT → Efecto CRT (activar/desactivar)** — el slider de intensidad pasó a ser un simple on/off
+- 🏷️ **Valores predeterminados visibles** — cada opción de Configuración indica su valor de fábrica en la propia descripción
+- ⏱️ **Duración del Screenbug configurable** — segundos antes de que aparezca al iniciar un segmento (antes fijo en 20 s)
+- 📺 **Intervalo entre comerciales configurable** — rango Min/Max en minutos editable (antes fijo 3–9 min)
+- 🖼️ **Forzar 4:3 configurable** — al desactivar, el canal usa el tamaño real de la pantalla en vez de forzar siempre un marco 4:3
+
+### 📦 Preview anterior — `v4.1.0.11-preview` *(Era Doki 1.0 · Preview Era 2006)*
 > *Preview del 20 de junio de 2026*
 
-- ⚙️ **Pantalla de Configuración** — nueva `SettingsActivity` con diseño de menú OSD de TV CRT, accesible desde el botón ⚙️ en el canal
-- 🎛️ **Modos Completa y Profesional** — Completa muestra todas las opciones; Profesional muestra solo la música de fondo
+- ⚙️ **Pantalla de Configuración** — nueva `SettingsActivity`, accesible desde el botón ⚙️ en el canal
 - 🎵 **Música de fondo configurable** — on/off, persistente entre sesiones
-- 🐛 **Modo debug configurable** — el overlay de FPS/RAM/versión ahora se puede ocultar (antes siempre visible en Preview)
-- 📡 **Brillo del CRT configurable** — control deslizante de 0–100% sobre la intensidad del `CrtOverlayView`, sin alterar los valores base de la Era 2006
 - 📺 **`comercial3` y `comercial4` agregados** — ahora los 4 comerciales de la Era 2006 rotan aleatoriamente sin repetir el mismo dos veces seguidas
-
-### 📦 Preview anterior — `v4.1.0.10-preview` *(Era Doki 1.0 · Preview Era 2006)*
-> *Preview del 19 de junio de 2026*
-
-- 📡 **`CrtOverlayView` evolucionado a la Era 2006** — scanlines, vignette, flicker y bordes más sutiles, reflejando los TV CRT más limpios de mediados/fines de los 2000
-- 📺 **Comerciales 1 y 2 actualizados** — reemplazados por versiones de la Era 2006
-- 🆕 **Screenbug 10 semanas (planeado)** — conmemorativo por las 10 semanas desde el lanzamiento de la app (`1996.1.0`), coincidiendo con el lanzamiento de `2006.4.1.0` el 22 de junio
+- 📡 **`CrtOverlayView` evolucionado a la Era 2006** *(19/06)* — scanlines, vignette, flicker y bordes más sutiles; comerciales 1 y 2 actualizados a la Era 2006
 
 ### 📦 Versión anterior — `v3.4.2` *(Era 2004 → Doki · Sub-rama 3.4.x)*
 > *Micro-release de corrección — intervalo de comerciales y bumper6*

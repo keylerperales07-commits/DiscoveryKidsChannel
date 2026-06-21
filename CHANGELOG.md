@@ -6,6 +6,55 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2006.4.1.0.12-preview] — Preview · Era Doki 1.0 — 2026-06-21
+
+> *Preview para el 21 de junio de 2026. Rediseña por completo la pantalla de Configuración a una lista simple (estilo Android Settings), elimina el modo debug configurable y el selector Completa/Profesional, cambia el brillo del CRT por un simple activar/desactivar, y agrega tres opciones nuevas: duración del Screenbug, intervalo de comerciales y Forzar 4:3.*
+
+### Agregado
+
+**Duración del Screenbug — configurable**
+- Nueva opción en Configuración: segundos antes de que el Screenbug aparezca al iniciar un segmento (antes `BUG_SHOW_DELAY` fija en 20 s como `const val`).
+- Pasa a ser `bugShowDelayMs`, una propiedad de instancia de `LiveDiscoveryKids` leída desde `SettingsManager.getScreenbugDelaySec()` en `applySettings()`.
+- Se edita desde un diálogo simple (`AlertDialog` + `EditText` numérico) al tocar el item en Configuración.
+
+**Intervalo entre comerciales — configurable (rango Min/Max)**
+- Nueva opción en Configuración: rango de minutos para el intervalo aleatorio entre cortes comerciales (antes `BREAK_INTERVAL_MIN_MS`/`BREAK_INTERVAL_MAX_MS` fijas en 3–9 min como `const val`).
+- Pasan a ser `breakIntervalMinMs`/`breakIntervalMaxMs`, propiedades de instancia leídas desde `SettingsManager.getCommercialMinMinutes()`/`getCommercialMaxMinutes()` en `applySettings()`. `calcBreaks()` las usa sin cambios en su lógica interna.
+- `SettingsManager.setCommercialInterval()` intercambia min/max automáticamente si se guardan invertidos, para no producir un rango inválido.
+- Se edita desde un diálogo con dos campos numéricos (Mínimo / Máximo).
+
+**Forzar 4:3 — configurable**
+- Nueva opción en Configuración (on/off). Controla `AspectRatioFrameLayout.forceAspectRatio`:
+  - **Activado** *(default)* — comportamiento histórico: `onMeasure()` siempre fuerza una proporción 4:3 (`width = height * 4 / 3`), sin importar el tamaño real de pantalla.
+  - **Desactivado** — `onMeasure()` deja pasar las specs originales sin modificar, por lo que el contenedor usa el tamaño real de pantalla definido en `activity_main.xml` (`match_parent`/`match_parent`).
+- El setter de `forceAspectRatio` llama `requestLayout()` internamente cuando el valor cambia, así que el cambio se refleja de inmediato si se modifica desde Configuración mientras el canal está visible.
+
+### Modificado
+
+**Pantalla de Configuración (`SettingsActivity`) — rediseño completo**
+- Se reemplaza el diseño de menú OSD de TV CRT (verde fósforo, tarjetas, tipografía monoespaciada) por una lista simple estilo Android Settings / AndroidIDE: fondo gris oscuro neutro, rótulo de sección pequeño en gris-azulado, título de item en blanco, descripción en gris debajo.
+- Se elimina el selector de modo **Completa**/**Profesional**: ya no hay secciones que mostrar/ocultar: todas las opciones están siempre visibles en una sola lista.
+- Cada item ahora indica su valor predeterminado directamente en su descripción (ej. *"Reproduce música ambiental durante los programas (Predeterminado: Activado)"*).
+- Paleta de colores simplificada en `colors.xml`: se elimina el acento verde fósforo (`dk_phosphor_green`, `dk_phosphor_green_dim`, `dk_amber`, `dk_surface`, `dk_surface_alt`) en favor de una escala de grises neutra (`dk_bg`, `dk_stroke`, `dk_text_primary`, `dk_text_secondary`).
+- Se eliminan del proyecto los drawables `bg_mode_selected.xml`, `bg_mode_unselected.xml`, `bg_settings_card.xml` y `bg_settings_screen.xml`, ya sin uso.
+
+**Brillo del CRT → Efecto CRT (activar/desactivar)**
+- El control deslizante de 0–100% (`brightnessMultiplier: Float`, Preview 4.1.0.11) se reemplaza por un simple switch on/off.
+- `CrtOverlayView.brightnessMultiplier` → `CrtOverlayView.effectEnabled: Boolean`. Internamente se sigue usando un factor (`1f`/`0f`) para reutilizar toda la lógica de escalado de alphas ya existente (scanlines, phosphor mask, vignette, bordes, flicker), sin modificar los valores base de la Era 2006.
+
+### Eliminado
+
+**Modo debug configurable**
+- Se elimina la opción "Modo debug" de Configuración. El overlay de FPS/RAM/versión vuelve a mostrarse automáticamente en builds Preview, sin posibilidad de ocultarlo desde el usuario (`setupDebugInfo()` vuelve a ser incondicional, como antes de la Preview 4.1.0.11).
+- Se elimina `SettingsManager.isDebugModeEnabled()`/`setDebugModeEnabled()` y `LiveDiscoveryKids.refreshDebugVisibility()`.
+
+**Selector de modo Completa/Profesional**
+- Se elimina `SettingsManager.Mode` (enum `COMPLETA`/`PROFESIONAL`) y `getSettingsMode()`/`setSettingsMode()`. La pantalla de Configuración ya no tiene secciones condicionales.
+
+---
+
+
+
 ## [2006.4.1.0.11-preview] — Preview · Era Doki 1.0 — 2026-06-20
 
 > *Preview para el 20 de junio de 2026. Agrega una pantalla de Configuración nueva (`SettingsActivity`) con modos Completa y Profesional, e incorpora `comercial3`/`comercial4` de la Era 2006 a la rotación de comerciales standalone.*
@@ -1161,6 +1210,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2006.4.1.0.12-preview| 2026-06-21 | 🧪 Preview | Configuración rediseñada a lista simple (sin modos, sin debug); Brillo CRT → Efecto CRT on/off; nuevo: duración Screenbug, intervalo comerciales, Forzar 4:3 |
 | 2006.4.1.0.11-preview| 2026-06-20 | 🧪 Preview | SettingsActivity nueva (modos Completa/Profesional: música, debug, brillo CRT); comercial3/4 agregados a rotación Era 2006 |
 | 2006.4.1.0.10-preview| 2026-06-19 | 🧪 Preview | CrtOverlayView evolucionado a Era 2006 (scanlines/vignette/flicker/borde reducidos); comercial1/2 a Era 2006; Screenbug 10 semanas planeado para 22/06 |
 | 2005.4.0.1           | 2026-06-17 | 🚀 Release | BUG FIX: ya_regresa/continuamos ahora determinístico por programa (antes shuffled pool); zona de protección de 3 min sin cortes al final del programa |
