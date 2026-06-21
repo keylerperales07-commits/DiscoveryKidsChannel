@@ -212,7 +212,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Estira los videos para llenar un marco 4:3. Al desactivar, el canal usa el tamaño real de la pantalla (Predeterminado: Activado)"
+                    android:text="Estira el video para llenar el ancho del marco 4:3. Al desactivar, el video respeta su proporción real (Predeterminado: Activado)"
                     android:textColor="@color/dk_text_secondary"
                     android:textSize="13sp"
                     android:fontFamily="@font/googlesans"

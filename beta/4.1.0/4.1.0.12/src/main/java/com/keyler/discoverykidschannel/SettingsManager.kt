@@ -44,7 +44,7 @@ object SettingsManager {
     const val DEFAULT_SCREENBUG_DELAY_SEC = 20
     const val DEFAULT_COMMERCIAL_MIN_MINUTES = 3
     const val DEFAULT_COMMERCIAL_MAX_MINUTES = 9
-    const val DEFAULT_FORCE_ASPECT_RATIO = true
+    const val DEFAULT_FORCE_ASPECT_RATIO = false
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -96,9 +96,10 @@ object SettingsManager {
     }
 
     // ── Forzar 4:3 ───────────────────────────────────────────────────────────
-    // ON  (true, default)  → el VideoView se estira para llenar el marco 4:3 (comportamiento histórico).
-    // OFF (false)           → el marco sigue siendo 4:3, pero el VideoView se ajusta dentro de él
-    //                         manteniendo el aspecto real del video, sin deformar (letterbox/pillarbox).
+    // OFF (false, default) → VideoView con match_parent (alto) / match_parent (ancho):
+    //                         ocupa todo el marco 4:3, respetando su proporción real.
+    // ON  (true)            → VideoView con match_parent (alto) / wrap_content (ancho):
+    //                         se estira para llenar el marco 4:3 (comportamiento histórico).
     fun isForceAspectRatioEnabled(context: Context): Boolean =
         prefs(context).getBoolean(KEY_FORCE_ASPECT_RATIO, DEFAULT_FORCE_ASPECT_RATIO)
 

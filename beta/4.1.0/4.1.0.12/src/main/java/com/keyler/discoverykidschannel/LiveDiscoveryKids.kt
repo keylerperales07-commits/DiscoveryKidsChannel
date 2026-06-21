@@ -24,6 +24,7 @@ import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
@@ -65,7 +66,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
 
     // ── Views ──────────────────────────────────────────────────────────────────
     private lateinit var videoView: VideoView
-    private lateinit var videoContainer: AspectRatioFrameLayout  // Preview 2006.4.1.0.12: para Forzar 4:3
     private lateinit var screenBug: ImageView
     private lateinit var versionInfo: TextView
     private lateinit var debugTextView: TextView
@@ -313,7 +313,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         videoView = findViewById(R.id.videoView)
-        videoContainer = findViewById(R.id.videoContainer)  // Preview 2006.4.1.0.12: para Forzar 4:3
 
         screenBug = findViewById(R.id.screenBug)
         screenBug.alpha = 0f
@@ -1404,18 +1403,27 @@ class LiveDiscoveryKids : AppCompatActivity() {
      *     0–100%, ahora on/off).
      *   - bugShowDelayMs y breakIntervalMin/MaxMs se leen de SettingsManager en
      *     lugar de ser const val fijas.
-     *   - videoContainer.forceAspectRatio: al asignarlo, AspectRatioFrameLayout
-     *     llama requestLayout() internamente si el valor cambió, así que el
-     *     marco se remide de inmediato sin lógica adicional acá. true → onMeasure()
-     *     fuerza 4:3 (histórico); false → onMeasure() deja pasar match_parent/
-     *     match_parent tal cual lo define activity_main.xml (tamaño real de pantalla).
+     *   - Forzar 4:3: controla los layoutParams del VideoView (no del contenedor).
+     *     ON  (default) → match_parent (alto) / wrap_content (ancho), igual que
+     *     siempre lo definió activity_main.xml.
+     *     OFF → match_parent (alto) / match_parent (ancho): el VideoView pasa
+     *     a ocupar todo el ancho del marco 4:3 en vez de ajustar su ancho al
+     *     aspecto del video.
      */
     private fun applySettings() {
         crtOverlay.effectEnabled = SettingsManager.isCrtEffectEnabled(this)
         bugShowDelayMs = SettingsManager.getScreenbugDelaySec(this) * 1_000L
         breakIntervalMinMs = SettingsManager.getCommercialMinMinutes(this) * 60 * 1_000L
         breakIntervalMaxMs = SettingsManager.getCommercialMaxMinutes(this) * 60 * 1_000L
-        videoContainer.forceAspectRatio = SettingsManager.isForceAspectRatioEnabled(this)
+
+        val params = videoView.layoutParams as FrameLayout.LayoutParams
+        params.height = FrameLayout.LayoutParams.MATCH_PARENT
+        params.width = if (SettingsManager.isForceAspectRatioEnabled(this)) {
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        } else {
+            FrameLayout.LayoutParams.MATCH_PARENT
+        }
+        videoView.layoutParams = params
     }
 
     //Modo Debug solo en Preview
