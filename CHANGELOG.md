@@ -6,6 +6,59 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2006.4.1.0] — Release · Era Doki 1.0 · Era 2006 — 2026-06-22
+
+> *Release estable que consolida las Preview 4.1.0.10 → 4.1.0.12: evolución visual del `CrtOverlayView` a la Era 2006, pantalla de Configuración nueva, 4 comerciales standalone actualizados, y el Screenbug conmemorativo por las 10 semanas de la app (lanzamiento `1996.1.0`).*
+
+### Agregado
+
+**Pantalla de Configuración (`SettingsActivity`) — nueva, diseño final**
+- Lista simple estilo Android Settings, accesible desde el botón ⚙️ en el canal. Cinco opciones, cada una con su valor predeterminado indicado en la descripción:
+
+  | Opción | Tipo | Predeterminado |
+  |---|---|---|
+  | Música de fondo | Switch | Activado |
+  | Efecto CRT | Switch | Activado |
+  | Forzar 4:3 | Switch | Desactivado |
+  | Duración del Screenbug | Diálogo numérico | 20 s |
+  | Intervalo entre comerciales | Diálogo Min/Max | 3–9 min |
+
+- **Forzar 4:3** controla los `layoutParams` del `VideoView` (no del contenedor, que sigue siendo siempre 4:3): Desactivado → `match_parent`/`match_parent` (el video respeta su proporción real dentro del marco); Activado → `match_parent`/`wrap_content` (se estira, comportamiento histórico).
+- **Duración del Screenbug** e **intervalo entre comerciales** reemplazan lo que antes eran constantes fijas en código (`BUG_SHOW_DELAY`, `BREAK_INTERVAL_MIN_MS`/`MAX_MS`), ahora leídas dinámicamente desde `SettingsManager`.
+- `txtSettingsVersion` (footer de la pantalla) ya no es texto hardcodeado: `settingsVersionInfo()` lo completa en `onCreate()` leyendo el nombre visible de la app y el `versionName` reales desde `PackageManager`, para que nunca quede desactualizado en futuras Preview/Release.
+
+**`comercial3.mp4` y `comercial4.mp4` — sumados a la rotación de la Era 2006**
+- Junto con `comercial1`/`comercial2` (ya actualizados a la Era 2006), los 4 comerciales standalone rotan aleatoriamente sin repetir el mismo dos veces seguidas.
+
+**Screenbug conmemorativo — 10 semanas de la app**
+- Por esta semana (desde el 22 de junio de 2026), el Screenbug muestra un logo conmemorativo por las 10 semanas desde el lanzamiento de la primera versión de la app (`1996.1.0`).
+- Es un reemplazo directo del archivo de imagen del Screenbug existente — no requiere `SettingsManager` ni lógica nueva, usa el mismo mecanismo de fadeIn/fadeOut ya implementado. Vuelve al logo estándar de la Era 2006 al cabo de una semana.
+
+### Modificado
+
+**`CrtOverlayView` — evolucionado al estándar visual de la Era 2006**
+- Los televisores CRT de mediados/fines de los 2000 (Trinitron y sucesores) tenían tubos más planos, barrido más fino y fuentes de alimentación más estables que los de los 90:
+
+  | Parámetro | Antes (Era 1999/2000) | Ahora (Era 2006) |
+  |---|---|---|
+  | `scanlineAlpha` | `100` | `65` |
+  | `scanlineGlowAlpha` | `25` | `16` |
+  | `scanlineSpacing` | `2px` | `3px` |
+  | `phosphorAlpha` | `30` | `18` |
+  | `vignetteAlpha` | `210` | `150` |
+  | `flickerIntensity` | `0.065` | `0.035` |
+  | `borderWidth` | `18dp` | `12dp` |
+  | `borderAlpha` | `210` | `150` |
+
+- El control "Brillo del CRT" (slider 0–100% en una Preview intermedia) se simplificó a **Efecto CRT** activar/desactivar: `CrtOverlayView.effectEnabled: Boolean`, reutilizando toda la lógica de escalado de alphas sin tocar los valores base de la tabla anterior.
+
+**Pantalla de Configuración — diseño final**
+- Tras una iteración intermedia con menú estilo OSD de TV CRT (verde fósforo, modos Completa/Profesional), el diseño se simplificó a una lista única estilo Android Settings: fondo gris oscuro neutro, sin secciones que ocultar, todas las opciones siempre visibles.
+
+---
+
+
+
 ## [2006.4.1.0.12-preview] — Preview · Era Doki 1.0 — 2026-06-21
 
 > *Preview para el 21 de junio de 2026. Rediseña por completo la pantalla de Configuración a una lista simple (estilo Android Settings), elimina el modo debug configurable y el selector Completa/Profesional, cambia el brillo del CRT por un simple activar/desactivar, y agrega tres opciones nuevas: duración del Screenbug, intervalo de comerciales y Forzar 4:3.*
@@ -1210,6 +1263,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2006.4.1.0           | 2026-06-22 | 🚀 Release | Configuración (5 opciones, Forzar 4:3, Screenbug, comerciales); CrtOverlayView Era 2006; comercial3/4; Screenbug 10 semanas |
 | 2006.4.1.0.12-preview| 2026-06-21 | 🧪 Preview | Configuración rediseñada a lista simple (sin modos, sin debug); Brillo CRT → Efecto CRT on/off; nuevo: duración Screenbug, intervalo comerciales, Forzar 4:3 |
 | 2006.4.1.0.11-preview| 2026-06-20 | 🧪 Preview | SettingsActivity nueva (modos Completa/Profesional: música, debug, brillo CRT); comercial3/4 agregados a rotación Era 2006 |
 | 2006.4.1.0.10-preview| 2026-06-19 | 🧪 Preview | CrtOverlayView evolucionado a Era 2006 (scanlines/vignette/flicker/borde reducidos); comercial1/2 a Era 2006; Screenbug 10 semanas planeado para 22/06 |

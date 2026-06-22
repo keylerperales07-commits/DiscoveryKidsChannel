@@ -6,6 +6,10 @@
 package com.keyler.discoverykidschannel
 
 import android.app.AlertDialog
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.content.pm.PackageInfo
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -56,6 +60,8 @@ class SettingsActivity : AppCompatActivity() {
         bindViews()
         loadCurrentValues()
         setupListeners()
+        
+        settingsVersionInfo()
     }
 
     private fun bindViews() {
@@ -200,5 +206,16 @@ class SettingsActivity : AppCompatActivity() {
             setPadding(pad, 0, pad, 0)
             addView(input)
         }
+    }
+    
+    private fun settingsVersionInfo() {
+        val versionInfo = findViewById<TextView>(R.id.txtSettingsVersion)
+
+        val packageInfo = packageManager.getPackageInfo(packageName, 0)
+        val versionName = packageInfo.versionName
+        val label = packageManager.getApplicationLabel(packageInfo.applicationInfo).toString()
+        val versionInfoText = "$label • $versionName"
+
+        versionInfo.text = versionInfoText
     }
 }

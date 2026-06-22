@@ -314,7 +314,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="Discovery Kids LA Preview · v2006.4.1.0.12"
+            android:text="Cargando..."
             android:textColor="@color/dk_text_secondary"
             android:textSize="12sp"
             android:fontFamily="@font/googlesans"
