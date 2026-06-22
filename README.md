@@ -178,19 +178,6 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 </details>
 
-### 📦 Versión anterior — `v4.0.1` *(Era Doki 1.0 · Sub-rama 4.0.x)*
-> *Release de corrección. Asignación determinística de ya_regresa/continuamos por programa y zona de protección de 3 min al final del programa.*
-
-- 🐛 **`ya_regresa` / `continuamos`** — asignación ahora determinística por programa (antes pool aleatorio)
-- 🐛 **`calcBreaks()`** — zona de protección de 3 minutos al final del programa, sin cortes comerciales en ese tramo
-- 🎬 **8 bumpers Era Doki 1.0**, logo y comerciales fase 3.0, `bg_music` reducido, enseguidas/ya_regresa/continuamos Era Doki, app renombrada a `Discovery Kids LA`, intervalo de comerciales aleatorio 3–9 min *(consolidado de la release 4.0.0)*
-
-### 📦 Versión anterior — `v3.4.2` *(Era 2004 → Doki · Sub-rama 3.4.x)*
-> *Micro-release de corrección — intervalo de comerciales y bumper6*
-
-- 🐛 **Intervalo de comerciales corregido** — aleatorio entre 3 y 9 minutos (antes fijo a 9 min)
-- 🎬 **`bumper6.mp4`** — reemplazado por nuevo bumper de aviso de la Actualización La Era Doki
-
 ---
 
 ## ⚠️ Notas Importantes
