@@ -16,5 +16,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Discovery Kids Channel"
 
-include(":release:2006:4.1.0",
+include(":release:2006:4.1.1",
         ":beta:4.1.0:4.1.0.12")

@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v4.1.0--release-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v4.1.1--bugfix-brightgreen?style=flat-square"/>
 </p>
 
 ---
@@ -160,7 +160,15 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v4.1.0` *(Era Doki 1.0 · Era 2006)*
+### 🐛 Última versión — `v4.1.1` *(Bug Fix · Era Doki 1.0 · Era 2006)*
+> *Corrige el Screenbug y la reanudación de bumper/enseguida/comercial al volver de segundo plano o cambiar de Activity — 23 de junio de 2026.*
+
+- 🖼️ **Screenbug ya no reinicia su cuenta** al volver de segundo plano o de un cambio de Activity (ej. abrir Configuración) — ahora calcula correctamente cuánto tiempo ya transcurrió en el segmento
+- ▶️ **Bumper / Enseguida / Comercial se reanudan en su posición real** en vez de reiniciarse desde el principio, incluyendo cada paso del bloque comercial (ya_regresa → comercial → continuamos)
+
+<details>
+<summary><strong>📜 Versión estable anterior</strong> — `v4.1.0` (22 de junio)</summary>
+
 > *Release del 22 de junio de 2026 — 10 semanas desde el lanzamiento de la app (`1996.1.0`). Consolida las Preview 4.1.0.10 → 4.1.0.12.*
 
 - ⚙️ **Pantalla de Configuración** — lista simple estilo Android Settings: música de fondo, efecto CRT, Forzar 4:3, duración del Screenbug e intervalo entre comerciales, cada una con su valor predeterminado indicado
@@ -169,8 +177,10 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 - 📺 **4 comerciales standalone actualizados** — `comercial1`–`comercial4` de la Era 2006, rotando aleatoriamente sin repetir
 - 🎉 **Screenbug conmemorativo de 10 semanas** — logo temporal por una semana, simple cambio de asset
 
+</details>
+
 <details>
-<summary><strong>📜 Preview consolidadas en esta release</strong> (4.1.0.10 → 4.1.0.12, 19–21 de junio)</summary>
+<summary><strong>📜 Preview consolidadas en la release 4.1.0</strong> (4.1.0.10 → 4.1.0.12, 19–21 de junio)</summary>
 
 - **4.1.0.10** *(19/06)* — `CrtOverlayView` evolucionado a la Era 2006; `comercial1`/`comercial2` actualizados
 - **4.1.0.11** *(20/06)* — `SettingsActivity` nueva (diseño OSD inicial); `comercial3`/`comercial4` agregados

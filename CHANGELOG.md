@@ -6,6 +6,31 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2006.4.1.1] — Bug Fix · Era Doki 1.0 · Era 2006 — 2026-06-23
+
+> *Corrige dos bugs relacionados: el Screenbug reiniciaba su cuenta de aparición cada vez que la app volvía de segundo plano o de un cambio de Activity (ej. abrir Configuración), y los clips no-programa (bumper, enseguida, comercial) se reiniciaban desde el principio en la misma situación, en vez de reanudarse donde estaban.*
+
+### Corregido
+
+**Screenbug se reiniciaba al volver de segundo plano o cambiar de Activity**
+- Causa raíz: `scheduleSegmentLogic()` calculaba `elapsed = segmentStartMs - currentSegmentStartMs` para decidir si el Screenbug ya debía estar visible, pero `currentSegmentStartMs` se sobreescribía con el mismo valor de `segmentStartMs` **antes** de hacer ese cálculo, dando siempre `elapsed = 0`. El Screenbug entonces creía que el segmento siempre acababa de empezar, sin importar cuánto tiempo real hubiera transcurrido.
+- `scheduleSegmentLogic()` ahora recibe un parámetro `isNewSegment: Boolean`. Solo actualiza `currentSegmentStartMs` cuando el segmento es realmente nuevo (arranque de programa, tras un corte comercial, restauración de sesión completa). Al reanudar el mismo segmento tras backgrounding (`isNewSegment = false`), conserva el valor original y calcula `elapsed` correctamente contra él.
+- `beginProgramSegment()` ahora también recibe `isNewSegment` (default `true`), propagado a `scheduleSegmentLogic()`. La única llamada que pasa `isNewSegment = false` es la de `onResume()` al reanudar un programa pausado por lifecycle.
+
+**Bumper / Enseguida / Comercial se reiniciaban desde el principio al volver de segundo plano**
+- Causa raíz: `onResume()` reanudaba correctamente un programa en curso (vía `beginProgramSegment()` con la posición guardada), pero para cualquier otro tipo de ítem activo (bumper, enseguida, StandaloneCommercial, o cualquiera de los 3 pasos del bloque comercial: ya_regresa → comercial → continuamos) simplemente llamaba `advance()`, que siempre arranca el ítem desde cero.
+- El position tracker (antes exclusivo de programas) ahora corre durante **cualquier** clip en reproducción, guardando su posición en `currentClipPositionMs` cuando no se está en un segmento de programa.
+- `playUriWithTransition()` (usado por bumper, enseguida, StandaloneCommercial, y los pasos comercial/continuamos del bloque comercial) ahora registra en todo momento qué Uri está sonando (`currentClipUri`) y cómo continuar el flujo al terminar (`currentClipOnComplete`).
+- Nueva función `resumeUriWithSeek()`: reanuda un clip no-programa exactamente en la posición guardada usando `seekTo()` dentro de `onPrepared()` (mismo patrón ya usado para programas, necesario porque Android puede liberar el surface del `VideoView` en segundo plano), en vez de reiniciarlo desde el principio.
+- El bloque comercial (`playCommercial()`) ahora trackea en qué paso está (`commercialStep`: `PRE_COMERCIAL` / `COMERCIAL` / `POST_COMERCIAL`) y qué recursos eligió cada paso (`commercialChosenPreComercial/Commercial/YaVolvemos`), promovidos de variables locales a propiedades de instancia. Nueva función `resumeCommercialBlock()` reconstruye el paso exacto donde se quedó el bloque sin volver a sortear ningún clip.
+- `onResume()` ahora reanuda en este orden de prioridad: programa en curso → bloque comercial en curso (en su paso y posición real) → cualquier otro clip con estado guardado (`currentClipUri`) → solo si no hay ningún estado guardado, recién ahí `advance()` como último recurso.
+- `goToAdjacentProgram()` (Prev/Next) limpia explícitamente el estado de clip no-programa al saltar, para no dejar un `currentClipUri` obsoleto que `onResume()` intente reanudar después.
+
+> **Nota:** la restauración de sesión tras cerrar completamente la app (diálogo "¿Continuar donde estabas?", `resumeSavedState()`) no se modificó — sigue reiniciando bumper/enseguida desde el principio y saltando el comercial en curso, tal como estaba documentado. Este fix aplica únicamente al ciclo de vida `onPause()`/`onResume()` dentro de la misma sesión (segundo plano, cambio de Activity), no al guardado explícito en `SharedPreferences`.
+
+---
+
+
 ## [2006.4.1.0] — Release · Era Doki 1.0 · Era 2006 — 2026-06-22
 
 > *Release estable que consolida las Preview 4.1.0.10 → 4.1.0.12: evolución visual del `CrtOverlayView` a la Era 2006, pantalla de Configuración nueva, 4 comerciales standalone actualizados, y el Screenbug conmemorativo por las 10 semanas de la app (lanzamiento `1996.1.0`).*
@@ -1263,6 +1288,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2006.4.1.1           | 2026-06-23 | 🐛 Bug Fix | Screenbug ya no reinicia su cuenta al volver de segundo plano/cambio de Activity; bumper/enseguida/comercial se reanudan en su posición real en vez de reiniciarse |
 | 2006.4.1.0           | 2026-06-22 | 🚀 Release | Configuración (5 opciones, Forzar 4:3, Screenbug, comerciales); CrtOverlayView Era 2006; comercial3/4; Screenbug 10 semanas |
 | 2006.4.1.0.12-preview| 2026-06-21 | 🧪 Preview | Configuración rediseñada a lista simple (sin modos, sin debug); Brillo CRT → Efecto CRT on/off; nuevo: duración Screenbug, intervalo comerciales, Forzar 4:3 |
 | 2006.4.1.0.11-preview| 2026-06-20 | 🧪 Preview | SettingsActivity nueva (modos Completa/Profesional: música, debug, brillo CRT); comercial3/4 agregados a rotación Era 2006 |

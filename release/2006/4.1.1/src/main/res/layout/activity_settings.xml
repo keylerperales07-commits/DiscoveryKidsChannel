@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_settings.xml — Preview 2006.4.1.0.12
+
+    Rediseño completo: de menú OSD de TV CRT a lista simple estilo
+    Android Settings / AndroidIDE (referencia: captura del 21/06/2026).
+    Sin tarjetas, sin acentos de color — fondo oscuro neutro, rótulo de
+    sección gris-azulado pequeño, título de item en blanco, descripción
+    en gris debajo (la descripción incluye el valor predeterminado entre
+    paréntesis). Los items de switch tienen el control a la derecha;
+    los items de valor (Screenbug, comerciales) son clickeables y abren
+    un diálogo, mostrando el valor actual en la propia descripción.
+-->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dk_bg"
+    android:fillViewport="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="32dp">
+
+        <!-- ══ Header ══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="20dp">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_back"
+                android:contentDescription="Volver" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Configuración"
+                android:textColor="@color/dk_text_primary"
+                android:textSize="24sp"
+                android:fontFamily="@font/googlesans" />
+        </LinearLayout>
+
+        <!-- ══ Sección: General ══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="General"
+            android:textColor="@color/dk_text_secondary"
+            android:textSize="14sp"
+            android:fontFamily="@font/googlesans"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="4dp" />
+
+        <!-- Item: Música de fondo (switch) -->
+        <LinearLayout
+            android:id="@+id/itemBgMusic"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Música de fondo"
+                    android:textColor="@color/dk_text_primary"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/googlesans" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Reproduce música ambiental durante los programas (Predeterminado: Activado)"
+                    android:textColor="@color/dk_text_secondary"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/googlesans"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchBgMusic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
+
+        <!-- ══ Sección: Pantalla ══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pantalla"
+            android:textColor="@color/dk_text_secondary"
+            android:textSize="14sp"
+            android:fontFamily="@font/googlesans"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="4dp" />
+
+        <!-- Item: Efecto CRT (switch) -->
+        <LinearLayout
+            android:id="@+id/itemCrtEffect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Efecto CRT"
+                    android:textColor="@color/dk_text_primary"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/googlesans" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Scanlines, viñeta y parpadeo de TV antiguo (Predeterminado: Desactivado)"
+                    android:textColor="@color/dk_text_secondary"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/googlesans"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchCrtEffect"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false" />
+        </LinearLayout>
+
+        <!-- Item: Forzar 4:3 (switch) -->
+        <LinearLayout
+            android:id="@+id/itemForceAspectRatio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Forzar 4:3"
+                    android:textColor="@color/dk_text_primary"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/googlesans" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Estira el video para llenar el ancho del marco 4:3. Al desactivar, el video respeta su proporción real (Predeterminado: Activado)"
+                    android:textColor="@color/dk_text_secondary"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/googlesans"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchForceAspectRatio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false" />
+        </LinearLayout>
+
+        <!-- Item: Duración del Screenbug (valor, abre diálogo) -->
+        <LinearLayout
+            android:id="@+id/itemScreenbugDelay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Duración del Screenbug"
+                android:textColor="@color/dk_text_primary"
+                android:textSize="17sp"
+                android:fontFamily="@font/googlesans" />
+
+            <TextView
+                android:id="@+id/txtScreenbugDelayValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Aparece a los 20 s de iniciado el segmento (Predeterminado: 20 s)"
+                android:textColor="@color/dk_text_secondary"
+                android:textSize="13sp"
+                android:fontFamily="@font/googlesans"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
+
+        <!-- ══ Sección: Comerciales ══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Comerciales"
+            android:textColor="@color/dk_text_secondary"
+            android:textSize="14sp"
+            android:fontFamily="@font/googlesans"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="4dp" />
+
+        <!-- Item: Intervalo aleatorio de comerciales (valor, abre diálogo) -->
+        <LinearLayout
+            android:id="@+id/itemCommercialInterval"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Intervalo entre comerciales"
+                android:textColor="@color/dk_text_primary"
+                android:textSize="17sp"
+                android:fontFamily="@font/googlesans" />
+
+            <TextView
+                android:id="@+id/txtCommercialIntervalValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cada 3–9 minutos, al azar (Predeterminado: 3–9 min)"
+                android:textColor="@color/dk_text_secondary"
+                android:textSize="13sp"
+                android:fontFamily="@font/googlesans"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- ══ Footer: versión ══ -->
+        <TextView
+            android:id="@+id/txtSettingsVersion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Cargando..."
+            android:textColor="@color/dk_text_secondary"
+            android:textSize="12sp"
+            android:fontFamily="@font/googlesans"
+            android:layout_marginTop="24dp" />
+
+    </LinearLayout>
+</ScrollView>
