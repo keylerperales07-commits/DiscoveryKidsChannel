@@ -6,6 +6,31 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2006.4.2.0.20-preview] — Preview · Era Doki 1.0 · Era 2006 — 2026-06-24
+
+> *Preview para el 24 de junio de 2026. Agrega un Actualizador integrado: desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub, y si hay una versión más nueva descarga el `.apk` y abre el instalador del sistema.*
+
+### Agregado
+
+**Actualizador (`AppUpdater.kt`) — nuevo, accesible desde Configuración**
+- Nuevo `object AppUpdater`: consulta la API de GitHub Releases (`/repos/keylerperales07-commits/DiscoveryKidsChannel/releases/latest`) en un hilo en background, lee `tag_name` (la versión del release) y la URL del primer asset `.apk` adjunto (`assets[].browser_download_url`).
+- `compareVersions()` compara la versión remota contra la instalada (`versionName` vía `PackageManager`) segmento por segmento de forma numérica — no alfabética, así `4.10` se reconoce mayor que `4.9` — compatible con el esquema `YYYY.MAJOR.MINOR.PATCH[.BUILD]` del proyecto. El sufijo `-preview` se descarta antes de comparar.
+- Si hay una versión más nueva con `.apk` adjunto: `AlertDialog` de confirmación → `downloadAndInstall()` encola la descarga con `DownloadManager` (hacia `getExternalFilesDir(DIRECTORY_DOWNLOADS)`) → un `BroadcastReceiver` de `ACTION_DOWNLOAD_COMPLETE` dispara `openInstaller()` al terminar, que abre el instalador del sistema vía `Intent.ACTION_VIEW` + `FileProvider`.
+- Si ya está actualizado, si el release no tiene `.apk` adjunto, o si falla la consulta (sin red, etc.), se informa con un `AlertDialog` simple — nunca queda la app en un estado roto ni reintenta sola.
+- El Actualizador **nunca corre automáticamente**: solo se activa al tocar "Buscar actualizaciones" en Configuración, una acción explícita del usuario.
+
+**`SettingsActivity` / `activity_settings.xml` — nueva sección "Actualizaciones"**
+- Item "Buscar actualizaciones" (acción inmediata, sin switch ni diálogo de valor): delega todo el trabajo en `AppUpdater.checkForUpdate()`, se deshabilita mientras la consulta está en curso para evitar toques repetidos, y muestra el resultado con los diálogos de `AppUpdater`.
+
+**`AndroidManifest.xml` — permisos y `FileProvider` para el Actualizador**
+- Nuevos permisos: `INTERNET` (consultar GitHub) y `REQUEST_INSTALL_PACKAGES` (abrir el instalador del `.apk` descargado; en Android 8+ el sistema solicita habilitar "Instalar apps desconocidas" la primera vez).
+- Nuevo `<provider>` `androidx.core.content.FileProvider` (`${applicationId}.fileprovider`), con `res/xml/file_paths.xml` exponiendo únicamente la subcarpeta `Download/` de los archivos privados de la app — necesario porque Android 7+ prohíbe pasar URIs `file://` directas entre apps.
+
+> **Nota:** el `.apk` debe estar adjunto como asset del release de GitHub para que el Actualizador lo detecte; un release sin `.apk` adjunto se informa como error, no se asume ni se intenta otra fuente.
+
+---
+
+
 ## [2006.4.1.1] — Bug Fix · Era Doki 1.0 · Era 2006 — 2026-06-23
 
 > *Corrige dos bugs relacionados: el Screenbug reiniciaba su cuenta de aparición cada vez que la app volvía de segundo plano o de un cambio de Activity (ej. abrir Configuración), y los clips no-programa (bumper, enseguida, comercial) se reiniciaban desde el principio en la misma situación, en vez de reanudarse donde estaban.*
@@ -1288,6 +1313,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2006.4.2.0.20-preview| 2026-06-23 | 🧪 Preview | Actualizador integrado: "Buscar actualizaciones" en Configuración consulta GitHub Releases, descarga el .apk más nuevo y abre el instalador |
 | 2006.4.1.1           | 2026-06-23 | 🐛 Bug Fix | Screenbug ya no reinicia su cuenta al volver de segundo plano/cambio de Activity; bumper/enseguida/comercial se reanudan en su posición real en vez de reiniciarse |
 | 2006.4.1.0           | 2026-06-22 | 🚀 Release | Configuración (5 opciones, Forzar 4:3, Screenbug, comerciales); CrtOverlayView Era 2006; comercial3/4; Screenbug 10 semanas |
 | 2006.4.1.0.12-preview| 2026-06-21 | 🧪 Preview | Configuración rediseñada a lista simple (sin modos, sin debug); Brillo CRT → Efecto CRT on/off; nuevo: duración Screenbug, intervalo comerciales, Forzar 4:3 |

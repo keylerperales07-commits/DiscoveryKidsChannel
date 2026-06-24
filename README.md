@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Última_versión-v4.1.1--bugfix-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Preview-v4.2.0.20-orange?style=flat-square"/>
 </p>
 
 ---
@@ -48,6 +49,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo enseguidas, bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
 - ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Enseguida → StandaloneCommercial → Bumper → Programa), igual que cambiar de canal en TV real
 - ⚙️ **Pantalla de Configuración** — Accesible desde el botón de ajustes, con lista simple estilo Android Settings. Permite alternar música de fondo, efecto CRT y Forzar 4:3, y ajustar la duración del Screenbug y el intervalo entre comerciales — cada opción muestra su valor predeterminado
+- 🔄 **Actualizador integrado** *(en Preview)* — Desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub; si hay una versión más nueva, descarga el `.apk` y abre el instalador del sistema
 
 ---
 
@@ -160,33 +162,17 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🐛 Última versión — `v4.1.1` *(Bug Fix · Era Doki 1.0 · Era 2006)*
+### 🧪 Preview en curso — `v4.2.0.20` *(Era Doki 1.0 · Era 2006)*
+> *Preview del 24 de junio de 2026. Agrega un Actualizador integrado.*
+
+- 🔄 **Actualizador integrado** — "Buscar actualizaciones" en Configuración consulta el último release del repo en GitHub, compara la versión y, si hay una más nueva, descarga su `.apk` y abre el instalador del sistema
+- 🔒 Acción siempre explícita del usuario — el Actualizador nunca se ejecuta solo al abrir la app
+
+### 🐛 Última versión estable — `v4.1.1` *(Bug Fix · Era Doki 1.0 · Era 2006)*
 > *Corrige el Screenbug y la reanudación de bumper/enseguida/comercial al volver de segundo plano o cambiar de Activity — 23 de junio de 2026.*
 
 - 🖼️ **Screenbug ya no reinicia su cuenta** al volver de segundo plano o de un cambio de Activity (ej. abrir Configuración) — ahora calcula correctamente cuánto tiempo ya transcurrió en el segmento
 - ▶️ **Bumper / Enseguida / Comercial se reanudan en su posición real** en vez de reiniciarse desde el principio, incluyendo cada paso del bloque comercial (ya_regresa → comercial → continuamos)
-
-<details>
-<summary><strong>📜 Versión estable anterior</strong> — `v4.1.0` (22 de junio)</summary>
-
-> *Release del 22 de junio de 2026 — 10 semanas desde el lanzamiento de la app (`1996.1.0`). Consolida las Preview 4.1.0.10 → 4.1.0.12.*
-
-- ⚙️ **Pantalla de Configuración** — lista simple estilo Android Settings: música de fondo, efecto CRT, Forzar 4:3, duración del Screenbug e intervalo entre comerciales, cada una con su valor predeterminado indicado
-- 🖼️ **Forzar 4:3** *(Desactivado por defecto)* — controla si el video se estira para llenar el marco 4:3 o respeta su proporción real dentro de él
-- 📡 **`CrtOverlayView` evolucionado a la Era 2006** — scanlines, vignette, flicker y bordes más sutiles, con Efecto CRT activar/desactivar
-- 📺 **4 comerciales standalone actualizados** — `comercial1`–`comercial4` de la Era 2006, rotando aleatoriamente sin repetir
-- 🎉 **Screenbug conmemorativo de 10 semanas** — logo temporal por una semana, simple cambio de asset
-
-</details>
-
-<details>
-<summary><strong>📜 Preview consolidadas en la release 4.1.0</strong> (4.1.0.10 → 4.1.0.12, 19–21 de junio)</summary>
-
-- **4.1.0.10** *(19/06)* — `CrtOverlayView` evolucionado a la Era 2006; `comercial1`/`comercial2` actualizados
-- **4.1.0.11** *(20/06)* — `SettingsActivity` nueva (diseño OSD inicial); `comercial3`/`comercial4` agregados
-- **4.1.0.12** *(21/06)* — Configuración rediseñada a lista simple; Forzar 4:3, duración Screenbug e intervalo de comerciales configurables
-
-</details>
 
 ---
 
