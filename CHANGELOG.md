@@ -6,7 +6,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2006.4.1.0.21-preview] — Preview · Era Doki 1.0 · Era 2006 — 2026-06-25
+## [2006.4.2.0.21-preview] — Preview · Era Doki 1.0 · Era 2006 — 2026-06-25
 
 > *Preview para el 25 de junio de 2026. Agrega "Habilitar versiones Preview" al Actualizador, corrige el texto del valor predeterminado de Forzar 4:3, y reorganiza todo el código de LiveDiscoveryKids.kt en archivos separados por responsabilidad (10 semanas desde el primer release).*
 
@@ -55,7 +55,7 @@ y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org
 
 
 
-
+## [2006.4.2.0.20-preview] — Preview · Era Doki 1.0 · Era 2006 — 2026-06-24
 > *Preview para el 24 de junio de 2026. Agrega un Actualizador integrado: desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub, y si hay una versión más nueva descarga el `.apk` y abre el instalador del sistema.*
 
 ### Agregado

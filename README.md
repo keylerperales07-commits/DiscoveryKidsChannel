@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Última_versión-v4.1.1--bugfix-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Preview-v4.1.0.21-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Preview-v4.2.0.21-orange?style=flat-square"/>
 </p>
 
 ---
@@ -162,7 +162,7 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🧪 Preview en curso — `v4.1.0.21` *(Era Doki 1.0 · Era 2006)*
+### 🧪 Preview en curso — `v4.2.0.21` *(Era Doki 1.0 · Era 2006)*
 > *Preview del 25 de junio de 2026. Habilitar versiones Preview en el Actualizador, fix de texto en Forzar 4:3, y reorganización completa del código del canal.*
 
 - 🧪 **"Habilitar versiones Preview"** — nuevo switch en Configuración → Actualizaciones (desactivado por defecto). Activado, permite que "Buscar actualizaciones" también instale releases Preview, no solo estables
