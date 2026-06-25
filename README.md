@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Última_versión-v4.1.1--bugfix-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Preview-v4.2.0.20-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Preview-v4.1.0.21-orange?style=flat-square"/>
 </p>
 
 ---
@@ -49,7 +49,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo enseguidas, bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
 - ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Enseguida → StandaloneCommercial → Bumper → Programa), igual que cambiar de canal en TV real
 - ⚙️ **Pantalla de Configuración** — Accesible desde el botón de ajustes, con lista simple estilo Android Settings. Permite alternar música de fondo, efecto CRT y Forzar 4:3, y ajustar la duración del Screenbug y el intervalo entre comerciales — cada opción muestra su valor predeterminado
-- 🔄 **Actualizador integrado** *(en Preview)* — Desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub; si hay una versión más nueva, descarga el `.apk` y abre el instalador del sistema
+- 🔄 **Actualizador integrado** *(en Preview)* — Desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub; si hay una versión más nueva, descarga el `.apk` y abre el instalador del sistema. Un switch "Habilitar versiones Preview" (desactivado por defecto) permite que también instale releases Preview, no solo estables
 
 ---
 
@@ -162,10 +162,13 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🧪 Preview en curso — `v4.2.0.20` *(Era Doki 1.0 · Era 2006)*
-> *Preview del 24 de junio de 2026. Agrega un Actualizador integrado.*
+### 🧪 Preview en curso — `v4.1.0.21` *(Era Doki 1.0 · Era 2006)*
+> *Preview del 25 de junio de 2026. Habilitar versiones Preview en el Actualizador, fix de texto en Forzar 4:3, y reorganización completa del código del canal.*
 
-- 🔄 **Actualizador integrado** — "Buscar actualizaciones" en Configuración consulta el último release del repo en GitHub, compara la versión y, si hay una más nueva, descarga su `.apk` y abre el instalador del sistema
+- 🧪 **"Habilitar versiones Preview"** — nuevo switch en Configuración → Actualizaciones (desactivado por defecto). Activado, permite que "Buscar actualizaciones" también instale releases Preview, no solo estables
+- 🐛 Corregido el texto de "Forzar 4:3" en Configuración, que mostraba "Predeterminado: Activado" cuando el valor real siempre fue Desactivado
+- 🗂️ **Reorganización de código** — `LiveDiscoveryKids.kt` (10 semanas, ~1770 líneas) se dividió en 11 archivos por responsabilidad (playlist, reproducción de programas, bloque comercial, transiciones de video, persistencia de sesión, etc.). Cambio puramente organizativo, verificado función por función contra el original — cero cambios de comportamiento
+- 🔄 **Actualizador integrado** *(agregado en Preview anterior)* — "Buscar actualizaciones" en Configuración consulta el último release del repo en GitHub, compara la versión y, si hay una más nueva, descarga su `.apk` y abre el instalador del sistema
 - 🔒 Acción siempre explícita del usuario — el Actualizador nunca se ejecuta solo al abrir la app
 
 ### 🐛 Última versión estable — `v4.1.1` *(Bug Fix · Era Doki 1.0 · Era 2006)*
