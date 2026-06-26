@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v4.1.1--bugfix-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Preview-v4.2.0.21-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v4.2.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Preview-v4.3.0--dev-orange?style=flat-square"/>
 </p>
 
 ---
@@ -162,17 +162,16 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🧪 Preview en curso — `v4.2.0.21` *(Era Doki 1.0 · Era 2006)*
-> *Preview del 25 de junio de 2026. Habilitar versiones Preview en el Actualizador, fix de texto en Forzar 4:3, y reorganización completa del código del canal.*
+### 🚀 Última versión estable — `v4.2.0` *(Era Doki 1.0 · Era 2006)*
+> *Release del 26 de junio de 2026. Agrega un Actualizador integrado y "Habilitar versiones Preview" en Configuración.*
 
-- 🧪 **"Habilitar versiones Preview"** — nuevo switch en Configuración → Actualizaciones (desactivado por defecto). Activado, permite que "Buscar actualizaciones" también instale releases Preview, no solo estables
-- 🐛 Corregido el texto de "Forzar 4:3" en Configuración, que mostraba "Predeterminado: Activado" cuando el valor real siempre fue Desactivado
-- 🗂️ **Reorganización de código** — `LiveDiscoveryKids.kt` (10 semanas, ~1770 líneas) se dividió en 11 archivos por responsabilidad (playlist, reproducción de programas, bloque comercial, transiciones de video, persistencia de sesión, etc.). Cambio puramente organizativo, verificado función por función contra el original — cero cambios de comportamiento
-- 🔄 **Actualizador integrado** *(agregado en Preview anterior)* — "Buscar actualizaciones" en Configuración consulta el último release del repo en GitHub, compara la versión y, si hay una más nueva, descarga su `.apk` y abre el instalador del sistema
-- 🔒 Acción siempre explícita del usuario — el Actualizador nunca se ejecuta solo al abrir la app
+- 🔄 **Actualizador integrado** — "Buscar actualizaciones" en Configuración → Actualizaciones consulta el último release del repo en GitHub, compara la versión contra la instalada y, si hay una más nueva, descarga su `.apk` y abre el instalador del sistema. Nunca se ejecuta automáticamente — solo al tocar el botón.
+- 🧪 **"Habilitar versiones Preview"** — nuevo switch en Configuración → Actualizaciones (desactivado por defecto). Desactivado, `AppUpdater` solo detecta releases estables; activado, también considera releases Preview del repositorio, permitiendo probar funcionalidades en desarrollo desde la app.
+- 🐛 Corregido el texto de "Forzar 4:3" en Configuración, que mostraba "Predeterminado: Activado" cuando el valor real siempre fue Desactivado.
+- 🗂️ **Reorganización de código** — `LiveDiscoveryKids.kt` (~1770 líneas) se dividió en 11 archivos por responsabilidad (playlist, reproducción de programas, bloque comercial, transiciones de video, persistencia de sesión, etc.). **Cambio puramente organizativo, verificado función por función** — cero cambios de comportamiento.
 
-### 🐛 Última versión estable — `v4.1.1` *(Bug Fix · Era Doki 1.0 · Era 2006)*
-> *Corrige el Screenbug y la reanudación de bumper/enseguida/comercial al volver de segundo plano o cambiar de Activity — 23 de junio de 2026.*
+### 🐛 Versión anterior — `v4.1.1` *(Bug Fix · Era Doki 1.0 · Era 2006)*
+> *Corrige el Screenbug y la reanudación de bumper/enseguida/comercial al volver de segundo plano — 23 de junio de 2026.*
 
 - 🖼️ **Screenbug ya no reinicia su cuenta** al volver de segundo plano o de un cambio de Activity (ej. abrir Configuración) — ahora calcula correctamente cuánto tiempo ya transcurrió en el segmento
 - ▶️ **Bumper / Enseguida / Comercial se reanudan en su posición real** en vez de reiniciarse desde el principio, incluyendo cada paso del bloque comercial (ya_regresa → comercial → continuamos)

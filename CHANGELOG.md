@@ -6,6 +6,55 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2006.4.2.0] — 🚀 Release · Era Doki 1.0 · Era 2006 — 2026-06-26
+
+> *Release estable del 26 de junio de 2026. Agrega "Habilitar versiones Preview" al Actualizador (desactivado por defecto), corrige el texto del valor predeterminado de "Forzar 4:3", e incluye un Actualizador integrado accesible desde Configuración. Además, reorganiza completamente `LiveDiscoveryKids.kt` (~1770 líneas) en 11 archivos separados por responsabilidad — cambio puramente organizativo verificado función por función sin alteraciones de comportamiento.*
+
+### Agregado
+
+**"Habilitar versiones Preview" — nuevo switch en Configuración → Actualizaciones**
+- Nuevo switch en `SettingsActivity`/`activity_settings.xml`, **desactivado por defecto**. Persistido vía `SettingsManager.isPreviewUpdatesEnabled()` / `setPreviewUpdatesEnabled()`.
+- Desactivado (default): `AppUpdater` solo considera el último release **estable** del repo (equivalente a `GET /releases/latest`, que GitHub ya filtra para excluir prereleases).
+- Activado: `AppUpdater` consulta `GET /releases` (lista completa, la más reciente primero) y toma el primer release sin importar si es estable o Preview (`prerelease: true`), permitiendo que "Buscar actualizaciones" instale una Preview.
+- `AppUpdater.checkForUpdate()` ahora lee este switch al iniciar la consulta y elige el endpoint correspondiente; el resto del flujo (comparación de versión, descarga, instalación) no cambia.
+
+### Corregido
+
+**Texto de "Forzar 4:3" en Configuración no coincidía con el valor predeterminado real**
+- La descripción del switch decía "(Predeterminado: Activado)" cuando el valor predeterminado real en `SettingsManager.DEFAULT_FORCE_ASPECT_RATIO` siempre fue `false` (Desactivado) — desde que la opción se simplificó a un alternar directo de `layoutParams`. Corregido el texto en `activity_settings.xml` a "(Predeterminado: Desactivado)"; también se corrigió un comentario desactualizado en `applySettings()` que documentaba el comportamiento anterior (ON por defecto).
+
+### Reorganizado
+
+**`LiveDiscoveryKids.kt` dividido en 11 archivos por responsabilidad — sin cambios de comportamiento**
+
+> Han pasado 10 semanas desde el primer release del proyecto; con `LiveDiscoveryKids.kt` en ~1770 líneas, era tiempo de reorganizar todo el código del canal antes de que siguiera creciendo.
+
+- El archivo, que concentraba absolutamente todo el flujo del canal en una sola clase de ~1770 líneas, se dividió en **funciones de extensión** de `LiveDiscoveryKids` repartidas en archivos nuevos por responsabilidad. Se eligió este enfoque (en vez de clases separadas con su propio estado) porque preserva exactamente el mismo estado de instancia y el mismo grafo de llamadas — el riesgo de introducir un bug de comportamiento es, por diseño, nulo.
+- `LiveDiscoveryKids.kt` ahora contiene únicamente: las propiedades de instancia, el `companion object` (constantes y listas de recursos), y los métodos de ciclo de vida de `Activity` (`onCreate`, `onPause`, `onResume`, `onStop`, `onDestroy`, `dispatchTouchEvent`, `onRequestPermissionsResult`) — quedó en ~560 líneas.
+- Archivos nuevos, cada uno con las funciones que le corresponden:
+
+| Archivo | Contenido |
+|---|---|
+| `ChannelPlaylist.kt` | `advance`, `playBumper`, `playEnseguida`, `playStandaloneCommercial`, `goToAdjacentProgram`, `findAvailableProgramIndex` |
+| `ChannelProgramPlayback.kt` | `playProgram`, `beginProgramSegment`, `scheduleSegmentLogic`, `calcBreaks` |
+| `ChannelCommercialBlock.kt` | `playCommercial`, `playCommercialStepPreComercial`, `resumeCommercialBlock` |
+| `ChannelVideoTransitions.kt` | `playUri`, `playUriWithTransition`, `resumeUriWithSeek` |
+| `ChannelMediaResolver.kt` | `resolveProgram`, `rawUri` |
+| `ChannelBackgroundMusic.kt` | `startBgMusic`, `stopBgMusic` |
+| `ChannelSessionState.kt` | `startChannel`, `saveChannelState`, `showResumeDialog`, `resumeSavedState`, `clearSavedState`, `showExitConfirmationDialog` |
+| `ChannelPositionTracker.kt` | `startPositionTracker`, `stopPositionTracker`, `post`, `cancelAllTasks` |
+| `ChannelScreenBug.kt` | `fadeInBug`, `fadeOutBug`, `setBugAlpha` |
+| `ChannelUiHelpers.kt` | `showNavButtons`, `resetNavHideTimer`, `requestStoragePermission`, `goFullscreen` |
+| `ChannelDebugOverlay.kt` | `applySettings`, `setupDebugInfo`, `startRamMonitor`, `displayInfo` |
+
+- Las propiedades y funciones que antes eran `private` pasaron a `internal` — requisito de Kotlin para que una función de extensión en un archivo distinto pueda acceder a los miembros de la clase. Sigue sin haber ninguna API pública nueva fuera del módulo de la app.
+
+> **Alcance:** este cambio es exclusivamente organizativo. Las 40 funciones movidas se verificaron una por una contra el código original — 39 son carácter por carácter idénticas (descontando comentarios y espaciado); la única diferencia es una anotación de tipo de retorno explícita en `rawUri()` (`: Uri`) que antes quedaba inferida, sin ningún efecto en tiempo de ejecución. El companion object completo y los 7 métodos de ciclo de vida de `Activity` también se verificaron idénticos.
+
+---
+
+
+
 ## [2006.4.2.0.21-preview] — Preview · Era Doki 1.0 · Era 2006 — 2026-06-25
 
 > *Preview para el 25 de junio de 2026. Agrega "Habilitar versiones Preview" al Actualizador, corrige el texto del valor predeterminado de Forzar 4:3, y reorganiza todo el código de LiveDiscoveryKids.kt en archivos separados por responsabilidad (10 semanas desde el primer release).*
@@ -1361,7 +1410,8 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
-| 2006.4.1.0.21-preview| 2026-06-25 | 🧪 Preview | "Habilitar versiones Preview" en Actualizador (default OFF); fix texto default Forzar 4:3; LiveDiscoveryKids.kt reorganizado en 11 archivos (sin cambios de comportamiento) |
+| 2006.4.2.0           | 2026-06-26 | 🚀 Release | "Habilitar versiones Preview" en Actualizador (default OFF); Actualizador integrado desde Configuración (consulta GitHub, descarga .apk); fix texto default Forzar 4:3; LiveDiscoveryKids.kt reorganizado en 11 archivos (sin cambios de comportamiento) |
+| 2006.4.2.0.21-preview| 2026-06-25 | 🧪 Preview | "Habilitar versiones Preview" en Actualizador (default OFF); fix texto default Forzar 4:3; LiveDiscoveryKids.kt reorganizado en 11 archivos |
 | 2006.4.2.0.20-preview| 2026-06-23 | 🧪 Preview | Actualizador integrado: "Buscar actualizaciones" en Configuración consulta GitHub Releases, descarga el .apk más nuevo y abre el instalador |
 | 2006.4.1.1           | 2026-06-23 | 🐛 Bug Fix | Screenbug ya no reinicia su cuenta al volver de segundo plano/cambio de Activity; bumper/enseguida/comercial se reanudan en su posición real en vez de reiniciarse |
 | 2006.4.1.0           | 2026-06-22 | 🚀 Release | Configuración (5 opciones, Forzar 4:3, Screenbug, comerciales); CrtOverlayView Era 2006; comercial3/4; Screenbug 10 semanas |
