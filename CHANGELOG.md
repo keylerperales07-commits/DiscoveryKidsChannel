@@ -6,6 +6,31 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2006.4.2.1] — 🐛 Release Fixer · Era Doki 1.0 · Era 2006 — 2026-06-27
+
+> *Release Fixer del 27 de junio de 2026. Corrige un bug crítico en el Actualizador: nunca detectaba versiones nuevas sin importar el tag publicado en GitHub.*
+
+### Corregido
+
+**El Actualizador siempre creía estar al día, sin importar el tag publicado en GitHub**
+
+**Causa raíz**
+
+Keyler etiqueta los releases en GitHub con el esquema corto `MAJOR.MINOR.PATCH[.BUILD]` (ej. tag `v4.2.1`, `v4.2.0`), pero `AppUpdater.currentVersionName()` devolvía el `versionName` **completo** instalado, que incluye el segmento de Era al inicio (ej. `2006.4.2.0`). Al comparar ambos directamente en `compareVersions()`, el primer segmento del tag (`4`) se comparaba contra el primer segmento del `versionName` (`2006`) — como `4 < 2006`, el Actualizador concluía que el release remoto era más viejo en **todos los casos**, sin importar qué tag hubiera publicado Keyler en GitHub.
+
+**Solución**
+
+`currentVersionName()` ahora descarta el primer segmento (la Era, fija para todo el esquema de versionado del proyecto) antes de comparar, dejando el `versionName` local en el mismo formato corto `MAJOR.MINOR.PATCH[.BUILD]` que usan los tags de GitHub. `compareVersions()` queda sin cambios — ahora compara dos versiones en el mismo esquema, como siempre debió ser.
+
+| Antes del fix | Después del fix |
+|---|---|
+| `local = "2006.4.2.0"` (versionName completo) | `local = "4.2.0"` (sin el segmento de Era) |
+| `compareVersions("4.2.1", "2006.4.2.0")` → `4 - 2006 < 0` → "ya estás al día" (incorrecto) | `compareVersions("4.2.1", "4.2.0")` → `4 - 4 = 0`, sigue comparando, `2 - 2 = 0`, sigue, `1 - 0 > 0` → "hay actualización" (correcto) |
+
+> **Alcance:** este fix solo afecta `AppUpdater.kt` (`currentVersionName()` y el doc-comment de `compareVersions()`). No hay cambios en `SettingsActivity`, `activity_settings.xml`, ni en ningún otro archivo del canal. Sigue dependiendo de que Keyler mantenga la convención: tag de GitHub = `versionName` sin el segmento de Era inicial.
+
+---
+
 ## [2006.4.2.0] — 🚀 Release · Era Doki 1.0 · Era 2006 — 2026-06-26
 
 > *Release estable del 26 de junio de 2026. Agrega "Habilitar versiones Preview" al Actualizador (desactivado por defecto), corrige el texto del valor predeterminado de "Forzar 4:3", e incluye un Actualizador integrado accesible desde Configuración. Además, reorganiza completamente `LiveDiscoveryKids.kt` (~1770 líneas) en 11 archivos separados por responsabilidad — cambio puramente organizativo verificado función por función sin alteraciones de comportamiento.*
@@ -1410,6 +1435,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2006.4.2.1           | 2026-06-27 | 🐛 Release Fixer | Fix crítico: AppUpdater siempre creía estar al día (comparaba el versionName completo contra el tag corto de GitHub, ej. "2006" vs "4") |
 | 2006.4.2.0           | 2026-06-26 | 🚀 Release | "Habilitar versiones Preview" en Actualizador (default OFF); Actualizador integrado desde Configuración (consulta GitHub, descarga .apk); fix texto default Forzar 4:3; LiveDiscoveryKids.kt reorganizado en 11 archivos (sin cambios de comportamiento) |
 | 2006.4.2.0.21-preview| 2026-06-25 | 🧪 Preview | "Habilitar versiones Preview" en Actualizador (default OFF); fix texto default Forzar 4:3; LiveDiscoveryKids.kt reorganizado en 11 archivos |
 | 2006.4.2.0.20-preview| 2026-06-23 | 🧪 Preview | Actualizador integrado: "Buscar actualizaciones" en Configuración consulta GitHub Releases, descarga el .apk más nuevo y abre el instalador |
