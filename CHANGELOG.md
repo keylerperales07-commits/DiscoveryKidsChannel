@@ -6,6 +6,38 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2007.4.3.0] — 🚀 Release · Era Doki 1.0 · Era 2007 — 2026-06-29
+
+> *Cambio de Era — los 4 comerciales, los clips ya_regresa/continuamos y el Screenbug evolucionan a la Era 2007. El Actualizador estrena `UpdateActivity`, una pantalla dedicada con barra de progreso en vivo, reemplazando los diálogos de siempre.*
+
+### Agregado
+
+**`UpdateActivity` — pantalla dedicada para el Actualizador, reemplaza los AlertDialog**
+- "Buscar actualizaciones" en Configuración ya no consulta a `AppUpdater` ni muestra diálogos desde `SettingsActivity`: ahora solo hace `startActivity(UpdateActivity::class.java)`. Es `UpdateActivity` quien hace la consulta, pide confirmación, descarga y muestra el resultado.
+- Seis estados manejados con visibilidad de vistas (sin `ViewFlipper`, sin diálogos): `CHECKING`, `UP_TO_DATE`, `AVAILABLE`, `DOWNLOADING`, `INSTALLING`, `ERROR`. Cada uno con su propio título, mensaje y botones.
+- `AppUpdater.downloadAndInstall()` ahora acepta `onProgress: (percent: Int) -> Unit`, además de `onStarted`/`onCompleted`/`onFailed`. Nueva función privada `trackDownloadProgress()`: hilo en segundo plano que sondea `DownloadManager.Query` cada 300 ms (`COLUMN_BYTES_DOWNLOADED_SO_FAR` / `COLUMN_TOTAL_SIZE_BYTES`) y reporta el porcentaje a la UI vía un `Handler` sobre el main looper, hasta detectar `STATUS_SUCCESSFUL` o `STATUS_FAILED`.
+- `registerInstallReceiver()` ahora también recibe `onCompleted`/`onFailed` para informarle a `UpdateActivity` el resultado final, además de abrir el instalador como siempre.
+- Nuevo layout `activity_update.xml`: barra superior con botón "Volver", título, mensaje, `ProgressBar` indeterminada (chequeo) y determinada (descarga + porcentaje), y dos botones (`btnUpdatePrimary`/`btnUpdateSecondary`) que cambian de texto/acción según el estado.
+- La instalación sigue abriéndose automáticamente al completar la descarga (mismo mecanismo de `FileProvider` + `Intent.ACTION_VIEW`). Es el máximo de automatización posible: desde Android 8, el sistema exige confirmación manual del usuario para instalar un APK, ese paso queda fuera del control de la app por diseño de la plataforma.
+
+### Eliminado
+
+**`AppUpdater.showUpdateAvailableDialog()` y `showInfoDialog()`**
+- Removidos junto con el import de `AlertDialog` en `AppUpdater.kt` — esa responsabilidad de UI pasó por completo a `UpdateActivity`. `SettingsActivity` perdió también `isCheckingUpdate` y el `CheckCallback` que manejaba inline; ya no hace falta, todo vive en la nueva Activity.
+
+### Cambio de Era — 2006 → 2007
+
+**Comerciales, ya_regresa, continuamos y Screenbug actualizados a la Era 2007**
+- Los 4 comerciales standalone (`comercial1`–`comercial4`), los 2 clips `ya_regresa` y los 2 `continuamos` se reemplazaron por versiones de la Era 2007.
+- El Screenbug pasó del logo de la Era 2006 al de la Era 2007.
+- Todos los reemplazos son a nivel de archivo de video/imagen — sin cambios de lógica en `ChannelPlaylist.kt`, `ChannelCommercialBlock.kt` ni `ChannelScreenBug.kt`.
+- El segmento de Era del `versionName` pasa de `2006` a `2007` a partir de esta Release (`2007.4.3.0`). Sin impacto en el Actualizador: `AppUpdater.currentVersionName()` descarta el primer segmento del `versionName` sin importar su valor.
+
+> **Alcance:** cambios de código en `AppUpdater.kt`, `UpdateActivity.kt` (nuevo), `activity_update.xml` (nuevo) y `SettingsActivity.kt`. Cambios de contenido: 4 comerciales, 4 clips y el Screenbug. Sin cambios en `LiveDiscoveryKids.kt` ni en el resto del canal. Pendiente registrar `UpdateActivity` en `AndroidManifest.xml`.
+
+---
+
+
 ## [2006.4.2.1] — 🐛 Release Fixer · Era Doki 1.0 · Era 2006 — 2026-06-27
 
 > *Release Fixer del 27 de junio de 2026. Corrige un bug crítico en el Actualizador: nunca detectaba versiones nuevas sin importar el tag publicado en GitHub.*

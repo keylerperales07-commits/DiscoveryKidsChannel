@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v4.2.1-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Preview-v4.3.0--dev-orange?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v4.3.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Era-2007-blue?style=flat-square"/>
 </p>
 
 ---
@@ -162,10 +162,21 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🐛 Última versión estable — `v4.2.1` *(Release Fixer · Era Doki 1.0 · Era 2006)*
-> *Release Fixer del 27 de junio de 2026. Corrige un bug crítico en el Actualizador.*
+### 🚀 Última versión estable — `v4.3.0` *(Release · Era Doki 1.0 · Era 2007)*
+> *Cambio de Era — comerciales, ya_regresa/continuamos y Screenbug evolucionan a la Era 2007. El Actualizador estrena UpdateActivity con barra de progreso en vivo.*
+
+- 🔄 **`UpdateActivity`** — nueva pantalla dedicada para "Buscar actualizaciones", con barra de progreso en vivo durante la descarga. Reemplaza por completo los diálogos de confirmación/resultado que usaba el Actualizador antes.
+- 🎨 **Cambio de Era: 2006 → 2007** — los 4 comerciales standalone, los clips *ya_regresa*/*continuamos* y el Screenbug se actualizaron al estilo visual de la Era 2007.
+
+<details>
+<summary><strong>📜 Versión estable anterior</strong> — `v4.2.1` (27 de junio)</summary>
+
+### 🐛 `v4.2.1` *(Release Fixer · Era Doki 1.0 · Era 2006)*
+> *Corrige un bug crítico en el Actualizador.*
 
 - 🐛 **El Actualizador siempre creía estar al día**, sin importar el tag publicado en GitHub — comparaba el `versionName` completo de la app (con el segmento de Era, ej. `2006.4.2.0`) contra el tag corto que usa Keyler (ej. `v4.2.1`), y el segmento de Era siempre "ganaba" la comparación por ser numéricamente mayor. Corregido: ahora se descarta el segmento de Era antes de comparar.
+
+</details>
 
 <details>
 <summary><strong>📜 Versión estable anterior</strong> — `v4.2.0` (26 de junio)</summary>
@@ -180,16 +191,6 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 </details>
 
-<details>
-<summary><strong>📜 Versión estable anterior</strong> — `v4.1.1` (23 de junio)</summary>
-
-### 🐛 `v4.1.1` *(Bug Fix · Era Doki 1.0 · Era 2006)*
-> *Corrige el Screenbug y la reanudación de bumper/enseguida/comercial al volver de segundo plano.*
-
-- 🖼️ **Screenbug ya no reinicia su cuenta** al volver de segundo plano o de un cambio de Activity (ej. abrir Configuración) — ahora calcula correctamente cuánto tiempo ya transcurrió en el segmento
-- ▶️ **Bumper / Enseguida / Comercial se reanudan en su posición real** en vez de reiniciarse desde el principio, incluyendo cada paso del bloque comercial (ya_regresa → comercial → continuamos)
-
-</details>
 
 ---
 
