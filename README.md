@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v4.3.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v4.4.0-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era-2007-blue?style=flat-square"/>
 </p>
 
@@ -49,7 +49,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo enseguidas, bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
 - ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Enseguida → StandaloneCommercial → Bumper → Programa), igual que cambiar de canal en TV real
 - ⚙️ **Pantalla de Configuración** — Accesible desde el botón de ajustes, con lista simple estilo Android Settings. Permite alternar música de fondo, efecto CRT y Forzar 4:3, y ajustar la duración del Screenbug y el intervalo entre comerciales — cada opción muestra su valor predeterminado
-- 🔄 **Actualizador integrado** *(en Preview)* — Desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub; si hay una versión más nueva, descarga el `.apk` y abre el instalador del sistema. Un switch "Habilitar versiones Preview" (desactivado por defecto) permite que también instale releases Preview, no solo estables
+- 🔄 **Actualizador integrado** *(en Preview)* — Desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub; si hay una versión más nueva, descarga el `.apk` con OkHttp (mostrando progreso y tamaño en vivo) y abre el instalador del sistema. Un switch "Habilitar versiones Preview" (desactivado por defecto) permite que también instale releases Preview, no solo estables
 
 ---
 
@@ -162,11 +162,33 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v4.3.0` *(Release · Era Doki 1.0 · Era 2007)*
+### 🚀 Última versión estable — `v4.4.0` *(Release · Era Doki 1.0 · Era 2007)*
+> *El Actualizador migra su descarga de DownloadManager a OkHttp (progreso + detección de fin confiable) y UpdateActivity se rediseña al estilo de Configuración. El Screenbug pasa a la variante de septiembre de 2007.*
+
+- 🔄 **Descarga del Actualizador con OkHttp** — reemplaza `DownloadManager`: lee el `.apk` en un loop manual reportando porcentaje y bytes descargados/totales, y detecta el fin de la descarga con certeza (antes dependía de un `BroadcastReceiver` + sondeo aparte).
+- 🎨 **`UpdateActivity` rediseñada** — mismo lenguaje visual que `SettingsTheme`/Configuración: header idéntico, ícono centrado, porcentaje grande + "X MB de Y MB", botones planos estilo diálogo nativo de Android.
+- 🖼️ **Screenbug actualizado** a la variante de septiembre de 2007.
+
+<details>
+<summary><strong>📜 Versión estable anterior</strong> — `v4.3.1` (1 de julio)</summary>
+
+### 🐛 `v4.3.1` *(Release Fixer · Era Doki 1.0 · Era 2007)*
+> *Corrige un bug de navegación: Prev/Next saltaba al programa equivocado si se tocaba antes de que arrancara cualquier programa en la sesión.*
+
+- 🐛 **Prev/Next saltaba al programa equivocado** al tocarse antes de que `Program(0)` hubiera arrancado en la sesión (durante la Enseguida/Bumper/Comercial inicial) — `currentProgramIndex` en su valor por defecto (`0`) se confundía con "el programa 0 ya salió al aire", así que Next saltaba directo al 1 y Prev caía en el 3. Corregido con un flag `hasPlayedAnyProgram` que distingue ambos casos.
+
+</details>
+
+<details>
+<summary><strong>📜 Versión estable anterior</strong> — `v4.3.0` (29 de junio)</summary>
+
+### 🚀 `v4.3.0` *(Release · Era Doki 1.0 · Era 2007)*
 > *Cambio de Era — comerciales, ya_regresa/continuamos y Screenbug evolucionan a la Era 2007. El Actualizador estrena UpdateActivity con barra de progreso en vivo.*
 
 - 🔄 **`UpdateActivity`** — nueva pantalla dedicada para "Buscar actualizaciones", con barra de progreso en vivo durante la descarga. Reemplaza por completo los diálogos de confirmación/resultado que usaba el Actualizador antes.
 - 🎨 **Cambio de Era: 2006 → 2007** — los 4 comerciales standalone, los clips *ya_regresa*/*continuamos* y el Screenbug se actualizaron al estilo visual de la Era 2007.
+
+</details>
 
 <details>
 <summary><strong>📜 Versión estable anterior</strong> — `v4.2.1` (27 de junio)</summary>

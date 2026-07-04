@@ -5,7 +5,7 @@
  NO ELIMINAR NINGUN COMENTARIO AGREGADO
 -->
 <!--
-    activity_update.xml — Release 2007.4.3.0
+    activity_update.xml — Release 2007.4.4.0
 
     Layout único para UpdateActivity. Un solo bloque centrado que cubre
     todos los estados de la pantalla (chequeando, al día, disponible,
@@ -13,15 +13,14 @@
     visibilidad de cada vista según el estado actual, sin inflar layouts
     distintos ni usar un ViewFlipper.
 
-    Sigue el mismo lenguaje visual que activity_settings.xml: fondo
-    dk_background, texto principal dk_text_primary, texto secundario
-    dk_text_secondary, mismo SettingsTheme.
-
-    NOTA PARA KEYLER: si tu activity_settings.xml usa otros nombres de color
-    o un ImageButton/drawable distinto para el botón Atrás, ajustá las
-    referencias @color/@drawable de este archivo para que coincidan
-    (no tengo acceso a tu activity_settings.xml ni a colors.xml reales,
-    así que repliqué los nombres que aparecen en SettingsActivity.kt).
+    Release 2007.4.4.0 — REDISEÑO: se alinea visualmente con el estilo de
+    SettingsTheme / activity_settings.xml (lista simple neutra estilo
+    Android Settings) en vez del diseño genérico anterior: mismo header
+    (botón Atrás + título 24sp), ícono de actualización centrado, y la
+    barra de descarga ahora se ve como la pantalla nativa de Android de
+    "Actualización del sistema" — porcentaje grande arriba de la barra,
+    tamaño descargado/total debajo, y botones planos (sin relleno) en vez
+    de los Button de ancho completo de antes.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -30,16 +29,16 @@
     android:background="@color/dk_bg"
     android:orientation="vertical">
 
-    <!-- Barra superior simple, mismo patrón que activity_settings (botón Atrás). -->
+    <!-- Barra superior: mismo patrón que activity_settings (botón Atrás + título). -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingStart="8dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
+        android:paddingEnd="20dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="20dp">
 
         <ImageButton
             android:id="@+id/btnUpdateBack"
@@ -50,16 +49,17 @@
             android:src="@drawable/ic_back" />
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:text="Actualizaciones"
             android:textColor="@color/dk_text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textSize="24sp"
+            android:fontFamily="@font/googlesans" />
     </LinearLayout>
 
-    <!-- Contenido centrado: título, mensaje, progreso, botones. -->
+    <!-- Contenido centrado: ícono, título, mensaje, progreso, botones. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -69,6 +69,14 @@
         android:paddingStart="32dp"
         android:paddingEnd="32dp">
 
+        <ImageView
+            android:id="@+id/imgUpdateIcon"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginBottom="20dp"
+            android:src="@drawable/ic_update"
+            android:contentDescription="@null" />
+
         <TextView
             android:id="@+id/txtUpdateTitle"
             android:layout_width="wrap_content"
@@ -76,6 +84,7 @@
             android:textColor="@color/dk_text_primary"
             android:textSize="20sp"
             android:textStyle="bold"
+            android:fontFamily="@font/googlesans"
             android:gravity="center"
             tools:ignore="HardcodedText" />
 
@@ -83,59 +92,109 @@
             android:id="@+id/txtUpdateMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:textColor="@color/dk_text_secondary"
             android:textSize="15sp"
+            android:fontFamily="@font/googlesans"
             android:gravity="center"
             tools:ignore="HardcodedText" />
 
-        <!-- Estado CHECKING: spinner indeterminado. -->
+        <!-- Estado CHECKING: spinner indeterminado (nativo de Android). -->
         <ProgressBar
             android:id="@+id/progressIndeterminate"
             style="?android:attr/progressBarStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="28dp"
+            android:indeterminateTint="@color/dk_accent"
             android:visibility="gone" />
 
-        <!-- Estado DOWNLOADING: barra de progreso determinada + porcentaje. -->
-        <ProgressBar
-            android:id="@+id/progressDownload"
-            style="?android:attr/progressBarStyleHorizontal"
+        <!-- Estado DOWNLOADING: porcentaje grande + barra determinada + tamaño. -->
+        <LinearLayout
+            android:id="@+id/groupDownloadProgress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:max="100"
-            android:progress="0"
-            android:visibility="gone" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginTop="28dp"
+            android:visibility="gone">
 
-        <TextView
-            android:id="@+id/txtUpdatePercent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textColor="@color/dk_text_secondary"
-            android:textSize="14sp"
-            android:visibility="gone"
-            tools:ignore="HardcodedText" />
+            <TextView
+                android:id="@+id/txtUpdatePercent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/dk_text_primary"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/googlesans"
+                tools:ignore="HardcodedText" />
 
-        <Button
-            android:id="@+id/btnUpdatePrimary"
+            <ProgressBar
+                android:id="@+id/progressDownload"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:max="100"
+                android:progress="0"
+                android:progressTint="@color/dk_accent"
+                android:progressBackgroundTint="@color/dk_stroke" />
+
+            <TextView
+                android:id="@+id/txtUpdateBytes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/dk_text_secondary"
+                android:textSize="13sp"
+                android:fontFamily="@font/googlesans"
+                tools:ignore="HardcodedText" />
+
+        </LinearLayout>
+
+        <!-- Botones planos, estilo diálogo de Android: Secundario a la izquierda,
+             Primario (acento) a la derecha — reemplaza los Button de ancho
+             completo del diseño anterior. -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:visibility="gone"
-            tools:ignore="HardcodedText" />
+            android:orientation="horizontal"
+            android:gravity="end|center_vertical"
+            android:layout_marginTop="32dp">
 
-        <Button
-            android:id="@+id/btnUpdateSecondary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="@android:color/transparent"
-            android:textColor="@color/dk_text_secondary"
-            android:visibility="gone"
-            tools:ignore="HardcodedText" />
+            <Button
+                android:id="@+id/btnUpdateSecondary"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:textColor="@color/dk_text_secondary"
+                android:textAllCaps="false"
+                android:fontFamily="@font/googlesans"
+                android:textSize="15sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:visibility="gone"
+                tools:ignore="HardcodedText" />
+
+            <Button
+                android:id="@+id/btnUpdatePrimary"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:textColor="@color/dk_accent"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                android:fontFamily="@font/googlesans"
+                android:textSize="15sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:visibility="gone"
+                tools:ignore="HardcodedText" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

@@ -225,6 +225,16 @@ class LiveDiscoveryKids : AppCompatActivity() {
     internal var playlistIndex = 0
     internal var currentProgramIndex = 0
 
+    // Release 4.3.1 — BUG FIX: Prev/Next saltaba al programa equivocado si se
+    // tocaba ANTES de que cualquier programa hubiera arrancado en la sesión
+    // (ej: durante la Enseguida/Bumper/Comercial inicial, antes de Program(0)).
+    // currentProgramIndex nace en 0 por defecto, así que findAvailableProgramIndex()
+    // lo trataba como si el programa 0 ya hubiera salido al aire, y "Next" saltaba
+    // directo al programa 1 (saltándose el 0) y "Prev" caía en el 3 en vez del 0.
+    // Este flag distingue "todavía no arrancó ningún programa" de "currentProgramIndex
+    // realmente refleja el último programa que salió al aire" — ver goToAdjacentProgram().
+    internal var hasPlayedAnyProgram = false
+
     // ── Program state (persisted across commercial breaks) ─────────────────────
     internal var currentProgramUri: Uri? = null
     internal var programDuration  = 0          // total ms
@@ -272,6 +282,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
         internal const val PREF_COMMERCIAL_MS = "commercial_resume_ms"
         internal const val PREF_SCREENBUG_RES = "screenbug_res"
         internal const val PREF_BREAK_QUEUE   = "break_queue"
+        internal const val PREF_HAS_PLAYED_PROGRAM = "has_played_program"   // Release 4.3.1
 
         /** Lista de comerciales disponibles; se elige uno al azar en cada corte. */
         internal val COMMERCIALS = listOf(R.raw.comercial1, R.raw.comercial2, R.raw.comercial3, R.raw.comercial4)

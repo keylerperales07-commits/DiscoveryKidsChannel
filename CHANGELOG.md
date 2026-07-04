@@ -6,6 +6,64 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2007.4.4.0] — 🚀 Release · Era Doki 1.0 · Era 2007 — 2026-07-03
+
+> *Release del 3 de julio de 2026. El Actualizador migra su descarga de DownloadManager a OkHttp — detecta con certeza cuándo termina la descarga y expone bytes descargados/totales — y `UpdateActivity` se rediseña para coincidir con el lenguaje visual de SettingsTheme. Además, el Screenbug pasa a la variante de septiembre de 2007.*
+
+### Cambiado
+
+**Descarga del Actualizador — de `DownloadManager` a OkHttp**
+
+- `AppUpdater.downloadAndInstall()` ya no encola la descarga en `DownloadManager`: ahora abre el `.apk` con OkHttp y lee el `ResponseBody` en un loop manual (bloques de 8 KB) escribiendo directo a un `FileOutputStream` en `getExternalFilesDir(DIRECTORY_DOWNLOADS)`.
+- Antes, saber cuándo terminaba la descarga dependía de dos mecanismos separados: un `Thread` sondeando `DownloadManager.Query` cada 300 ms para el progreso, y un `BroadcastReceiver` de `ACTION_DOWNLOAD_COMPLETE` para el resultado final — con posibilidad de que ambos quedaran desincronizados. Con OkHttp, todo corre en el mismo hilo: el progreso se reporta en cada bloque leído, y en cuanto el loop de lectura termina sin excepción, la descarga está garantizada completa — sin receiver aparte, sin condición de carrera.
+- `onProgress` cambia de firma: pasa de `(percent: Int) -> Unit` a `(percent: Int, bytesDownloaded: Long, bytesTotal: Long) -> Unit`, para que la UI pueda mostrar también el tamaño descargado/total, no solo el porcentaje.
+- `trackDownloadProgress()` y `registerInstallReceiver()` fueron eliminadas — ya no hace falta sondear ni escuchar broadcasts, OkHttp resuelve ambos casos en el mismo flujo secuencial.
+- Requiere agregar la dependencia `com.squareup.okhttp3:okhttp` en `build.gradle` (no incluida en el paquete de fuentes de la app).
+
+**`UpdateActivity` / `activity_update.xml` — rediseño visual, mismo lenguaje que Configuración**
+
+- El layout de `UpdateActivity` se rediseñó para coincidir con el estilo de `SettingsTheme`/`activity_settings.xml` (lista simple neutra estilo Android Settings) en vez del diseño genérico anterior: mismo header (botón Atrás + título 24sp), ícono de actualización (`ic_update`, nuevo) centrado sobre el título/mensaje.
+- La pantalla de descarga ahora se parece a la nativa de Android para "Actualización del sistema": porcentaje grande (30sp) arriba de la barra, tamaño descargado/total en formato "X MB de Y MB" debajo, barra horizontal con `progressTint`/`progressBackgroundTint` en los colores de la paleta (`dk_accent`/`dk_stroke`) en vez del estilo Holo por defecto.
+- Los dos `Button` de ancho completo del diseño anterior se reemplazaron por botones planos alineados a la derecha (`borderlessButtonStyle`), imitando los botones de diálogo nativos de Android — secundario en `dk_text_secondary`, primario en `dk_accent` y negrita.
+- Si el servidor no envía `Content-Length` (`bytesTotal <= 0`), la barra pasa a modo indeterminado en vez de mostrar un porcentaje inválido.
+
+### Contenido — Screenbug actualizado a la variante de septiembre de 2007
+
+- El Screenbug se reemplazó por la variante correspondiente a septiembre de 2007, dentro de la misma Era 2007 iniciada en la Release 4.3.0.
+- Es un reemplazo directo del archivo de imagen (`res/drawable/screenbug.webp`) — sin cambios de lógica en `ChannelScreenBug.kt` ni en `ChannelProgramPlayback.kt` (el cálculo de cuándo mostrarlo/ocultarlo no se modificó).
+
+> **Alcance:** cambios de código en `AppUpdater.kt`, `UpdateActivity.kt`, `activity_update.xml` y el nuevo `ic_update.xml`. Cambio de contenido: Screenbug. Sin cambios en `LiveDiscoveryKids.kt`, `SettingsActivity.kt` ni en el resto del canal. Pendiente agregar la dependencia de OkHttp a `build.gradle` si el proyecto todavía no la tiene.
+
+---
+
+
+## [2007.4.3.1] — 🐛 Release Fixer · Era Doki 1.0 · Era 2007 — 2026-07-01
+
+> *Release Fixer del 1 de julio de 2026. Corrige el bug reportado en 4.3.0 y anterior: Prev/Next saltaba al programa equivocado si se tocaba antes de que cualquier programa hubiera arrancado en la sesión.*
+
+### Corregido
+
+**Prev/Next saltaba al programa equivocado si se tocaba antes de que arrancara cualquier programa en la sesión**
+
+**Causa raíz**
+
+`goToAdjacentProgram()` calculaba el programa destino a partir de `currentProgramIndex`, que arranca en `0` por defecto al iniciar la Activity. Si Keyler tocaba Prev o Next durante la Enseguida/Bumper/Comercial **inicial** — es decir, antes de que `Program(0)` (`pro1.mp4`) hubiera salido al aire por primera vez en la sesión — `findAvailableProgramIndex()` no tenía forma de distinguir "todavía no arrancó ningún programa" de "el programa 0 ya se reprodujo", y trataba ambos casos igual. Resultado: **Next** saltaba directo al programa 1 (saltándose el 0), y **Prev** caía en el programa 3 en vez de ir al 0 — en ambos casos, no era el siguiente/anterior real en el orden del `PlayItem`.
+
+**Solución**
+
+Se agregó `hasPlayedAnyProgram`, un flag que solo pasa a `true` dentro de `playProgram()`, en el momento exacto en que un programa realmente arranca. Mientras siga en `false`, `goToAdjacentProgram()` usa un punto de partida "virtual" para el wraparound de `findAvailableProgramIndex()` — distinto según la dirección, ya que no es simétrico: `-1` para Next (así el primer candidato evaluado es el programa 0) y `0` para Prev (así el primer candidato evaluado, retrocediendo, es el programa 3). El guard que evita el no-op (`target == currentProgramIndex`) también se ajustó para no dispararse falsamente en este estado inicial. El flag se persiste en la sesión guardada (`PREF_HAS_PLAYED_PROGRAM`), con un valor por defecto retrocompatible para sesiones guardadas por versiones anteriores a 4.3.1 (se infiere `true` si el ítem guardado era `"program"` o `"commercial"`).
+
+| Antes del fix | Después del fix |
+|---|---|
+| `currentProgramIndex = 0` (valor por defecto, ningún programa reprodujo aún) | `hasPlayedAnyProgram = false` hasta que `playProgram()` arranca un programa real |
+| Next antes de Program(0) → salta al programa 1 (salteando el 0) | Next antes de Program(0) → va correctamente al programa 0 |
+| Prev antes de Program(0) → cae en el programa 3 sin razón aparente | Prev antes de Program(0) → va correctamente al programa 3 (último, por wraparound) |
+
+> **Alcance:** este fix solo afecta `ChannelPlaylist.kt` (`goToAdjacentProgram()`, `findAvailableProgramIndex()` sin cambios de firma), `ChannelProgramPlayback.kt` (`playProgram()`) y `ChannelSessionState.kt` (persistencia/restauración del nuevo flag). No hay cambios de contenido ni en el resto de la lógica del canal (`advance()`, bloque comercial, Screenbug).
+
+---
+
+
 ## [2007.4.3.0] — 🚀 Release · Era Doki 1.0 · Era 2007 — 2026-06-29
 
 > *Cambio de Era — los 4 comerciales, los clips ya_regresa/continuamos y el Screenbug evolucionan a la Era 2007. El Actualizador estrena `UpdateActivity`, una pantalla dedicada con barra de progreso en vivo, reemplazando los diálogos de siempre.*
@@ -1467,6 +1525,9 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2007.4.4.0           | 2026-07-03 | 🚀 Release | Actualizador migra descarga de DownloadManager a OkHttp (progreso + detección de fin confiable); UpdateActivity rediseñada al estilo SettingsTheme; Screenbug actualizado a la variante de septiembre 2007 |
+| 2007.4.3.1           | 2026-07-01 | 🐛 Release Fixer | Fix: Prev/Next saltaba al programa equivocado si se tocaba antes de que cualquier programa hubiera arrancado en la sesión (currentProgramIndex por defecto en 0 se confundía con "programa 0 ya visto") |
+| 2007.4.3.0           | 2026-06-29 | 🚀 Release | Cambio de Era 2006→2007 (comerciales, ya_regresa/continuamos, Screenbug); UpdateActivity reemplaza los AlertDialog del Actualizador con barra de progreso en vivo |
 | 2006.4.2.1           | 2026-06-27 | 🐛 Release Fixer | Fix crítico: AppUpdater siempre creía estar al día (comparaba el versionName completo contra el tag corto de GitHub, ej. "2006" vs "4") |
 | 2006.4.2.0           | 2026-06-26 | 🚀 Release | "Habilitar versiones Preview" en Actualizador (default OFF); Actualizador integrado desde Configuración (consulta GitHub, descarga .apk); fix texto default Forzar 4:3; LiveDiscoveryKids.kt reorganizado en 11 archivos (sin cambios de comportamiento) |
 | 2006.4.2.0.21-preview| 2026-06-25 | 🧪 Preview | "Habilitar versiones Preview" en Actualizador (default OFF); fix texto default Forzar 4:3; LiveDiscoveryKids.kt reorganizado en 11 archivos |

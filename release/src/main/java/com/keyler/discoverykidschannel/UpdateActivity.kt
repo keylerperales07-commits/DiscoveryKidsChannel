@@ -44,6 +44,14 @@ import androidx.appcompat.app.AppCompatActivity
  * automatización posible; lo que sigue después ya es 100% del sistema.
  *
  * Se accede únicamente desde Configuración → "Buscar actualizaciones".
+ *
+ * Release 2007.4.4.0 — el progreso de descarga ya no viene de
+ * DownloadManager.Query sino directo del callback onProgress de
+ * AppUpdater.downloadAndInstall() (ahora con OkHttp), que además informa
+ * bytes descargados/totales — se muestran como "X MB de Y MB" debajo de
+ * la barra. Rediseño de activity_update.xml para que coincida con el
+ * lenguaje visual de SettingsTheme/activity_settings (header idéntico,
+ * ícono centrado, botones planos en vez de Button de ancho completo).
  */
 class UpdateActivity : AppCompatActivity() {
 
@@ -52,10 +60,12 @@ class UpdateActivity : AppCompatActivity() {
     }
 
     private lateinit var progressIndeterminate: ProgressBar
+    private lateinit var groupDownloadProgress: View
     private lateinit var progressDownload: ProgressBar
     private lateinit var txtTitle: TextView
     private lateinit var txtMessage: TextView
     private lateinit var txtPercent: TextView
+    private lateinit var txtBytes: TextView
     private lateinit var btnPrimary: Button
     private lateinit var btnSecondary: Button
 
@@ -76,10 +86,12 @@ class UpdateActivity : AppCompatActivity() {
         findViewById<android.widget.ImageButton>(R.id.btnUpdateBack).setOnClickListener { finish() }
 
         progressIndeterminate = findViewById(R.id.progressIndeterminate)
+        groupDownloadProgress = findViewById(R.id.groupDownloadProgress)
         progressDownload = findViewById(R.id.progressDownload)
         txtTitle = findViewById(R.id.txtUpdateTitle)
         txtMessage = findViewById(R.id.txtUpdateMessage)
         txtPercent = findViewById(R.id.txtUpdatePercent)
+        txtBytes = findViewById(R.id.txtUpdateBytes)
         btnPrimary = findViewById(R.id.btnUpdatePrimary)
         btnSecondary = findViewById(R.id.btnUpdateSecondary)
     }
@@ -105,7 +117,7 @@ class UpdateActivity : AppCompatActivity() {
         })
     }
 
-    // ── Paso 2: descargar + instalar ─────────────────────────────────────────
+    // ── Paso 2: descargar (OkHttp) + instalar ────────────────────────────────
     private fun startDownload() {
         val apkUrl = pendingApkUrl ?: return
         render(UpdateScreenState.DOWNLOADING)
@@ -113,9 +125,17 @@ class UpdateActivity : AppCompatActivity() {
         AppUpdater.downloadAndInstall(
             context = this,
             apkUrl = apkUrl,
-            onProgress = { percent ->
-                progressDownload.progress = percent
-                txtPercent.text = "$percent%"
+            onProgress = { percent, bytesDownloaded, bytesTotal ->
+                if (percent >= 0) {
+                    progressDownload.isIndeterminate = false
+                    progressDownload.progress = percent
+                    txtPercent.text = "$percent%"
+                } else {
+                    // Sin Content-Length no se puede calcular %: barra indeterminada.
+                    progressDownload.isIndeterminate = true
+                    txtPercent.text = "Descargando…"
+                }
+                txtBytes.text = formatBytesProgress(bytesDownloaded, bytesTotal)
             },
             onCompleted = {
                 render(UpdateScreenState.INSTALLING)
@@ -127,12 +147,22 @@ class UpdateActivity : AppCompatActivity() {
         )
     }
 
+    /** Formatea "12.3 MB de 45.0 MB" (o solo "12.3 MB descargados" si no hay total). */
+    private fun formatBytesProgress(downloaded: Long, total: Long): String {
+        val downloadedMb = downloaded / (1024.0 * 1024.0)
+        return if (total > 0) {
+            val totalMb = total / (1024.0 * 1024.0)
+            String.format("%.1f MB de %.1f MB", downloadedMb, totalMb)
+        } else {
+            String.format("%.1f MB descargados", downloadedMb)
+        }
+    }
+
     // ── Render de estados ────────────────────────────────────────────────────
     private fun render(state: UpdateScreenState) {
         // Por defecto todo oculto; cada estado prende lo que necesita.
         progressIndeterminate.visibility = View.GONE
-        progressDownload.visibility = View.GONE
-        txtPercent.visibility = View.GONE
+        groupDownloadProgress.visibility = View.GONE
         btnPrimary.visibility = View.GONE
         btnSecondary.visibility = View.GONE
 
@@ -166,10 +196,11 @@ class UpdateActivity : AppCompatActivity() {
             UpdateScreenState.DOWNLOADING -> {
                 txtTitle.text = "Descargando…"
                 txtMessage.text = "No cierres esta pantalla hasta que termine."
+                progressDownload.isIndeterminate = false
                 progressDownload.progress = 0
-                progressDownload.visibility = View.VISIBLE
                 txtPercent.text = "0%"
-                txtPercent.visibility = View.VISIBLE
+                txtBytes.text = ""
+                groupDownloadProgress.visibility = View.VISIBLE
             }
 
             UpdateScreenState.INSTALLING -> {
