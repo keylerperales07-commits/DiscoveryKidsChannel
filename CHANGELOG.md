@@ -6,6 +6,26 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2008.4.5.0] — 🚀 Release · Era Doki 1.0 · Era 2008 — 2026-07-06
+
+> *Release del 6 de julio de 2026. Cambio de Era — los 4 comerciales standalone y el par ya_regresa4/continuamos4 evolucionan a la Era 2008.*
+
+### Cambio de Era — 2007 → 2008
+
+**4 comerciales actualizados a la Era 2008**
+- `comercial1.mp4` a `comercial4.mp4` se reemplazaron por versiones de la Era 2008.
+
+**`ya_regresa4.mp4` y `continuamos4.mp4` actualizados a la Era 2008**
+- El cuarto par de transición comercial (pre/post) se actualizó a la estética de la Era 2008. Los pares 1–3 (`ya_regresa1–3`/`continuamos1–3`) no se modificaron en esta Release.
+- Sin cambios en el mapeo `ya_regresa → continuamos` ni en la lógica de asignación determinística por programa (`ENSEGUIDAS_PRE_COMERCIAL[currentProgramIndex % size]`, ver 2005.4.0.1).
+
+- El segmento de Era del `versionName` pasa de `2007` a `2008` a partir de esta Release (`2008.4.5.0`). Sin impacto en el Actualizador: `AppUpdater.currentVersionName()` descarta el primer segmento del `versionName` sin importar su valor.
+
+> **Alcance:** cambios de contenido únicamente — 4 comerciales, `ya_regresa4` y `continuamos4`. Sin cambios de código en `ChannelPlaylist.kt`, `ChannelCommercialBlock.kt`, `AppUpdater.kt` ni en el resto del canal. El Screenbug, los bumpers y los demás pares ya_regresa/continuamos no se modificaron.
+
+---
+
+
 ## [2007.4.4.0] — 🚀 Release · Era Doki 1.0 · Era 2007 — 2026-07-03
 
 > *Release del 3 de julio de 2026. El Actualizador migra su descarga de DownloadManager a OkHttp — detecta con certeza cuándo termina la descarga y expone bytes descargados/totales — y `UpdateActivity` se rediseña para coincidir con el lenguaje visual de SettingsTheme. Además, el Screenbug pasa a la variante de septiembre de 2007.*
@@ -1525,6 +1545,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2008.4.5.0           | 2026-07-06 | 🚀 Release | Cambio de Era 2007→2008: 4 comerciales standalone y par ya_regresa4/continuamos4 actualizados |
 | 2007.4.4.0           | 2026-07-03 | 🚀 Release | Actualizador migra descarga de DownloadManager a OkHttp (progreso + detección de fin confiable); UpdateActivity rediseñada al estilo SettingsTheme; Screenbug actualizado a la variante de septiembre 2007 |
 | 2007.4.3.1           | 2026-07-01 | 🐛 Release Fixer | Fix: Prev/Next saltaba al programa equivocado si se tocaba antes de que cualquier programa hubiera arrancado en la sesión (currentProgramIndex por defecto en 0 se confundía con "programa 0 ya visto") |
 | 2007.4.3.0           | 2026-06-29 | 🚀 Release | Cambio de Era 2006→2007 (comerciales, ya_regresa/continuamos, Screenbug); UpdateActivity reemplaza los AlertDialog del Actualizador con barra de progreso en vivo |

@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v4.4.0-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Era-2007-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v4.5.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Era-2008-blue?style=flat-square"/>
 </p>
 
 ---
@@ -162,12 +162,23 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v4.4.0` *(Release · Era Doki 1.0 · Era 2007)*
+### 🚀 Última versión estable — `v4.5.0` *(Release · Era Doki 1.0 · Era 2008)*
+> *Cambio de Era — los 4 comerciales standalone y el par ya_regresa4/continuamos4 evolucionan a la Era 2008.*
+
+- 🎨 **Cambio de Era: 2007 → 2008** — `comercial1.mp4` a `comercial4.mp4` reemplazados por versiones de la Era 2008.
+- 🎨 **`ya_regresa4.mp4` / `continuamos4.mp4`** actualizados a la Era 2008. Los pares 1–3 no se modificaron.
+
+<details>
+<summary><strong>📜 Versión estable anterior</strong> — `v4.4.0` (3 de julio)</summary>
+
+### 🚀 `v4.4.0` *(Release · Era Doki 1.0 · Era 2007)*
 > *El Actualizador migra su descarga de DownloadManager a OkHttp (progreso + detección de fin confiable) y UpdateActivity se rediseña al estilo de Configuración. El Screenbug pasa a la variante de septiembre de 2007.*
 
 - 🔄 **Descarga del Actualizador con OkHttp** — reemplaza `DownloadManager`: lee el `.apk` en un loop manual reportando porcentaje y bytes descargados/totales, y detecta el fin de la descarga con certeza (antes dependía de un `BroadcastReceiver` + sondeo aparte).
 - 🎨 **`UpdateActivity` rediseñada** — mismo lenguaje visual que `SettingsTheme`/Configuración: header idéntico, ícono centrado, porcentaje grande + "X MB de Y MB", botones planos estilo diálogo nativo de Android.
 - 🖼️ **Screenbug actualizado** a la variante de septiembre de 2007.
+
+</details>
 
 <details>
 <summary><strong>📜 Versión estable anterior</strong> — `v4.3.1` (1 de julio)</summary>
@@ -197,19 +208,6 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 > *Corrige un bug crítico en el Actualizador.*
 
 - 🐛 **El Actualizador siempre creía estar al día**, sin importar el tag publicado en GitHub — comparaba el `versionName` completo de la app (con el segmento de Era, ej. `2006.4.2.0`) contra el tag corto que usa Keyler (ej. `v4.2.1`), y el segmento de Era siempre "ganaba" la comparación por ser numéricamente mayor. Corregido: ahora se descarta el segmento de Era antes de comparar.
-
-</details>
-
-<details>
-<summary><strong>📜 Versión estable anterior</strong> — `v4.2.0` (26 de junio)</summary>
-
-### 🚀 `v4.2.0` *(Release · Era Doki 1.0 · Era 2006)*
-> *Agrega un Actualizador integrado y "Habilitar versiones Preview" en Configuración.*
-
-- 🔄 **Actualizador integrado** — "Buscar actualizaciones" en Configuración → Actualizaciones consulta el último release del repo en GitHub, compara la versión contra la instalada y, si hay una más nueva, descarga su `.apk` y abre el instalador del sistema. Nunca se ejecuta automáticamente — solo al tocar el botón.
-- 🧪 **"Habilitar versiones Preview"** — switch en Configuración → Actualizaciones (desactivado por defecto). Desactivado, `AppUpdater` solo detecta releases estables; activado, también considera releases Preview del repositorio.
-- 🐛 Corregido el texto de "Forzar 4:3" en Configuración, que mostraba "Predeterminado: Activado" cuando el valor real siempre fue Desactivado.
-- 🗂️ **Reorganización de código** — `LiveDiscoveryKids.kt` (~1770 líneas) se dividió en 11 archivos por responsabilidad. Cambio puramente organizativo, verificado función por función — cero cambios de comportamiento.
 
 </details>
 
