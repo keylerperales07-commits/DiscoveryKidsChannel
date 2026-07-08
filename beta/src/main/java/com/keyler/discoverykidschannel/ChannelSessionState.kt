@@ -69,6 +69,7 @@ internal fun LiveDiscoveryKids.saveChannelState() {
         putInt    (LiveDiscoveryKids.PREF_COMMERCIAL_MS, commercialResumeMs)
         putInt    (LiveDiscoveryKids.PREF_SCREENBUG_RES, currentScreenBugRes)
         putString (LiveDiscoveryKids.PREF_BREAK_QUEUE,   breakQueueStr)
+        putBoolean(LiveDiscoveryKids.PREF_HAS_PLAYED_PROGRAM, hasPlayedAnyProgram)   // Release 4.3.1
         apply()
     }
     Log.d(LiveDiscoveryKids.TAG, "Estado guardado: type=$currentItemType pos=${posToSave}ms breaks=$breakQueueStr")
@@ -89,6 +90,10 @@ internal fun LiveDiscoveryKids.showResumeDialog(prefs: SharedPreferences) {
     val commMs       = prefs.getInt(LiveDiscoveryKids.PREF_COMMERCIAL_MS, 0)
     val screenbugRes = prefs.getInt(LiveDiscoveryKids.PREF_SCREENBUG_RES, R.drawable.screenbug)
     val breakQueueStr = prefs.getString(LiveDiscoveryKids.PREF_BREAK_QUEUE, "") ?: ""
+    // Release 4.3.1 — si el estado guardado viene de una versión anterior sin
+    // esta clave, se infiere a partir del tipo de ítem: si estaba en medio de
+    // un programa o un comercial, necesariamente ya salió al aire un programa.
+    val hasPlayedProgram = prefs.getBoolean(LiveDiscoveryKids.PREF_HAS_PLAYED_PROGRAM, itemType == "program" || itemType == "commercial")
 
     val whereStr = when (itemType) {
         "program"    -> getString(R.string.resume_where_program, progIdx + 1, posMs / 60_000, (posMs % 60_000) / 1_000)
@@ -105,7 +110,7 @@ internal fun LiveDiscoveryKids.showResumeDialog(prefs: SharedPreferences) {
         .setCancelable(false)
         .setPositiveButton(getString(R.string.dialog_resume_positive)) { _, _ ->
             pausedPositionMs = 0
-            resumeSavedState(itemType, plIdx, progIdx, posMs, commMs, screenbugRes, breakQueueStr, prefs)
+            resumeSavedState(itemType, plIdx, progIdx, posMs, commMs, screenbugRes, breakQueueStr, hasPlayedProgram, prefs)
         }
         .setNegativeButton(getString(R.string.dialog_resume_negative)) { _, _ ->
             pausedPositionMs = 0
@@ -133,12 +138,14 @@ internal fun LiveDiscoveryKids.resumeSavedState(
     commMs: Int,
     screenbugRes: Int,
     breakQueueStr: String,
+    hasPlayedProgram: Boolean,
     prefs: SharedPreferences
 ) {
     clearSavedState()
     playlistIndex       = plIdx
     currentProgramIndex = progIdx
     currentScreenBugRes = screenbugRes
+    hasPlayedAnyProgram = hasPlayedProgram   // Release 4.3.1
 
     val restoredBreaks = if (breakQueueStr.isNotBlank()) {
         breakQueueStr.split(",")

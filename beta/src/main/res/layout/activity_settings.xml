@@ -168,7 +168,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Scanlines, viñeta y parpadeo de TV antiguo (Predeterminado: Desactivado)"
+                    android:text="Scanlines, viñeta y parpadeo de TV antiguo (Predeterminado: Activado)"
                     android:textColor="@color/dk_text_secondary"
                     android:textSize="13sp"
                     android:fontFamily="@font/googlesans"

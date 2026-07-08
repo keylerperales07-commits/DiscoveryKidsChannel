@@ -6,6 +6,26 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2008.4.6.0.60-preview] — 🧪 Preview · Era Doki 1.0 · Era 2008 — 2026-07-07
+
+> *Preview para el 7 de julio de 2026. Segundo rediseño de `UpdateActivity`: ahora calca la pantalla nativa de Android "Configuración → Sistema → Actualización del sistema" en vez del diseño tipo diálogo centrado del release anterior.*
+
+### Cambiado
+
+**`UpdateActivity` / `activity_update.xml` — rediseño visual 2, calco de la pantalla nativa de Android**
+
+- El bloque de estado (ícono, título, subtítulos) deja de estar centrado: ahora queda alineado a la izquierda con el mismo padding de 20dp que usan los ítems de `activity_settings.xml` — igual que "Tu sistema está actualizado" en la captura de referencia de Android.
+- El `ProgressBar` indeterminado grande (`progressIndeterminate`) y la `ProgressBar` gruesa de descarga (`progressDownload`, dentro de `groupDownloadProgress`) se eliminan. En su lugar hay una única barra fina de 3dp (`progressThin`) pegada debajo del título, visible solo en los estados CHECKING (indeterminada) y DOWNLOADING (determinada, 0–100%) — el mismo efecto visual que la línea celeste fina que muestra Android nativo mientras busca actualizaciones.
+- `txtUpdateMessage` se reemplaza por dos líneas de subtítulo (`txtUpdateSubtitle1`/`txtUpdateSubtitle2`): la primera siempre muestra la versión instalada ("Versión instalada: X", equivalente a "Versión de Android: Q" de la captura), la segunda es contextual según el estado (mensaje de progreso, versión nueva disponible, o el error).
+- Los dos `Button` planos (`btnUpdatePrimary`/`btnUpdateSecondary`, estilo diálogo) se reemplazan por renglones de lista clickeables (`itemUpdatePrimary`/`itemUpdateSecondary`) con una flecha ">" a la izquierda (`ic_chevron_right.xml`, nuevo), idénticos en estructura a un ítem de `activity_settings.xml` — así se ve "Comprobar actualizaciones" en la captura de referencia.
+- Durante CHECKING y DOWNLOADING no se muestra ningún renglón de acción (igual que la pantalla nativa, que oculta "Comprobar actualizaciones" mientras la comprobación está en curso).
+- `UpdateActivity.kt` se actualizó para poblar estas vistas nuevas; el enum `UpdateScreenState` y el flujo de estados (CHECKING → UP_TO_DATE / AVAILABLE → DOWNLOADING → INSTALLING, o ERROR en cualquier paso) no cambiaron — solo qué vistas se muestran y cómo. Sin cambios en `AppUpdater.kt`.
+
+> **Alcance:** cambios de código en `UpdateActivity.kt`, `activity_update.xml` y el nuevo `ic_chevron_right.xml`. Sin cambios en `AppUpdater.kt`, `SettingsActivity.kt`, `LiveDiscoveryKids.kt` ni en el resto del canal. Al ser una Preview de solo UI, no hay cambio de Era ni de contenido.
+
+---
+
+
 ## [2008.4.5.0] — 🚀 Release · Era Doki 1.0 · Era 2008 — 2026-07-06
 
 > *Release del 6 de julio de 2026. Cambio de Era — los 4 comerciales standalone y el par ya_regresa4/continuamos4 evolucionan a la Era 2008.*
@@ -1545,6 +1565,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2008.4.5.0.50-preview| 2026-07-07 | 🧪 Preview | UpdateActivity rediseñada 2: calca la pantalla nativa "Actualización del sistema" de Android — ícono/título/subtítulos alineados a la izquierda, barra fina de progreso, renglones de lista con flecha ">" en vez de botones |
 | 2008.4.5.0           | 2026-07-06 | 🚀 Release | Cambio de Era 2007→2008: 4 comerciales standalone y par ya_regresa4/continuamos4 actualizados |
 | 2007.4.4.0           | 2026-07-03 | 🚀 Release | Actualizador migra descarga de DownloadManager a OkHttp (progreso + detección de fin confiable); UpdateActivity rediseñada al estilo SettingsTheme; Screenbug actualizado a la variante de septiembre 2007 |
 | 2007.4.3.1           | 2026-07-01 | 🐛 Release Fixer | Fix: Prev/Next saltaba al programa equivocado si se tocaba antes de que cualquier programa hubiera arrancado en la sesión (currentProgramIndex por defecto en 0 se confundía con "programa 0 ya visto") |

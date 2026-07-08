@@ -49,6 +49,13 @@ import androidx.appcompat.widget.SwitchCompat
  * "Actualizaciones" (desactivado por defecto). Cuando está activado,
  * AppUpdater también puede detectar e instalar releases marcados como
  * Preview en GitHub, no solo los estables.
+ *
+ * Release 2007.4.3.0 — CAMBIO: "Buscar actualizaciones" ya no consulta a
+ * AppUpdater ni muestra AlertDialogs desde esta Activity. Ahora solo abre
+ * `UpdateActivity` (startActivity simple, sin pasar datos) — es esa pantalla
+ * la que hace la consulta, pide confirmación, descarga con barra de progreso
+ * en vivo, e instala. Se eliminaron checkForUpdate(), isCheckingUpdate y el
+ * CheckCallback que vivían acá.
  */
 class SettingsActivity : AppCompatActivity() {
 
@@ -227,46 +234,14 @@ class SettingsActivity : AppCompatActivity() {
             "Cada $min–$max minutos, al azar (Predeterminado: ${SettingsManager.DEFAULT_COMMERCIAL_MIN_MINUTES}–${SettingsManager.DEFAULT_COMMERCIAL_MAX_MINUTES} min)"
     }
 
-    // ── Actualizaciones (Preview 4.2.0.20) ──────────────────────────────────
+    // ── Actualizaciones (Release 2007.4.3.0) ────────────────────────────────
     //
-    // "Buscar actualizaciones" delega todo el trabajo de red, comparación de
-    // versión, descarga e instalación en AppUpdater. Esta Activity solo se
-    // encarga de: deshabilitar el item mientras se consulta (evita toques
-    // repetidos), y mostrar el resultado vía los diálogos de AppUpdater.
-    private var isCheckingUpdate = false
-
+    // "Buscar actualizaciones" ya no hace la consulta ni muestra diálogos
+    // desde acá: simplemente abre UpdateActivity, que se encarga de todo el
+    // flujo (consulta a GitHub, confirmación, descarga con progreso e
+    // instalación). Ver UpdateActivity.kt para el detalle completo.
     private fun checkForUpdate() {
-        if (isCheckingUpdate) return
-        isCheckingUpdate = true
-        txtCheckUpdateValue.text = "Buscando actualizaciones…"
-        itemCheckUpdate.isEnabled = false
-
-        AppUpdater.checkForUpdate(this, object : AppUpdater.CheckCallback {
-            override fun onUpToDate() {
-                isCheckingUpdate = false
-                itemCheckUpdate.isEnabled = true
-                refreshCheckUpdateLabel()
-                AppUpdater.showInfoDialog(
-                    this@SettingsActivity,
-                    "Ya estás al día",
-                    "Tenés instalada la última versión disponible."
-                )
-            }
-
-            override fun onUpdateAvailable(remoteVersion: String, apkUrl: String, releaseNotesUrl: String) {
-                isCheckingUpdate = false
-                itemCheckUpdate.isEnabled = true
-                refreshCheckUpdateLabel()
-                AppUpdater.showUpdateAvailableDialog(this@SettingsActivity, remoteVersion, apkUrl)
-            }
-
-            override fun onError(message: String) {
-                isCheckingUpdate = false
-                itemCheckUpdate.isEnabled = true
-                refreshCheckUpdateLabel()
-                AppUpdater.showInfoDialog(this@SettingsActivity, "No se pudo verificar", message)
-            }
-        })
+        startActivity(android.content.Intent(this, UpdateActivity::class.java))
     }
 
     private fun refreshCheckUpdateLabel() {

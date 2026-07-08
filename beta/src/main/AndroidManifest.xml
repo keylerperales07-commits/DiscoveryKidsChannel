@@ -46,6 +46,14 @@
             android:screenOrientation="portrait"
             android:theme="@style/SettingsTheme"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout" />
+        
+        <activity 
+            android:name=".UpdateActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/SettingsTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout" />
+
 
         <!-- Preview 2006.4.2.0.20: FileProvider para que AppUpdater pueda exponer
              el .apk descargado (carpeta privada de la app) al instalador del

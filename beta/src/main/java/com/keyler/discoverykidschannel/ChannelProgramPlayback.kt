@@ -25,6 +25,9 @@ import android.util.Log
 
 internal fun LiveDiscoveryKids.playProgram(idx: Int, restartFromBeginning: Boolean = true) {
     currentProgramIndex = idx
+    // Release 4.3.1 — a partir de acá currentProgramIndex ya refleja un programa
+    // real que empezó a salir al aire; ver comentario en goToAdjacentProgram().
+    hasPlayedAnyProgram = true
     val uri = resolveProgram(idx)
     if (uri == null) {
         Log.w(LiveDiscoveryKids.TAG, "pro${idx + 1}.mp4 not found – skipping")

@@ -12,9 +12,8 @@ android {
         applicationId "com.keyler.discoverykidschannel"
         minSdk 23
         targetSdk 36
-        versionCode 04020021
-        versionName "2006.4.2.0.21"
-        
+        versionCode 04060060
+        versionName "2008.4.6.0.60"
         vectorDrawables { 
             useSupportLibrary true
         }
@@ -75,4 +74,5 @@ dependencies {
     implementation("com.google.android.material:material:1.9.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }

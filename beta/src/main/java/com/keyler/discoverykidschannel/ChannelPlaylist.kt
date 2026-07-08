@@ -141,9 +141,27 @@ internal fun LiveDiscoveryKids.playEnseguida() {
 // ══════════════════════════════════════════════════════════════════════════
 
 internal fun LiveDiscoveryKids.goToAdjacentProgram(direction: Int) {
-    val target = findAvailableProgramIndex(currentProgramIndex, direction) ?: return
+    // Release 4.3.1 — BUG FIX: si todavía no arrancó ningún programa en la
+    // sesión (ej: Prev/Next tocado durante la Enseguida/Bumper/Comercial
+    // inicial, antes de Program(0)), currentProgramIndex sigue en su valor
+    // por defecto (0) sin que el programa 0 haya salido realmente al aire.
+    // Antes esto hacía que findAvailableProgramIndex() lo tratara como
+    // "programa 0 ya visto" y Next saltara directo al 1 (saltándose el 0) y
+    // Prev cayera en el 3 en vez de ir al 0.
+    //
+    // El punto de partida "virtual" para el wraparound de
+    // findAvailableProgramIndex() depende de la dirección: para Next hay que
+    // partir de -1 (así el primer candidato que evalúa es el 0); para Prev
+    // hay que partir de 0 (así el primer candidato que evalúa, retrocediendo,
+    // es el 3 — el último programa). No es el mismo valor para ambos casos.
+    val startIndex = when {
+        hasPlayedAnyProgram -> currentProgramIndex
+        direction > 0       -> -1
+        else                -> 0
+    }
+    val target = findAvailableProgramIndex(startIndex, direction) ?: return
 
-    if (target == currentProgramIndex) return
+    if (hasPlayedAnyProgram && target == currentProgramIndex) return
 
     Log.d(LiveDiscoveryKids.TAG, "▶ Navegando directo al programa ${target + 1} (direction=$direction)")
     cancelAllTasks()
