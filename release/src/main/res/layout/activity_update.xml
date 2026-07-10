@@ -21,6 +21,30 @@
     "Actualización del sistema" — porcentaje grande arriba de la barra,
     tamaño descargado/total debajo, y botones planos (sin relleno) en vez
     de los Button de ancho completo de antes.
+
+    Preview 2008.4.5.0.50 — REDISEÑO 2: ahora se calca directamente la
+    pantalla nativa "Configuración → Sistema → Actualización del sistema"
+    de Android (referencia: captura adjunta). Cambios respecto al rediseño
+    anterior:
+      • El bloque de estado deja de estar centrado: ícono pequeño, título
+        y subtítulos quedan alineados a la izquierda, con el mismo padding
+        de 20dp que usa cada ítem de activity_settings.xml.
+      • El ProgressBar indeterminado grande desaparece. En su lugar hay
+        una barra fina (progressThin, 3dp de alto) pegada debajo del
+        título, visible solo mientras se busca o se descarga — igual que
+        la línea celeste fina que muestra Android nativo mientras
+        comprueba actualizaciones.
+      • Los dos TextView de subtítulo (txtUpdateSubtitle1/2) reemplazan a
+        txtUpdateMessage: la primera línea siempre muestra la versión
+        instalada (equivalente a "Versión de Android: Q"), la segunda es
+        contextual según el estado (igual a la línea de parche de
+        seguridad de la captura).
+      • Los Button planos de antes se reemplazan por renglones de lista
+        clickeables (itemUpdatePrimary / itemUpdateSecondary), idénticos
+        en estructura a los ítems de activity_settings.xml (mismo padding,
+        tipografía y ripple), con un ícono de flecha ">" a la izquierda
+        del texto — así es como se ve "Comprobar actualizaciones" en la
+        captura de referencia.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -59,143 +83,167 @@
             android:fontFamily="@font/googlesans" />
     </LinearLayout>
 
-    <!-- Contenido centrado: ícono, título, mensaje, progreso, botones. -->
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:paddingStart="32dp"
-        android:paddingEnd="32dp">
+        android:fillViewport="true"
+        android:scrollbars="none">
 
-        <ImageView
-            android:id="@+id/imgUpdateIcon"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_marginBottom="20dp"
-            android:src="@drawable/ic_update"
-            android:contentDescription="@null" />
-
-        <TextView
-            android:id="@+id/txtUpdateTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/dk_text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:fontFamily="@font/googlesans"
-            android:gravity="center"
-            tools:ignore="HardcodedText" />
-
-        <TextView
-            android:id="@+id/txtUpdateMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textColor="@color/dk_text_secondary"
-            android:textSize="15sp"
-            android:fontFamily="@font/googlesans"
-            android:gravity="center"
-            tools:ignore="HardcodedText" />
-
-        <!-- Estado CHECKING: spinner indeterminado (nativo de Android). -->
-        <ProgressBar
-            android:id="@+id/progressIndeterminate"
-            style="?android:attr/progressBarStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:indeterminateTint="@color/dk_accent"
-            android:visibility="gone" />
-
-        <!-- Estado DOWNLOADING: porcentaje grande + barra determinada + tamaño. -->
         <LinearLayout
-            android:id="@+id/groupDownloadProgress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center"
-            android:layout_marginTop="28dp"
-            android:visibility="gone">
+            android:paddingBottom="24dp">
 
-            <TextView
-                android:id="@+id/txtUpdatePercent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/dk_text_primary"
-                android:textSize="30sp"
-                android:textStyle="bold"
-                android:fontFamily="@font/googlesans"
-                tools:ignore="HardcodedText" />
-
-            <ProgressBar
-                android:id="@+id/progressDownload"
-                style="?android:attr/progressBarStyleHorizontal"
+            <!-- ══ Bloque de estado: ícono + título + barra fina + subtítulos ══
+                 Calca "Configuración → Actualización del sistema" nativo:
+                 todo alineado a la izquierda, sin centrar. -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:max="100"
-                android:progress="0"
-                android:progressTint="@color/dk_accent"
-                android:progressBackgroundTint="@color/dk_stroke" />
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="20dp">
 
-            <TextView
-                android:id="@+id/txtUpdateBytes"
-                android:layout_width="wrap_content"
+                <ImageView
+                    android:id="@+id/imgUpdateIcon"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_marginBottom="14dp"
+                    android:src="@drawable/ic_update"
+                    android:contentDescription="@null" />
+
+                <TextView
+                    android:id="@+id/txtUpdateTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/dk_text_primary"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:fontFamily="@font/googlesans"
+                    tools:ignore="HardcodedText" />
+
+                <!-- Barra fina de progreso: visible solo en CHECKING (indeterminada)
+                     y DOWNLOADING (determinada, 0–100%). Reemplaza al spinner grande
+                     y a la ProgressBar gruesa del diseño anterior. -->
+                <ProgressBar
+                    android:id="@+id/progressThin"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:layout_marginTop="12dp"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressTint="@color/dk_accent"
+                    android:progressBackgroundTint="@color/dk_stroke"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/txtUpdateSubtitle1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:textColor="@color/dk_text_secondary"
+                    android:textSize="15sp"
+                    android:fontFamily="@font/googlesans"
+                    tools:ignore="HardcodedText" />
+
+                <TextView
+                    android:id="@+id/txtUpdateSubtitle2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/dk_text_secondary"
+                    android:textSize="15sp"
+                    android:fontFamily="@font/googlesans"
+                    tools:ignore="HardcodedText" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/dividerBeforeActions"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/dk_stroke"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp" />
+
+            <!-- Renglón de acción primaria: "Comprobar actualizaciones" /
+                 "Descargar actualización" / "Reintentar" / "Cerrar" según el
+                 estado — mismo look que un ítem de activity_settings.xml. -->
+            <LinearLayout
+                android:id="@+id/itemUpdatePrimary"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:textColor="@color/dk_text_secondary"
-                android:textSize="13sp"
-                android:fontFamily="@font/googlesans"
-                tools:ignore="HardcodedText" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackground"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginEnd="16dp"
+                    android:src="@drawable/ic_chevron_right"
+                    android:contentDescription="@null" />
+
+                <TextView
+                    android:id="@+id/txtUpdatePrimaryLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/dk_text_primary"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/googlesans"
+                    tools:ignore="HardcodedText" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/dividerAfterPrimary"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/dk_stroke"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:visibility="gone" />
+
+            <!-- Renglón de acción secundaria: "Más tarde" / "Volver" — sin
+                 flecha, texto en gris, para diferenciarlo de la acción
+                 principal (mismo criterio que un ítem secundario de lista). -->
+            <LinearLayout
+                android:id="@+id/itemUpdateSecondary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackground"
+                android:paddingStart="56dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/txtUpdateSecondaryLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/dk_text_secondary"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/googlesans"
+                    tools:ignore="HardcodedText" />
+            </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Botones planos, estilo diálogo de Android: Secundario a la izquierda,
-             Primario (acento) a la derecha — reemplaza los Button de ancho
-             completo del diseño anterior. -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="end|center_vertical"
-            android:layout_marginTop="32dp">
-
-            <Button
-                android:id="@+id/btnUpdateSecondary"
-                style="?android:attr/borderlessButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:textColor="@color/dk_text_secondary"
-                android:textAllCaps="false"
-                android:fontFamily="@font/googlesans"
-                android:textSize="15sp"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:visibility="gone"
-                tools:ignore="HardcodedText" />
-
-            <Button
-                android:id="@+id/btnUpdatePrimary"
-                style="?android:attr/borderlessButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="?attr/selectableItemBackground"
-                android:textColor="@color/dk_accent"
-                android:textStyle="bold"
-                android:textAllCaps="false"
-                android:fontFamily="@font/googlesans"
-                android:textSize="15sp"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:visibility="gone"
-                tools:ignore="HardcodedText" />
-
-        </LinearLayout>
-
-    </LinearLayout>
+    </ScrollView>
 
 </LinearLayout>

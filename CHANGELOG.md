@@ -6,7 +6,34 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2008.4.6.0.60-preview] — 🧪 Preview · Era Doki 1.0 · Era 2008 — 2026-07-07
+## [2008.4.6.0] — 🚀 Release · Era Doki 1.0 · Era 2008 — 2026-07-10
+
+> *Release del 10 de julio de 2026. Dos cambios grandes: `LiveDiscoveryKids.kt` se reunifica en un solo archivo (reversión de la reorganización de la 4.1.0.21), y debuta el Discovery Kids Launcher, una pantalla nueva para elegir qué programas salen al aire.*
+
+### Cambiado
+
+**`LiveDiscoveryKids.kt` — reunificación de los 11 archivos de extensión**
+
+- La Reorganización 4.1.0.21 había repartido el flujo del canal (playlist driver, reproducción de programas, bloque comercial, transiciones de video, resolución de URIs, música de fondo, persistencia de sesión, position tracker, Screenbug, helpers de UI y overlay de debug) en 11 archivos de extensión aparte: `ChannelPlaylist.kt`, `ChannelProgramPlayback.kt`, `ChannelCommercialBlock.kt`, `ChannelVideoTransitions.kt`, `ChannelMediaResolver.kt`, `ChannelBackgroundMusic.kt`, `ChannelSessionState.kt`, `ChannelPositionTracker.kt`, `ChannelScreenBug.kt`, `ChannelUiHelpers.kt` y `ChannelDebugOverlay.kt`.
+- Esta Release revierte esa reorganización: los 11 archivos se eliminan del proyecto y todo su código vuelve a vivir en `LiveDiscoveryKids.kt`, cada bloque bajo el comentario de encabezado original de su archivo de origen (a modo de separador de sección).
+- Copiado tal cual, **sin cambios de comportamiento** — mismas funciones, misma lógica, mismas visibilidades (`internal`). El único cambio es dónde vive el código.
+
+**Discovery Kids Launcher — nueva pantalla para elegir programas**
+
+- Nueva `DiscoveryKidsLauncherActivity` (`activity_launcher.xml`), con el mismo diseño de lista simple de `SettingsActivity`/`activity_settings.xml`: header con botón Atrás, rótulo de sección gris, e ítems con switch a la derecha.
+- Un switch por programa (`pro1.mp4`–`pro4.mp4`), todos activados por defecto. Cada ítem muestra además si el archivo se encontró realmente en la carpeta Movies (misma resolución que `ChannelMediaResolver.resolveProgram()`, duplicada en `checkProgramFileExists()` porque esta Activity no es una instancia de `LiveDiscoveryKids`).
+- Se accede desde Configuración → nueva sección "Programación" → ítem "Elegir programas" (mismo patrón que "Buscar actualizaciones" → `UpdateActivity`: `startActivity` simple, sin pasar datos).
+- El estado de cada switch se persiste al toque, sin botón "Guardar", vía dos funciones nuevas en `SettingsManager`: `isProgramEnabled(context, index)` / `setProgramEnabled(context, index, enabled)`.
+- `LiveDiscoveryKids.playProgram()` ahora consulta `SettingsManager.isProgramEnabled()` antes de reproducir un programa: si está desactivado, lo saltea exactamente por el mismo camino que ya usaba para un archivo `.mp4` faltante (`playlistIndex++` + `advance()`).
+- `findAvailableProgramIndex()` (navegación Prev/Next) también respeta el estado activado/desactivado, además de la existencia del archivo — Prev/Next nunca aterriza en un programa desactivado.
+- Desactivar los 4 programas a la vez no rompe nada: el canal sigue el mismo fallback que ya existía si faltaban los 4 archivos — repite Enseguida → Bumper → Comercial en loop sin encontrar programa disponible.
+
+> **Alcance:** cambios de código en `LiveDiscoveryKids.kt` (reunificado, sin los 11 archivos de extensión), `DiscoveryKidsLauncherActivity.kt` (nuevo), `activity_launcher.xml` (nuevo), `SettingsManager.kt` (nuevas funciones de per-programa), `SettingsActivity.kt`/`activity_settings.xml` (nueva sección "Programación") y `AndroidManifest.xml` (nueva Activity). Sin cambios en `AppUpdater.kt` ni en `UpdateActivity.kt`. Sin cambio de contenido ni de Era.
+
+---
+
+
+## [2008.4.5.0.50-preview] — 🧪 Preview · Era Doki 1.0 · Era 2008 — 2026-07-07
 
 > *Preview para el 7 de julio de 2026. Segundo rediseño de `UpdateActivity`: ahora calca la pantalla nativa de Android "Configuración → Sistema → Actualización del sistema" en vez del diseño tipo diálogo centrado del release anterior.*
 
@@ -1565,6 +1592,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2008.4.6.0           | 2026-07-10 | 🚀 Release | LiveDiscoveryKids.kt reunificado (reversión de la reorganización 4.1.0.21, sin cambios de comportamiento); nuevo Discovery Kids Launcher para elegir qué programas salen al aire |
 | 2008.4.5.0.50-preview| 2026-07-07 | 🧪 Preview | UpdateActivity rediseñada 2: calca la pantalla nativa "Actualización del sistema" de Android — ícono/título/subtítulos alineados a la izquierda, barra fina de progreso, renglones de lista con flecha ">" en vez de botones |
 | 2008.4.5.0           | 2026-07-06 | 🚀 Release | Cambio de Era 2007→2008: 4 comerciales standalone y par ya_regresa4/continuamos4 actualizados |
 | 2007.4.4.0           | 2026-07-03 | 🚀 Release | Actualizador migra descarga de DownloadManager a OkHttp (progreso + detección de fin confiable); UpdateActivity rediseñada al estilo SettingsTheme; Screenbug actualizado a la variante de septiembre 2007 |

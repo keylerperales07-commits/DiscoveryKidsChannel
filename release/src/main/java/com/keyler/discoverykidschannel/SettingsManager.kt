@@ -26,6 +26,15 @@ import android.content.SharedPreferences
  *   - NUEVO: duración antes de aparecer el Screenbug (antes fija en 20 s).
  *   - NUEVO: rango Min/Max del intervalo aleatorio de comerciales (antes fijo 3–9 min).
  *   - NUEVO: Forzar 4:3 (on/off). Ver KEY_FORCE_ASPECT_RATIO.
+ *
+ * Release 4.6.0 — NUEVO: estado activado/desactivado por programa
+ * (KEY_PROGRAM_ENABLED_PREFIX + índice), usado por el nuevo
+ * DiscoveryKidsLauncherActivity para que el usuario elija qué programas
+ * (pro1–pro4.mp4) quiere que salgan al aire. Todos activados por defecto
+ * (comportamiento idéntico al de antes de esta Release). LiveDiscoveryKids
+ * consulta isProgramEnabled() en playProgram() y findAvailableProgramIndex()
+ * para saltear los programas desactivados, igual que ya salteaba los que
+ * faltaban en la carpeta Movies.
  */
 object SettingsManager {
 
@@ -38,6 +47,7 @@ object SettingsManager {
     private const val KEY_COMMERCIAL_MAX_MIN = "commercial_interval_max_minutes"
     private const val KEY_FORCE_ASPECT_RATIO = "force_aspect_ratio_4_3"
     private const val KEY_PREVIEW_UPDATES_ENABLED = "preview_updates_enabled"
+    private const val KEY_PROGRAM_ENABLED_PREFIX = "program_enabled_"   // Release 4.6.0
 
     // ── Valores por defecto ─────────────────────────────────────────────────
     const val DEFAULT_BG_MUSIC_ENABLED = true
@@ -47,6 +57,7 @@ object SettingsManager {
     const val DEFAULT_COMMERCIAL_MAX_MINUTES = 9
     const val DEFAULT_FORCE_ASPECT_RATIO = false
     const val DEFAULT_PREVIEW_UPDATES_ENABLED = false
+    const val DEFAULT_PROGRAM_ENABLED = true   // Release 4.6.0 — todos activados por defecto
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -119,5 +130,15 @@ object SettingsManager {
 
     fun setPreviewUpdatesEnabled(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean(KEY_PREVIEW_UPDATES_ENABLED, enabled).apply()
+    }
+
+    // ── Programas activados/desactivados (Release 4.6.0 — DiscoveryKidsLauncherActivity) ──
+    // [index] es 0-based (0 → pro1.mp4, 1 → pro2.mp4, etc.), igual que en todo
+    // el resto del código (currentProgramIndex, PlayItem.Program, resolveProgram).
+    fun isProgramEnabled(context: Context, index: Int): Boolean =
+        prefs(context).getBoolean(KEY_PROGRAM_ENABLED_PREFIX + index, DEFAULT_PROGRAM_ENABLED)
+
+    fun setProgramEnabled(context: Context, index: Int, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_PROGRAM_ENABLED_PREFIX + index, enabled).apply()
     }
 }

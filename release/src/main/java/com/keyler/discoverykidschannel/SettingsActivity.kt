@@ -56,6 +56,11 @@ import androidx.appcompat.widget.SwitchCompat
  * la que hace la consulta, pide confirmación, descarga con barra de progreso
  * en vivo, e instala. Se eliminaron checkForUpdate(), isCheckingUpdate y el
  * CheckCallback que vivían acá.
+ *
+ * Release 4.6.0 — NUEVO: sección "Programación" con el item "Elegir
+ * programas", que abre el nuevo DiscoveryKidsLauncherActivity (mismo
+ * patrón que "Buscar actualizaciones" → UpdateActivity: startActivity
+ * simple, toda la lógica vive en la otra Activity).
  */
 class SettingsActivity : AppCompatActivity() {
 
@@ -72,6 +77,8 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var itemCheckUpdate: LinearLayout
     private lateinit var txtCheckUpdateValue: TextView
+
+    private lateinit var itemChooseLauncher: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,6 +108,8 @@ class SettingsActivity : AppCompatActivity() {
 
         itemCheckUpdate = findViewById(R.id.itemCheckUpdate)
         txtCheckUpdateValue = findViewById(R.id.txtCheckUpdateValue)
+
+        itemChooseLauncher = findViewById(R.id.itemChooseLauncher)
     }
 
     /** Carga los valores guardados en SettingsManager y los refleja en cada control. */
@@ -150,6 +159,10 @@ class SettingsActivity : AppCompatActivity() {
         itemCommercialInterval.setOnClickListener { showCommercialIntervalDialog() }
 
         itemCheckUpdate.setOnClickListener { checkForUpdate() }
+
+        itemChooseLauncher.setOnClickListener {
+            startActivity(android.content.Intent(this, DiscoveryKidsLauncherActivity::class.java))
+        }
     }
 
     // ── Diálogo: Duración del Screenbug ─────────────────────────────────────

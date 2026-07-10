@@ -12,8 +12,8 @@ android {
         applicationId "com.keyler.discoverykidschannel"
         minSdk 23
         targetSdk 36
-        versionCode 040500454
-        versionName "2008.4.5.0.01"
+        versionCode 04060064
+        versionName "2008.4.6.0.01"
         vectorDrawables { 
             useSupportLibrary true
         }
@@ -57,9 +57,10 @@ android {
         
     }
     
-    aaptOptions {
+    /*aaptOptions {
         noCompress "mp4"
     }
+    */
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {

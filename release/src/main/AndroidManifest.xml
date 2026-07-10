@@ -54,6 +54,14 @@
             android:theme="@style/SettingsTheme"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout" />
 
+        <!-- Release 4.6.0: Discovery Kids Launcher — elegir qué programas salen al aire -->
+        <activity 
+            android:name=".DiscoveryKidsLauncherActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/SettingsTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout" />
+
 
         <!-- Preview 2006.4.2.0.20: FileProvider para que AppUpdater pueda exponer
              el .apk descargado (carpeta privada de la app) al instalador del
