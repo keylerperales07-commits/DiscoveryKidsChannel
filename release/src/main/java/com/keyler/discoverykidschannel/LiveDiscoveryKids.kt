@@ -7,6 +7,7 @@ package com.keyler.discoverykidschannel
 
 import android.app.ActivityManager
 import android.app.AlertDialog
+import com.bumptech.glide.Glide
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
@@ -1004,14 +1005,18 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     val segmentDuration = (segmentEndMs - segmentStartMs).toLong().coerceAtLeast(0)
     
     // --- PHASE 1: screenbug_start (GIF) ---
-    val startShowAt = SCREENBUG_START_DELAY_MS
-    val startHideAt = SCREENBUG_START_DELAY_MS + SCREENBUG_START_ESTIMATED_DURATION_MS
+    // BUG FIX: estas constantes viven en el companion object de LiveDiscoveryKids;
+    // como esta es una función de extensión top-level (fuera de la clase), hay que
+    // calificarlas con "LiveDiscoveryKids." o el compilador las marca como
+    // "Unresolved reference" (igual que TAG más abajo).
+    val startShowAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS
+    val startHideAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS
     
     if (elapsed < startShowAt && segmentDuration > startShowAt) {
         val startDelay = (startShowAt - elapsed).coerceAtLeast(0L)
         post(startDelay) { 
             fadeInBugWithResource(R.drawable.screenbug_start)
-            Log.d(TAG, "ScreenBug PHASE 1: screenbug_start shown")
+            Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 1: screenbug_start shown")
         }
     }
     
@@ -1021,14 +1026,14 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     }
     
     // --- PHASE 2: screenbug (PNG) ---
-    val midShowAt = SCREENBUG_START_DELAY_MS + SCREENBUG_START_ESTIMATED_DURATION_MS + SCREENBUG_MID_DELAY_AFTER_START_MS
-    val midHideAt = segmentDuration - SCREENBUG_END_SHOW_BEFORE_MS
+    val midShowAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS + LiveDiscoveryKids.SCREENBUG_MID_DELAY_AFTER_START_MS
+    val midHideAt = segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
     
     if (elapsed < midShowAt && segmentDuration > midShowAt && midShowAt < midHideAt) {
         val midDelay = (midShowAt - elapsed).coerceAtLeast(0L)
         post(midDelay) { 
             fadeInBugWithResource(R.drawable.screenbug)
-            Log.d(TAG, "ScreenBug PHASE 2: screenbug shown")
+            Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 2: screenbug shown")
         }
     }
     
@@ -1038,14 +1043,14 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     }
     
     // --- PHASE 3: screenbug_end (GIF) ---
-    val endShowAt = segmentDuration - SCREENBUG_END_SHOW_BEFORE_MS
+    val endShowAt = segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
     val endHideAt = segmentDuration
     
     if (elapsed < endShowAt && segmentDuration > endShowAt) {
         val endDelay = (endShowAt - elapsed).coerceAtLeast(0L)
         post(endDelay) { 
             fadeInBugWithResource(R.drawable.screenbug_end)
-            Log.d(TAG, "ScreenBug PHASE 3: screenbug_end shown")
+            Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 3: screenbug_end shown")
         }
     }
     
@@ -1955,9 +1960,20 @@ internal fun LiveDiscoveryKids.cancelAllTasks() {
 // ScreenBug animation
 // ══════════════════════════════════════════════════════════════════════════
 
+/**
+ * BUG FIX: ImageView.setImageResource() con un .gif solo decodifica y muestra
+ * el primer frame (no anima). screenbug_start.gif y screenbug_end.gif se veían
+ * congelados por esto, mientras que screenbug.png (estático) se veía bien.
+ *
+ * Fix: usar Glide, que detecta GIFs animados y los reproduce en el ImageView
+ * automáticamente vía .load(resId). Para el PNG estático (fase 2) Glide
+ * también funciona igual de bien, así que se unifica el path para las 3 fases.
+ */
 internal fun LiveDiscoveryKids.fadeInBug() {
     Log.d(LiveDiscoveryKids.TAG, "ScreenBug FADE IN [res=$currentScreenBugRes]")
-    screenBug.setImageResource(currentScreenBugRes)
+    Glide.with(screenBug)
+        .load(currentScreenBugRes)
+        .into(screenBug)
     screenBug.animate()
         .alpha(1f)
         .setDuration(LiveDiscoveryKids.FADE_MS)
@@ -1968,7 +1984,9 @@ internal fun LiveDiscoveryKids.fadeInBug() {
 internal fun LiveDiscoveryKids.fadeInBugWithResource(res: Int) {
     Log.d(LiveDiscoveryKids.TAG, "ScreenBug FADE IN [res=$res]")
     currentScreenBugRes = res
-    screenBug.setImageResource(res)
+    Glide.with(screenBug)
+        .load(res)
+        .into(screenBug)
     screenBug.animate()
         .alpha(1f)
         .setDuration(LiveDiscoveryKids.FADE_MS)

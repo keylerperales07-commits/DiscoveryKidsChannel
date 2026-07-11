@@ -12,8 +12,8 @@ android {
         applicationId "com.keyler.discoverykidschannel"
         minSdk 23
         targetSdk 36
-        versionCode 04060064
-        versionName "2008.4.6.0.01"
+        versionCode 04060165
+        versionName "2008.4.6.1.02"
         vectorDrawables { 
             useSupportLibrary true
         }
@@ -76,4 +76,8 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Release (fix) — Glide para decodificar y animar GIFs en el ScreenBug
+    // (ImageView.setImageResource() con un .gif solo muestra el primer frame).
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }
