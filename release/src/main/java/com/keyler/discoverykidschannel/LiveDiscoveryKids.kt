@@ -279,6 +279,19 @@ class LiveDiscoveryKids : AppCompatActivity() {
         /** Screenbug hides this many ms before segment end or commercial start. */
         internal const val BUG_HIDE_EARLY = 20_000L
 
+        // Release 2009.4.6.1 — NUEVO: sistema de 3 screenbug con animaciones secuenciales
+        // durante el programa. Los 3 son GIFs o imágenes (screenbug_start.gif, screenbug.png,
+        // screenbug_end.gif) que se muestran en momentos diferentes para dar más dinamismo.
+        // Timings:
+        //   screenbug_start (GIF): mostrar 20s después de iniciar, ocultar 5s después (asumir)
+        //   screenbug (PNG): mostrar 15s después de que start se oculta (40s total), ocultar
+        //     cuando aparece screenbug_end (programDuration - 20s)
+        //   screenbug_end (GIF): mostrar 20s antes del final, ocultar al final del programa
+        internal const val SCREENBUG_START_DELAY_MS = 20_000L
+        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 5_000L   // Duración estimada del GIF start
+        internal const val SCREENBUG_MID_DELAY_AFTER_START_MS = 15_000L    // Delay antes de mostrar el PNG, después de que start se oculta
+        internal const val SCREENBUG_END_SHOW_BEFORE_MS = 20_000L          // Mostrar screenbug_end 20s antes del final
+
         /** No commercial break is scheduled within this many ms of the program end. */
         internal const val BREAK_CUTOFF_MS = 3 * 60 * 1_000L         // 3 min
 
@@ -802,11 +815,29 @@ internal fun LiveDiscoveryKids.goToAdjacentProgram(direction: Int) {
     currentClipOnComplete = null
     videoView.stopPlayback()
 
-    // Busca el índice del PlayItem.Program destino en el playlist y fija playlistIndex ahí.
-    // El programa terminará normalmente y su onCompletionListener hará playlistIndex++ + advance(),
-    // arrancando la Enseguida del siguiente bloque sin ningún conflicto de ViewPropertyAnimator.
-    val programIdx = playlist.indexOfFirst { it is LiveDiscoveryKids.PlayItem.Program && it.index == target }
-        .takeIf { it >= 0 } ?: 0
+    // Release 2009.4.6.1 — BUG FIX: busca el índice del PlayItem.Program destino
+    // en el playlist, pero a partir de la posición ACTUAL (playlistIndex) en la
+    // DIRECCIÓN de la navegación (Prev o Next), wrapeando si es necesario.
+    // Antes usaba indexOfFirst (búsqueda siempre desde el inicio), lo que hacía
+    // que si estabas reproduciendo Program(3) y presionabas Next, iría al Program(0)
+    // encontrado en el índice 3 del playlist en vez de avanzar. Esto corrige
+    // que Prev/Next ahora van en orden real a través de la lista.
+    var searchIdx = playlistIndex
+    val searchDirection = if (direction > 0) 1 else -1
+    var found = false
+    var attemptCounter = 0
+    
+    while (attemptCounter < playlist.size) {
+        searchIdx = (searchIdx + searchDirection + playlist.size) % playlist.size
+        val item = playlist[searchIdx]
+        if (item is LiveDiscoveryKids.PlayItem.Program && item.index == target) {
+            found = true
+            break
+        }
+        attemptCounter++
+    }
+    
+    val programIdx = if (found) searchIdx else 0
 
     playlistIndex = programIdx
     currentProgramIndex = target
@@ -951,7 +982,81 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
 }
 
 /**
- * Schedules screenbug show/hide and the next commercial break
+ * Release 2009.4.6.1 — NUEVO: programa los 3 screenbug secuenciales durante un programa.
+ *
+ * Sistema de 3 fases que reemplaza la lógica simple anterior:
+ *   1. screenbug_start (GIF): mostrar en SCREENBUG_START_DELAY_MS (20s),
+ *      ocultar en SCREENBUG_START_DELAY_MS + SCREENBUG_START_ESTIMATED_DURATION_MS (25s)
+ *   2. screenbug (PNG): mostrar SCREENBUG_MID_DELAY_AFTER_START_MS (15s) después de
+ *      que start se oculta (40s total), ocultar cuando aparece screenbug_end
+ *   3. screenbug_end (GIF): mostrar SCREENBUG_END_SHOW_BEFORE_MS (20s) antes del final,
+ *      ocultar al final del programa
+ *
+ * @param segmentStartMs posición en ms del programa donde arrancó el segmento
+ * @param segmentEndMs posición en ms donde termina el segmento (siguiente break o final)
+ * @param elapsed ms ya transcurridos del segmento antes de este (re)arranque
+ */
+internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
+    segmentStartMs: Int,
+    segmentEndMs: Int,
+    elapsed: Long
+) {
+    val segmentDuration = (segmentEndMs - segmentStartMs).toLong().coerceAtLeast(0)
+    
+    // --- PHASE 1: screenbug_start (GIF) ---
+    val startShowAt = SCREENBUG_START_DELAY_MS
+    val startHideAt = SCREENBUG_START_DELAY_MS + SCREENBUG_START_ESTIMATED_DURATION_MS
+    
+    if (elapsed < startShowAt && segmentDuration > startShowAt) {
+        val startDelay = (startShowAt - elapsed).coerceAtLeast(0L)
+        post(startDelay) { 
+            fadeInBugWithResource(R.drawable.screenbug_start)
+            Log.d(TAG, "ScreenBug PHASE 1: screenbug_start shown")
+        }
+    }
+    
+    if (elapsed < startHideAt && segmentDuration > startHideAt) {
+        val hideDelay = (startHideAt - elapsed).coerceAtLeast(0L)
+        post(hideDelay) { fadeOutBug() }
+    }
+    
+    // --- PHASE 2: screenbug (PNG) ---
+    val midShowAt = SCREENBUG_START_DELAY_MS + SCREENBUG_START_ESTIMATED_DURATION_MS + SCREENBUG_MID_DELAY_AFTER_START_MS
+    val midHideAt = segmentDuration - SCREENBUG_END_SHOW_BEFORE_MS
+    
+    if (elapsed < midShowAt && segmentDuration > midShowAt && midShowAt < midHideAt) {
+        val midDelay = (midShowAt - elapsed).coerceAtLeast(0L)
+        post(midDelay) { 
+            fadeInBugWithResource(R.drawable.screenbug)
+            Log.d(TAG, "ScreenBug PHASE 2: screenbug shown")
+        }
+    }
+    
+    if (elapsed < midHideAt && segmentDuration > midHideAt && midHideAt > midShowAt) {
+        val hideDelay = (midHideAt - elapsed).coerceAtLeast(0L)
+        post(hideDelay) { fadeOutBug() }
+    }
+    
+    // --- PHASE 3: screenbug_end (GIF) ---
+    val endShowAt = segmentDuration - SCREENBUG_END_SHOW_BEFORE_MS
+    val endHideAt = segmentDuration
+    
+    if (elapsed < endShowAt && segmentDuration > endShowAt) {
+        val endDelay = (endShowAt - elapsed).coerceAtLeast(0L)
+        post(endDelay) { 
+            fadeInBugWithResource(R.drawable.screenbug_end)
+            Log.d(TAG, "ScreenBug PHASE 3: screenbug_end shown")
+        }
+    }
+    
+    if (elapsed < endHideAt && segmentDuration > endHideAt) {
+        val hideDelay = (endHideAt - elapsed).coerceAtLeast(0L)
+        post(hideDelay) { fadeOutBug() }
+    }
+}
+
+/**
+ * Schedule screenbug show/hide and the next commercial break
  * for the current segment starting at [segmentStartMs] in program time.
  *
  * Beta 3.4.0.42 — BUG FIX: ajusta los delays del screenbug descontando el
@@ -967,50 +1072,23 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
  * SettingsActivity (antes BUG_SHOW_DELAY fijo en 20 s).
  */
 internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSegment: Boolean) {
-    // Release 2006.4.1.1 — BUG FIX: el cálculo de `elapsed` comparaba
-    // segmentStartMs contra currentSegmentStartMs DESPUÉS de haberlo
-    // sobreescrito con el mismo segmentStartMs, dando siempre elapsed = 0.
-    // Esto hacía que el screenbug reiniciara su cuenta cada vez que la app
-    // volvía de segundo plano o de un cambio de Activity (ej: SettingsActivity),
-    // en vez de "recordar" cuánto tiempo ya había transcurrido en el segmento.
-    //
-    // Ahora currentSegmentStartMs solo se actualiza cuando arranca un segmento
-    // REALMENTE nuevo (isNewSegment = true, ej: tras un corte comercial o al
-    // iniciar el programa). Al reanudar el mismo segmento (isNewSegment = false)
-    // se conserva el valor anterior, permitiendo calcular cuánto tiempo pasó.
     val previousSegmentStartMs = currentSegmentStartMs
     if (isNewSegment) {
         currentSegmentStartMs = segmentStartMs
     }
 
-    // Determine end of this segment (next break or program end)
     val segmentEndMs = if (breakQueue.isNotEmpty()) breakQueue[0] else programDuration
     val segmentDuration = (segmentEndMs - segmentStartMs).toLong().coerceAtLeast(0)
 
     Log.d(LiveDiscoveryKids.TAG, "Segment: ${segmentStartMs}ms → ${segmentEndMs}ms (${segmentDuration}ms)")
 
-    // Calcula cuántos ms del segmento ya transcurrieron antes de este (re)arranque.
-    // En la primera llamada de un segmento nuevo elapsed = 0 (previousSegmentStartMs
-    // todavía no se actualizó arriba, así que coincide con segmentStartMs).
-    // Al reanudar desde segundo plano elapsed = segmentStartMs - currentSegmentStartMs
-    // (el valor de arranque ORIGINAL del segmento, que no se tocó).
     val baseSegmentStartMs = if (isNewSegment) segmentStartMs else previousSegmentStartMs
     val elapsed = (segmentStartMs - baseSegmentStartMs).toLong().coerceAtLeast(0L)
 
-    val bugShowDelay = (bugShowDelayMs - elapsed).coerceAtLeast(0L)
-
-    if (elapsed >= bugShowDelayMs) {
-        // El screenbug ya debía estar visible — aparece inmediatamente sin animación
-        Log.d(LiveDiscoveryKids.TAG, "ScreenBug: elapsed=${elapsed}ms >= bugShowDelayMs(${bugShowDelayMs}) → aparece inmediatamente")
-        setBugAlpha(1f)
-    } else if (segmentDuration > bugShowDelay) {
-        post(bugShowDelay) { fadeInBug() }
-    }
-
-    val hideAt = segmentDuration - LiveDiscoveryKids.BUG_HIDE_EARLY
-    if (hideAt > bugShowDelay) {
-        post(hideAt) { fadeOutBug() }
-    }
+    // Release 2009.4.6.1 — NUEVO: reemplazo de la lógica simple de screenbug
+    // por el sistema de 3 screenbug secuenciales. Usa la nueva función
+    // scheduleMultipleScreenbugs() que maneja los timings de los 3 drawables.
+    scheduleMultipleScreenbugs(segmentStartMs, segmentEndMs, elapsed)
 
     if (breakQueue.isNotEmpty()) {
         val breakProgramPos = breakQueue[0]
@@ -1880,6 +1958,17 @@ internal fun LiveDiscoveryKids.cancelAllTasks() {
 internal fun LiveDiscoveryKids.fadeInBug() {
     Log.d(LiveDiscoveryKids.TAG, "ScreenBug FADE IN [res=$currentScreenBugRes]")
     screenBug.setImageResource(currentScreenBugRes)
+    screenBug.animate()
+        .alpha(1f)
+        .setDuration(LiveDiscoveryKids.FADE_MS)
+        .start()
+}
+
+/** Release 2009.4.6.1 — variante de fadeInBug() que toma un resource específico (para screenbug de 3 fases). */
+internal fun LiveDiscoveryKids.fadeInBugWithResource(res: Int) {
+    Log.d(LiveDiscoveryKids.TAG, "ScreenBug FADE IN [res=$res]")
+    currentScreenBugRes = res
+    screenBug.setImageResource(res)
     screenBug.animate()
         .alpha(1f)
         .setDuration(LiveDiscoveryKids.FADE_MS)

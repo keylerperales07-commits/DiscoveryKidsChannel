@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v4.6.0-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Era-2008-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v4.6.1-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Era-2009-blue?style=flat-square"/>
 </p>
 
 ---
@@ -163,56 +163,13 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v4.6.0` *(Release · Era Doki 1.0 · Era 2008)*
-> *LiveDiscoveryKids.kt se reunifica en un solo archivo (reversión de la reorganización de la 4.1.0.21), y debuta el Discovery Kids Launcher para elegir qué programas salen al aire.*
+### 🚀 Última versión estable — `v4.6.1` *(Release · Era Doki 1.0 · Era 2009)*
+> *Cambio de Era (2008→2009), 3 Screenbug secuenciales, y 2 bug fixes críticos.*
 
-- 🔧 **`LiveDiscoveryKids.kt` reunificado** — los 11 archivos de extensión (`ChannelPlaylist.kt`, `ChannelProgramPlayback.kt`, etc.) vuelven a vivir en un solo archivo. Copiado tal cual, sin cambios de comportamiento.
-- 🎬 **Discovery Kids Launcher** — nueva pantalla (`DiscoveryKidsLauncherActivity`) con el diseño de Configuración, donde elegís con un switch qué programas (`pro1–pro4.mp4`) salen al aire. Se accede desde Configuración → "Elegir programas".
-
-<details>
-<summary><strong>📜 Versión estable anterior</strong> — `v4.5.0` (6 de julio)</summary>
-
-### 🚀 `v4.5.0` *(Release · Era Doki 1.0 · Era 2008)*
-> *Cambio de Era — los 4 comerciales standalone y el par ya_regresa4/continuamos4 evolucionan a la Era 2008.*
-
-- 🎨 **Cambio de Era: 2007 → 2008** — `comercial1.mp4` a `comercial4.mp4` reemplazados por versiones de la Era 2008.
-- 🎨 **`ya_regresa4.mp4` / `continuamos4.mp4`** actualizados a la Era 2008. Los pares 1–3 no se modificaron.
-
-</details>
-
-<details>
-<summary><strong>📜 Versión estable anterior</strong> — `v4.4.0` (3 de julio)</summary>
-
-
-### 🚀 `v4.4.0` *(Release · Era Doki 1.0 · Era 2007)*
-> *El Actualizador migra su descarga de DownloadManager a OkHttp (progreso + detección de fin confiable) y UpdateActivity se rediseña al estilo de Configuración. El Screenbug pasa a la variante de septiembre de 2007.*
-
-- 🔄 **Descarga del Actualizador con OkHttp** — reemplaza `DownloadManager`: lee el `.apk` en un loop manual reportando porcentaje y bytes descargados/totales, y detecta el fin de la descarga con certeza (antes dependía de un `BroadcastReceiver` + sondeo aparte).
-- 🎨 **`UpdateActivity` rediseñada** — mismo lenguaje visual que `SettingsTheme`/Configuración: header idéntico, ícono centrado, porcentaje grande + "X MB de Y MB", botones planos estilo diálogo nativo de Android.
-- 🖼️ **Screenbug actualizado** a la variante de septiembre de 2007.
-
-</details>
-
-<details>
-<summary><strong>📜 Versión estable anterior</strong> — `v4.3.1` (1 de julio)</summary>
-
-### 🐛 `v4.3.1` *(Release Fixer · Era Doki 1.0 · Era 2007)*
-> *Corrige un bug de navegación: Prev/Next saltaba al programa equivocado si se tocaba antes de que arrancara cualquier programa en la sesión.*
-
-- 🐛 **Prev/Next saltaba al programa equivocado** al tocarse antes de que `Program(0)` hubiera arrancado en la sesión (durante la Enseguida/Bumper/Comercial inicial) — `currentProgramIndex` en su valor por defecto (`0`) se confundía con "el programa 0 ya salió al aire", así que Next saltaba directo al 1 y Prev caía en el 3. Corregido con un flag `hasPlayedAnyProgram` que distingue ambos casos.
-
-</details>
-
-<details>
-<summary><strong>📜 Versión estable anterior</strong> — `v4.3.0` (29 de junio)</summary>
-
-### 🚀 `v4.3.0` *(Release · Era Doki 1.0 · Era 2007)*
-> *Cambio de Era — comerciales, ya_regresa/continuamos y Screenbug evolucionan a la Era 2007. El Actualizador estrena UpdateActivity con barra de progreso en vivo.*
-
-- 🔄 **`UpdateActivity`** — nueva pantalla dedicada para "Buscar actualizaciones", con barra de progreso en vivo durante la descarga. Reemplaza por completo los diálogos de confirmación/resultado que usaba el Actualizador antes.
-- 🎨 **Cambio de Era: 2006 → 2007** — los 4 comerciales standalone, los clips *ya_regresa*/*continuamos* y el Screenbug se actualizaron al estilo visual de la Era 2007.
-
-</details>
+- 🎬 **3 Screenbug secuenciales** — animación de entrada (start.gif), imagen estática (screenbug.png), animación de salida (end.gif) en momentos específicos del programa.
+- 🎬 Se agregó **bumper6** como indicando que esta cerca la fase 4.
+- 🐛 **AppUpdater arreglado** — ya no cree que hay versión más nueva cuando actualizas de una preview a la release final de la misma versión.
+- 🐛 **Prev/Next arreglado** — ahora navega en orden real a través del playlist, no saltando entre programas.
 
 
 ---

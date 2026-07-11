@@ -6,6 +6,54 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2009.4.6.1] — 🚀 Release · Era Doki 1.0 · Era 2009 — 2026-07-11
+
+> *Release del 11 de julio de 2026. Cambio de Era (2008→2009) e implementación del sistema de 3 Screenbug secuenciales. Además, 2 bug fixes críticos: Prev/Next ahora navega en orden real del playlist, y el Actualizador ya no cree que hay versión nueva cuando actualizas de una preview a la release final de la misma versión.*
+
+### 🔧 Bug Fixes Críticos
+
+**AppUpdater — versión con BUILD segment**
+
+- **BUG**: cuando instalabas una preview (versionName ej. `2008.4.6.0.60`) y después sacaba la release final de esa misma versión (versionName `2008.4.6.0.01`), el Actualizador creía que había versión más nueva (4.6.0) < instalada (4.6.0.60), así que no te dejaba actualizar. 
+- **CAUSA**: `currentVersionName()` devolvía los 4 segmentos (MAJOR.MINOR.PATCH.BUILD), y el segmento BUILD (60 en preview vs 01 en release) hacía que se comparara como "preview es mayor que release de la misma versión".
+- **CORRECCIÓN**: `currentVersionName()` ahora devuelve solo los primeros 3 segmentos (MAJOR.MINOR.PATCH), ignorando BUILD completamente. Así, preview y release de la misma 4.6.0 ambas devuelven "4.6.0", y compareVersions() funciona correctamente.
+
+**LiveDiscoveryKids — Prev/Next navegación en orden del playlist**
+
+- **BUG**: al presionar Prev/Next para cambiar de programa, a veces saltaba al programa equivocado o no respetaba el orden real de reproducción del playlist.
+- **CAUSA**: `goToAdjacentProgram()` usaba `indexOfFirst` para buscar el próximo programa en todo el playlist desde el inicio, ignorando la dirección de navegación (Prev o Next). Si estabas reproduciendo Program(3) y presionabas Next, buscaba el primer `PlayItem.Program(0)` en el playlist (índice 3) en vez de continuar hacia adelante, wrapeando si es necesario.
+- **CORRECCIÓN**: ahora busca a partir de `playlistIndex` actual en la dirección de la navegación (1 para Next, -1 para Prev), wrapeando correctamente. Prev/Next ahora avanzan/retroceden en orden lógico a través de la lista, no saltando de forma impredecible.
+
+### 🎬 Sistema de 3 Screenbug Secuenciales
+
+**Release 2009.4.6.1 — NUEVO: 3 fases de Screenbug durante el programa**
+
+Implementación de un sistema de 3 imágenes/GIFs diferentes que se muestran en momentos específicos durante la reproducción del programa, reemplazando la lógica simple anterior:
+
+- **Fase 1 — `screenbug_start.gif` (GIF):** Mostrar 20s después de iniciar el programa, ocultar 5s después (duración asumida del GIF). Propósito: animación de "entrada" dinámica del Screenbug.
+- **Fase 2 — `screenbug.png` (PNG):** Mostrar 15s después de que `screenbug_start` se oculta (40s totales después de iniciar), ocultar cuando aparece `screenbug_end`. La imagen estática principal del Screenbug, visible la mayor parte del programa.
+- **Fase 3 — `screenbug_end.gif` (GIF):** Mostrar 20s antes de que termine el programa, ocultar al terminar. Propósito: animación de "salida" dinámica, dando dinamismo al final.
+
+Timings configurables vía constantes en `LiveDiscoveryKids.Companion` (en ms):
+- `SCREENBUG_START_DELAY_MS` = 20.000 (20s)
+- `SCREENBUG_START_ESTIMATED_DURATION_MS` = 5.000 (5s, duración asumida del GIF start)
+- `SCREENBUG_MID_DELAY_AFTER_START_MS` = 15.000 (15s, delay antes de mostrar el PNG)
+- `SCREENBUG_END_SHOW_BEFORE_MS` = 20.000 (20s antes del final)
+
+Nueva función `scheduleMultipleScreenbugs()` que maneja toda la lógica de timings, llamada automáticamente desde `scheduleSegmentLogic()`. Los timings se ajustan si la app se pausa/reanuda, igual que la lógica anterior — no reinician desde cero.
+
+### 🎉Nueva Fase 4 está cerca 5.0.0
+- Se agregó **bumper6** como indicando que esta cerca la fase 4.
+
+### 🎨 Cambio de Era
+
+- **Era 2008 → Era 2009:** el segmento de Era en `versionName` cambia de 2008 a 2009 (ej. `2009.4.6.1`). Esto afecta a `versionName`, tags de GitHub, versionCode para Play Store, etc. Los 3 Screenbug comienzan a usarse en esta Era (como mencionó Keyler, "la fase 4 está cerca").
+
+> **Alcance:** cambios de código en `LiveDiscoveryKids.kt` (nueva función `scheduleMultipleScreenbugs()`, nueva función `fadeInBugWithResource()`, constantes de timings del screenbug) y `AppUpdater.kt` (fix de `currentVersionName()` para ignorar BUILD). Los 3 archivos de screenbug (`screenbug_start.gif`, `screenbug.png`, `screenbug_end.gif`) deben estar en `src/main/res/drawable/` o importarse desde `src/main/res/raw/` — ver comentarios en `scheduleMultipleScreenbugs()` para la migración de asset paths. Sin cambios en Activities ni layouts. Cambio de Era: actualizar `versionName` en `build.gradle` a `2009.4.6.1` y `versionCode` según correspondza.
+
+---
+
+
 ## [2008.4.6.0] — 🚀 Release · Era Doki 1.0 · Era 2008 — 2026-07-10
 
 > *Release del 10 de julio de 2026. Dos cambios grandes: `LiveDiscoveryKids.kt` se reunifica en un solo archivo (reversión de la reorganización de la 4.1.0.21), y debuta el Discovery Kids Launcher, una pantalla nueva para elegir qué programas salen al aire.*
@@ -1592,6 +1640,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2009.4.6.1           | 2026-07-11 | 🚀 Release | Cambio de Era 2008→2009; 3 Screenbug secuenciales (start.gif/screenbug.png/end.gif); fix AppUpdater con BUILD segment; fix Prev/Next navegación en orden del playlist |
 | 2008.4.6.0           | 2026-07-10 | 🚀 Release | LiveDiscoveryKids.kt reunificado (reversión de la reorganización 4.1.0.21, sin cambios de comportamiento); nuevo Discovery Kids Launcher para elegir qué programas salen al aire |
 | 2008.4.5.0.50-preview| 2026-07-07 | 🧪 Preview | UpdateActivity rediseñada 2: calca la pantalla nativa "Actualización del sistema" de Android — ícono/título/subtítulos alineados a la izquierda, barra fina de progreso, renglones de lista con flecha ">" en vez de botones |
 | 2008.4.5.0           | 2026-07-06 | 🚀 Release | Cambio de Era 2007→2008: 4 comerciales standalone y par ya_regresa4/continuamos4 actualizados |
