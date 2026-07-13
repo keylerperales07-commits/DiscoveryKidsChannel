@@ -122,53 +122,6 @@
 
         <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
 
-        <!-- ══ Sección: Programación (Release 4.6.0) ══ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Programación"
-            android:textColor="@color/dk_text_secondary"
-            android:textSize="14sp"
-            android:fontFamily="@font/googlesans"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="4dp" />
-
-        <!-- Item: Elegir programas — abre DiscoveryKidsLauncherActivity -->
-        <LinearLayout
-            android:id="@+id/itemChooseLauncher"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Elegir programas"
-                android:textColor="@color/dk_text_primary"
-                android:textSize="17sp"
-                android:fontFamily="@font/googlesans" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Discovery Kids Launcher — elegí qué programas salen al aire"
-                android:textColor="@color/dk_text_secondary"
-                android:textSize="13sp"
-                android:fontFamily="@font/googlesans"
-                android:layout_marginTop="2dp" />
-        </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
-
         <!-- ══ Sección: Pantalla ══ -->
         <TextView
             android:layout_width="wrap_content"
@@ -313,6 +266,69 @@
 
         <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
 
+        <!-- ══ Sección: Compatibilidad de video (Release 2009.5.0.0) ══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Compatibilidad de video"
+            android:textColor="@color/dk_text_secondary"
+            android:textSize="14sp"
+            android:fontFamily="@font/googlesans"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="4dp" />
+
+        <!-- Item: Usar TextureView (switch) -->
+        <LinearLayout
+            android:id="@+id/itemTextureView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Usar TextureView"
+                    android:textColor="@color/dk_text_primary"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/googlesans" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Motor de video compatible con 720p o superior, para que el ScreenBug no quede oculto detrás del video (Predeterminado: Desactivado)"
+                    android:textColor="@color/dk_text_secondary"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/googlesans"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchTextureView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
+
         <!-- ══ Sección: Comerciales ══ -->
         <TextView
             android:layout_width="wrap_content"
@@ -452,6 +468,67 @@
                 android:textSize="13sp"
                 android:fontFamily="@font/googlesans"
                 android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- ══ Sección: Experimental (Release 2009.5.0.0) ══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Experimental"
+            android:textColor="@color/dk_text_secondary"
+            android:textSize="14sp"
+            android:fontFamily="@font/googlesans"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="4dp" />
+
+        <!-- Item: Habilitar funciones experimentales (switch) -->
+        <LinearLayout
+            android:id="@+id/itemExperimental"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Habilitar funciones experimentales"
+                    android:textColor="@color/dk_text_primary"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/googlesans" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Discovery Kids Launcher como pantalla de inicio, cantidad de programas configurable (hasta 24), video elegido por vos para cada programa y ya_regresa/continuamos personalizados (Predeterminado: Desactivado)"
+                    android:textColor="@color/dk_text_secondary"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/googlesans"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchExperimental"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false" />
         </LinearLayout>
 
         <!-- ══ Footer: versión ══ -->

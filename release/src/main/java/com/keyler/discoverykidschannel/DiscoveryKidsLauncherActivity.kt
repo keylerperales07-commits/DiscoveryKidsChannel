@@ -5,148 +5,256 @@
 */
 package com.keyler.discoverykidschannel
 
-import android.os.Build
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
+import android.provider.OpenableColumns
+import android.text.InputType
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import java.io.File
 
 /**
- * DiscoveryKidsLauncherActivity — Release 4.6.0
+ * DiscoveryKidsLauncherActivity — Release 2009.5.0.0 ("Parque Imaginario")
  *
- * "Discovery Kids Launcher": pantalla donde el usuario elige qué programas
- * (pro1–pro4.mp4) quiere que salgan al aire en la programación lineal.
- * Mismo diseño de lista simple que SettingsActivity/activity_settings.xml
- * (header con botón Atrás + título, rótulo de sección gris, ítems con
- * switch a la derecha) — se abre desde Configuración → "Elegir programas".
+ * Reescritura completa. Antes (Release 4.6.0) era una pantalla secundaria,
+ * accesible solo desde Configuración → "Elegir programas", con una lista
+ * fija de 4 switches (activar/desactivar pro1–pro4.mp4).
  *
- * Cada ítem muestra, además del switch, si el archivo pro{N}.mp4 se
- * encontró realmente en la carpeta Movies (o vía MediaStore) — la misma
- * resolución que usa ChannelMediaResolver.resolveProgram() en
- * LiveDiscoveryKids, duplicada acá en checkProgramFileExists() porque esta
- * Activity no es una instancia de LiveDiscoveryKids y no puede llamar a
- * esa función de extensión directamente.
+ * Ahora es la Activity de inicio REAL de la app — ver el intent-filter
+ * MAIN/LAUNCHER en AndroidManifest.xml, que se movió acá desde
+ * LiveDiscoveryKids — pero todo lo que implica (esta pantalla, elegir el
+ * video de cada programa, personalizar ya_regresa/continuamos, elegir
+ * cuántos programas armar la programación) vive detrás del interruptor
+ * maestro "Habilitar funciones experimentales" de Configuración
+ * (SettingsManager.isExperimentalEnabled(), desactivado por defecto):
  *
- * El estado de cada switch se persiste inmediatamente en SettingsManager
- * (SettingsManager.setProgramEnabled), igual que el resto de las opciones
- * de la app — no hay botón "Guardar". LiveDiscoveryKids consulta
- * SettingsManager.isProgramEnabled() en playProgram() y
- * findAvailableProgramIndex() para saltear los programas desactivados,
- * tanto en la programación lineal como en la navegación Prev/Next.
+ *   - Experimental DESACTIVADO (default): onCreate() redirige de inmediato a
+ *     LiveDiscoveryKids y hace finish(), sin mostrar nunca esta UI —
+ *     comportamiento 100% idéntico al de abrir la app antes de esta Release.
+ *   - Experimental ACTIVADO: se muestra el diseño nuevo (MenuBar con
+ *     degradado azul→cian y logo, fuente dk_font) con:
+ *       • Botón "Iniciar canal" → LiveDiscoveryKids.
+ *       • Botón (ícono) "Configuración" → SettingsActivity.
+ *       • Sección Programas: cantidad (1–24, SettingsManager.getProgramCount())
+ *         y una fila por programa (item_program_config.xml, inflada en
+ *         código porque puede haber hasta 24) donde el usuario:
+ *           - elige el video del programa vía selector de archivos del
+ *             sistema (SAF, ACTION_OPEN_DOCUMENT) — ya no hace falta
+ *             renombrarlo a pro{N}.mp4 ni copiarlo a la carpeta Movies.
+ *           - puede activar "ya_regresa personalizado" / "continuamos
+ *             personalizado" y elegir un video propio para cada uno, en vez
+ *             del que trae la app por defecto.
  *
- * Desactivar TODOS los programas no rompe nada: el canal simplemente sigue
- * repitiendo Enseguida → Bumper → Comercial en loop sin nunca encontrar un
- * programa disponible, el mismo comportamiento de fallback que ya existía
- * si a alguien le faltaban los 4 archivos .mp4 en Movies.
+ * Todas las Uri elegidas se persisten con
+ * ContentResolver.takePersistableUriPermission() para seguir siendo válidas
+ * entre reinicios de la app (SAF: sin esto, el permiso de lectura expira al
+ * cerrar la app). LiveDiscoveryKids las consulta en resolveProgram(),
+ * resolveYaRegresaUri() y resolveContinuamosUri().
  */
 class DiscoveryKidsLauncherActivity : AppCompatActivity() {
 
-    private val totalPrograms = 4
+    private enum class PickTarget { PROGRAM, YA_REGRESA, CONTINUAMOS }
 
-    private lateinit var programItems: List<LinearLayout>
-    private lateinit var programSwitches: List<SwitchCompat>
-    private lateinit var programStatusLabels: List<TextView>
+    private var pendingPickIndex = -1
+    private var pendingPickTarget: PickTarget? = null
+
+    private lateinit var containerPrograms: LinearLayout
+    private lateinit var txtProgramCountValue: TextView
+
+    /** SAF: selector de archivos del sistema para elegir un video (programa, ya_regresa o continuamos). */
+    private val pickVideoLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) handlePickedVideo(uri)
+        pendingPickIndex = -1
+        pendingPickTarget = null
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setTheme(R.style.SettingsTheme)
+
+        // Ver doc de la clase: con Experimental desactivado, esta Activity es
+        // transparente — pasa directo al canal, sin mostrar nada.
+        if (!SettingsManager.isExperimentalEnabled(this)) {
+            startActivity(Intent(this, LiveDiscoveryKids::class.java))
+            finish()
+            return
+        }
+
+        setTheme(R.style.LauncherTheme)
         setContentView(R.layout.activity_launcher)
 
-        findViewById<ImageButton>(R.id.btnLauncherBack).setOnClickListener { finish() }
+        findViewById<ImageButton>(R.id.btnLauncherSettings).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        findViewById<LinearLayout>(R.id.btnStartChannel).setOnClickListener {
+            startActivity(Intent(this, LiveDiscoveryKids::class.java))
+        }
 
-        programItems = listOf(
-            findViewById(R.id.itemProgram1),
-            findViewById(R.id.itemProgram2),
-            findViewById(R.id.itemProgram3),
-            findViewById(R.id.itemProgram4)
-        )
-        programSwitches = listOf(
-            findViewById(R.id.switchProgram1),
-            findViewById(R.id.switchProgram2),
-            findViewById(R.id.switchProgram3),
-            findViewById(R.id.switchProgram4)
-        )
-        programStatusLabels = listOf(
-            findViewById(R.id.txtProgram1Status),
-            findViewById(R.id.txtProgram2Status),
-            findViewById(R.id.txtProgram3Status),
-            findViewById(R.id.txtProgram4Status)
-        )
+        containerPrograms = findViewById(R.id.containerPrograms)
+        txtProgramCountValue = findViewById(R.id.txtProgramCountValue)
+        findViewById<LinearLayout>(R.id.itemProgramCount).setOnClickListener { showProgramCountDialog() }
 
-        setupProgramToggles()
+        refreshProgramCountLabel()
+        rebuildProgramList()
     }
 
-    /** Carga el estado guardado de cada programa y busca si su archivo existe, todo en un solo loop. */
-    private fun setupProgramToggles() {
-        for (index in 0 until totalPrograms) {
-            val enabled = SettingsManager.isProgramEnabled(this, index)
-            val found = checkProgramFileExists(index)
+    override fun onResume() {
+        super.onResume()
+        // Por si el usuario desactivó Experimental desde Configuración y
+        // volvió acá con el botón Atrás del sistema: no debería quedar
+        // mostrando una pantalla que ya no corresponde.
+        if (!SettingsManager.isExperimentalEnabled(this)) {
+            startActivity(Intent(this, LiveDiscoveryKids::class.java))
+            finish()
+        }
+    }
 
-            programSwitches[index].isChecked = enabled
-            refreshStatusLabel(index, found)
+    // ── Cantidad de programas (1–24) ─────────────────────────────────────────
 
-            // Mismo patrón que SettingsActivity: toda la fila es clickeable y
-            // alterna el switch, además del propio switch por si lo tocan directo.
-            programItems[index].setOnClickListener {
-                programSwitches[index].isChecked = !programSwitches[index].isChecked
+    private fun refreshProgramCountLabel() {
+        val count = SettingsManager.getProgramCount(this)
+        txtProgramCountValue.text =
+            "$count de ${SettingsManager.MAX_PROGRAM_COUNT} programas (Predeterminado: ${SettingsManager.DEFAULT_PROGRAM_COUNT})"
+    }
+
+    private fun showProgramCountDialog() {
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(SettingsManager.getProgramCount(this@DiscoveryKidsLauncherActivity).toString())
+            setSelection(text.length)
+        }
+        val pad = (16 * resources.displayMetrics.density).toInt()
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, 0, pad, 0)
+            addView(input)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Cantidad de programas")
+            .setMessage("¿Cuántos programas (videos) querés que arme la programación? (${SettingsManager.MIN_PROGRAM_COUNT}–${SettingsManager.MAX_PROGRAM_COUNT}, Predeterminado: ${SettingsManager.DEFAULT_PROGRAM_COUNT})")
+            .setView(container)
+            .setPositiveButton("Guardar") { _, _ ->
+                val count = input.text.toString().toIntOrNull() ?: SettingsManager.DEFAULT_PROGRAM_COUNT
+                SettingsManager.setProgramCount(this, count)
+                refreshProgramCountLabel()
+                rebuildProgramList()
             }
-            programSwitches[index].setOnCheckedChangeListener { _, isChecked ->
-                SettingsManager.setProgramEnabled(this, index, isChecked)
-                refreshStatusLabel(index, found)
-            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    // ── Filas de programas ───────────────────────────────────────────────────
+
+    /**
+     * Reconstruye desde cero la lista de filas (Programa 1..N). Se llama al
+     * entrar, al cambiar la cantidad de programas, y después de elegir
+     * cualquier video — es más simple y menos propenso a errores que tratar
+     * de actualizar una sola fila a mano.
+     */
+    private fun rebuildProgramList() {
+        containerPrograms.removeAllViews()
+        val count = SettingsManager.getProgramCount(this)
+        val inflater = LayoutInflater.from(this)
+        for (index in 0 until count) {
+            val row = inflater.inflate(R.layout.item_program_config, containerPrograms, false)
+            bindProgramRow(row, index)
+            containerPrograms.addView(row)
+        }
+    }
+
+    private fun bindProgramRow(row: View, index: Int) {
+        val txtTitle = row.findViewById<TextView>(R.id.txtProgramTitle)
+        val txtVideoStatus = row.findViewById<TextView>(R.id.txtProgramVideoStatus)
+        val btnPickVideo = row.findViewById<LinearLayout>(R.id.btnPickProgramVideo)
+        val switchYaRegresa = row.findViewById<SwitchCompat>(R.id.switchYaRegresaCustom)
+        val btnPickYaRegresa = row.findViewById<LinearLayout>(R.id.btnPickYaRegresaVideo)
+        val switchContinuamos = row.findViewById<SwitchCompat>(R.id.switchContinuamosCustom)
+        val btnPickContinuamos = row.findViewById<LinearLayout>(R.id.btnPickContinuamosVideo)
+
+        txtTitle.text = "Programa ${index + 1}"
+
+        val savedUri = SettingsManager.getProgramUri(this, index)
+        txtVideoStatus.text = if (savedUri.isNullOrBlank()) {
+            "Sin video elegido — usa pro${index + 1}.mp4 en Videos"
+        } else {
+            "Video elegido: ${displayNameFor(Uri.parse(savedUri))}"
+        }
+
+        btnPickVideo.setOnClickListener {
+            pendingPickIndex = index
+            pendingPickTarget = PickTarget.PROGRAM
+            pickVideoLauncher.launch(arrayOf("video/*"))
+        }
+
+        switchYaRegresa.isChecked = SettingsManager.isYaRegresaCustom(this, index)
+        btnPickYaRegresa.visibility = if (switchYaRegresa.isChecked) View.VISIBLE else View.GONE
+        switchYaRegresa.setOnCheckedChangeListener { _, checked ->
+            SettingsManager.setYaRegresaCustom(this, index, checked)
+            btnPickYaRegresa.visibility = if (checked) View.VISIBLE else View.GONE
+        }
+        btnPickYaRegresa.setOnClickListener {
+            pendingPickIndex = index
+            pendingPickTarget = PickTarget.YA_REGRESA
+            pickVideoLauncher.launch(arrayOf("video/*"))
+        }
+
+        switchContinuamos.isChecked = SettingsManager.isContinuamosCustom(this, index)
+        btnPickContinuamos.visibility = if (switchContinuamos.isChecked) View.VISIBLE else View.GONE
+        switchContinuamos.setOnCheckedChangeListener { _, checked ->
+            SettingsManager.setContinuamosCustom(this, index, checked)
+            btnPickContinuamos.visibility = if (checked) View.VISIBLE else View.GONE
+        }
+        btnPickContinuamos.setOnClickListener {
+            pendingPickIndex = index
+            pendingPickTarget = PickTarget.CONTINUAMOS
+            pickVideoLauncher.launch(arrayOf("video/*"))
         }
     }
 
     /**
-     * Actualiza el subtítulo del ítem combinando dos cosas independientes:
-     * si el usuario lo activó (switch) y si el archivo realmente existe.
-     * Un programa activado pero no encontrado no se va a reproducir igual
-     * (ver playProgram() en LiveDiscoveryKids) — se lo avisamos acá para
-     * que no sea sorpresa.
+     * Se llama cuando el usuario eligió un archivo en el selector del
+     * sistema. Persiste el permiso de lectura (para que la Uri no expire al
+     * cerrar la app) y lo guarda en SettingsManager según qué botón lo
+     * disparó (pendingPickTarget/pendingPickIndex, fijados justo antes de
+     * lanzar el selector).
      */
-    private fun refreshStatusLabel(index: Int, found: Boolean) {
-        val fileName = "pro${index + 1}.mp4"
-        programStatusLabels[index].text = when {
-            !found -> "$fileName no encontrado en Videos — no va a salir al aire aunque esté activado"
-            programSwitches[index].isChecked -> "$fileName encontrado — va a salir al aire"
-            else -> "$fileName encontrado — desactivado, no va a salir al aire"
-        }
-    }
-
-    /**
-     * Duplicado deliberado de la lógica de ChannelMediaResolver.resolveProgram():
-     * busca pro{N}.mp4 primero por path directo en Movies, y si no lo
-     * encuentra cae a una consulta MediaStore (necesario en Android 10+ con
-     * scoped storage). Se duplica acá (en vez de reusar la función de
-     * extensión) porque esta Activity no es una instancia de LiveDiscoveryKids.
-     */
-    private fun checkProgramFileExists(index: Int): Boolean {
-        val fileName = "pro${index + 1}.mp4"
-
-        val moviesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
-        val file = File(moviesDir, fileName)
-        if (file.exists()) return true
-
-        val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-            MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
-        else
-            MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-
-        return try {
-            contentResolver.query(
-                collection,
-                arrayOf(MediaStore.Video.Media._ID),
-                "${MediaStore.Video.Media.DISPLAY_NAME} = ?",
-                arrayOf(fileName),
-                null
-            )?.use { cursor -> cursor.moveToFirst() } ?: false
+    private fun handlePickedVideo(uri: Uri) {
+        try {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         } catch (e: Exception) {
-            false
+            Log.w("DKLauncher", "No se pudo persistir el permiso de lectura de $uri", e)
+        }
+
+        val index = pendingPickIndex
+        if (index < 0) return
+
+        when (pendingPickTarget) {
+            PickTarget.PROGRAM -> SettingsManager.setProgramUri(this, index, uri.toString())
+            PickTarget.YA_REGRESA -> SettingsManager.setYaRegresaUri(this, index, uri.toString())
+            PickTarget.CONTINUAMOS -> SettingsManager.setContinuamosUri(this, index, uri.toString())
+            null -> return
+        }
+
+        rebuildProgramList()
+    }
+
+    /** Nombre legible del archivo elegido (vía SAF), con fallback al último segmento de la Uri. */
+    private fun displayNameFor(uri: Uri): String {
+        return try {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            } ?: uri.lastPathSegment ?: "video"
+        } catch (e: Exception) {
+            uri.lastPathSegment ?: "video"
         }
     }
 }

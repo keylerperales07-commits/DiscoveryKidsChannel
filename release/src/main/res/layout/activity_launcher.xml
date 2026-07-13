@@ -5,284 +5,175 @@
  NO ELIMINAR NINGUN COMENTARIO AGREGADO
 -->
 <!--
-    activity_launcher.xml — Release 4.6.0
+    activity_launcher.xml — Release 2009.5.0.0 ("Parque Imaginario")
 
-    Layout de DiscoveryKidsLauncherActivity ("Discovery Kids Launcher"):
-    pantalla donde el usuario elige qué programas (pro1–pro4.mp4) quiere
-    que salgan al aire. Calca al 100% el estilo de lista simple de
-    activity_settings.xml (mismo header, mismo rótulo de sección gris,
-    mismos ítems con switch a la derecha y descripción debajo) — se abre
-    desde Configuración → "Elegir programas".
+    Rediseño completo de Discovery Kids Launcher: ya no es una lista estilo
+    Configuración, sino la pantalla de inicio real de la app (detrás del
+    interruptor Experimental — ver DiscoveryKidsLauncherActivity.onCreate()).
+
+    MenuBar superior fijo: logo (icon.webp) + título, degradado azul→cian
+    (bg_launcher_menubar.xml), fuente dk_font. Debajo, contenido scrolleable:
+    botones "Iniciar canal" / "Configuración", y la sección de Programas
+    (cantidad + una fila por programa, generada dinámicamente en código —
+    ver item_program_config.xml — porque puede haber hasta 24).
 -->
-<ScrollView
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/dk_bg"
-    android:fillViewport="true"
-    android:scrollbars="none">
+    android:orientation="vertical"
+    android:background="@color/dk_bg">
 
+    <!-- ══ MenuBar ══ -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingBottom="32dp">
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_launcher_menubar"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:elevation="4dp">
 
-        <!-- ══ Header ══ -->
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/icon"
+            android:contentDescription="Discovery Kids" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="Discovery Kids Launcher"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
+            android:fontFamily="@font/dk_font" />
+
+        <ImageButton
+            android:id="@+id/btnLauncherSettings"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/btn_settings"
+            android:contentDescription="Configuración" />
+    </LinearLayout>
+
+    <!-- ══ Contenido ══ -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="8dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="20dp">
+            android:orientation="vertical"
+            android:paddingBottom="32dp">
 
-            <ImageButton
-                android:id="@+id/btnLauncherBack"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@android:color/transparent"
-                android:src="@drawable/ic_back"
-                android:contentDescription="Volver" />
+            <!-- Botón principal: Iniciar canal -->
+            <LinearLayout
+                android:id="@+id/btnStartChannel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="20dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_launcher_menubar"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_play"
+                    android:contentDescription="Iniciar canal" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="Iniciar canal"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:fontFamily="@font/dk_font" />
+            </LinearLayout>
+
+            <!-- ══ Sección: Programas ══ -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Programas"
+                android:textColor="@color/dk_text_secondary"
+                android:textSize="14sp"
+                android:fontFamily="@font/dk_font"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
 
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="Discovery Kids Launcher"
-                android:textColor="@color/dk_text_primary"
-                android:textSize="24sp"
-                android:fontFamily="@font/googlesans" />
-        </LinearLayout>
+                android:text="Elegí el video de cada programa (ya no hace falta renombrarlo ni copiarlo a Videos) y, si querés, personalizá su ya_regresa y su continuamos."
+                android:textColor="@color/dk_text_secondary"
+                android:textSize="13sp"
+                android:fontFamily="@font/dk_font"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="8dp" />
 
-        <!-- ══ Sección: Programas ══ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Programas"
-            android:textColor="@color/dk_text_secondary"
-            android:textSize="14sp"
-            android:fontFamily="@font/googlesans"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="12dp"
-            android:paddingBottom="4dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Elegí qué programas querés que salgan al aire en la programación. Los desactivados se saltean, igual que si el archivo no estuviera en Videos."
-            android:textColor="@color/dk_text_secondary"
-            android:textSize="13sp"
-            android:fontFamily="@font/googlesans"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="8dp" />
-
-        <!-- Item: Programa 1 (switch) -->
-        <LinearLayout
-            android:id="@+id/itemProgram1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
-
+            <!-- Item: Cantidad de programas (valor, abre diálogo 1–24) -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:id="@+id/itemProgramCount"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:orientation="vertical"
-                android:layout_marginEnd="12dp">
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackground"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Programa 1"
+                    android:text="Cantidad de programas"
                     android:textColor="@color/dk_text_primary"
                     android:textSize="17sp"
-                    android:fontFamily="@font/googlesans" />
+                    android:fontFamily="@font/dk_font" />
 
                 <TextView
-                    android:id="@+id/txtProgram1Status"
+                    android:id="@+id/txtProgramCountValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Comprobando…"
+                    android:text="4 de 24 programas (Predeterminado: 4)"
                     android:textColor="@color/dk_text_secondary"
                     android:textSize="13sp"
-                    android:fontFamily="@font/googlesans"
+                    android:fontFamily="@font/dk_font"
                     android:layout_marginTop="2dp" />
             </LinearLayout>
 
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchProgram1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
-        </LinearLayout>
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
 
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
-
-        <!-- Item: Programa 2 (switch) -->
-        <LinearLayout
-            android:id="@+id/itemProgram2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
-
+            <!-- Filas de programas: se agregan acá en código, una por programa
+                 (item_program_config.xml), ver rebuildProgramList(). -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:id="@+id/containerPrograms"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginEnd="12dp">
+                android:orientation="vertical" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Programa 2"
-                    android:textColor="@color/dk_text_primary"
-                    android:textSize="17sp"
-                    android:fontFamily="@font/googlesans" />
-
-                <TextView
-                    android:id="@+id/txtProgram2Status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Comprobando…"
-                    android:textColor="@color/dk_text_secondary"
-                    android:textSize="13sp"
-                    android:fontFamily="@font/googlesans"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchProgram2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
         </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
-
-        <!-- Item: Programa 3 (switch) -->
-        <LinearLayout
-            android:id="@+id/itemProgram3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginEnd="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Programa 3"
-                    android:textColor="@color/dk_text_primary"
-                    android:textSize="17sp"
-                    android:fontFamily="@font/googlesans" />
-
-                <TextView
-                    android:id="@+id/txtProgram3Status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Comprobando…"
-                    android:textColor="@color/dk_text_secondary"
-                    android:textSize="13sp"
-                    android:fontFamily="@font/googlesans"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchProgram3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
-        </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
-
-        <!-- Item: Programa 4 (switch) -->
-        <LinearLayout
-            android:id="@+id/itemProgram4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginEnd="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Programa 4"
-                    android:textColor="@color/dk_text_primary"
-                    android:textSize="17sp"
-                    android:fontFamily="@font/googlesans" />
-
-                <TextView
-                    android:id="@+id/txtProgram4Status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Comprobando…"
-                    android:textColor="@color/dk_text_secondary"
-                    android:textSize="13sp"
-                    android:fontFamily="@font/googlesans"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchProgram4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
-        </LinearLayout>
-
-    </LinearLayout>
-</ScrollView>
+    </ScrollView>
+</LinearLayout>

@@ -11,10 +11,14 @@
          android:id="@+id/videoContainer"
          android:layout_gravity="center">
 
-        <VideoView
+        <!-- Release 2009.5.0.0: ya no es un <VideoView> fijo en XML. Se
+             reemplaza en tiempo de ejecución por un DkVideoView.create()
+             (VideoView clásico o TextureView, según Configuración) dentro de
+             este mismo placeholder — ver LiveDiscoveryKids.onCreate(). -->
+        <FrameLayout
              android:layout_height="match_parent"
              android:layout_width="wrap_content"
-             android:id="@+id/videoView"
+             android:id="@+id/videoViewContainer"
              android:layout_gravity="center" />
 
         <ImageView

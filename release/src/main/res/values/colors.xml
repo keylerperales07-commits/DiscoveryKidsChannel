@@ -9,4 +9,10 @@
     <color name="dk_text_primary">#F2F2F2</color>
     <color name="dk_text_secondary">#9AA0A6</color>
     <color name="dk_accent">#8AB4F8</color>
+
+    <!-- ══ Discovery Kids Launcher (Release 2009.5.0.0) ══
+         MenuBar superior: degradado azul (arriba) → cian (abajo), logo +
+         título en dk_font. Ver bg_launcher_menubar.xml y activity_launcher.xml. -->
+    <color name="dk_launcher_gradient_top">#1565C0</color>
+    <color name="dk_launcher_gradient_bottom">#00BCD4</color>
 </resources>

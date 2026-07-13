@@ -7,7 +7,6 @@ package com.keyler.discoverykidschannel
 
 import android.app.ActivityManager
 import android.app.AlertDialog
-import com.bumptech.glide.Glide
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
@@ -30,7 +29,6 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.VideoView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -94,7 +92,12 @@ import java.io.File
 class LiveDiscoveryKids : AppCompatActivity() {
 
     // ── Views ──────────────────────────────────────────────────────────────────
-    internal lateinit var videoView: VideoView
+    // Release 2009.5.0.0: VideoView → DkVideoView (VideoView clásico o
+    // TextureView según Configuración → "Compatibilidad de video"). Toda la
+    // API usada acá abajo (setVideoURI, seekTo, start, pause, stopPlayback,
+    // isPlaying, currentPosition, setOnPreparedListener, setOnCompletionListener)
+    // se mantiene idéntica — ver DkVideoView.kt.
+    internal lateinit var videoView: DkVideoView
     internal lateinit var screenBug: ImageView
     internal lateinit var versionInfo: TextView
     internal lateinit var debugTextView: TextView
@@ -165,14 +168,23 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // qué recurso eligió el paso anterior para no volver a sortear al azar.
     internal enum class CommercialStep { PRE_COMERCIAL, COMERCIAL, POST_COMERCIAL }
     internal var commercialStep: CommercialStep        = CommercialStep.PRE_COMERCIAL
-    internal var commercialChosenPreComercial: Int      = -1
+    // Release 2009.5.0.0 — pasan de Int (resource id fijo en res/raw) a Uri,
+    // porque ahora pueden ser un video personalizado elegido por el usuario
+    // (ver resolveYaRegresaUri()/resolveContinuamosUri()), no solo un recurso
+    // empaquetado. commercialChosenCommercial sigue siendo Int: el comercial
+    // en sí no es configurable por programa, solo ya_regresa/continuamos.
+    internal var commercialChosenPreComercial: Uri?     = null
     internal var commercialChosenCommercial: Int        = -1
-    internal var commercialChosenYaVolvemos: Int         = -1
+    internal var commercialChosenYaVolvemos: Uri?        = null
 
     // ── Flags de estado ────────────────────────────────────────────────────────
     internal var isInProgramSegment    = false
     internal var isInCommercialBlock   = false
     internal var commercialResumeMs    = 0
+
+    // Release 2009.5.0.0 — evita repetir el AlertDialog de "video no es
+    // 480p" en cada programa de la sesión; se muestra una sola vez.
+    internal var hasWarnedAboutResolution = false
 
     // ── Tipo de ítem actual ────────────────────────────────────────────────────
     // Valores: "program", "bumper", "enseguida", "talla", "commercial"
@@ -228,24 +240,13 @@ class LiveDiscoveryKids : AppCompatActivity() {
         data class Program(val index: Int) : PlayItem()   // 0-based → pro(n+1).mp4
     }
 
-    internal val playlist = listOf(
-        PlayItem.Enseguida,
-        PlayItem.Bumper,
-        PlayItem.StandaloneCommercial,
-        PlayItem.Program(0),
-        PlayItem.Enseguida,
-        PlayItem.Bumper,
-        PlayItem.StandaloneCommercial,
-        PlayItem.Program(1),
-        PlayItem.Enseguida,
-        PlayItem.Bumper,
-        PlayItem.StandaloneCommercial,
-        PlayItem.Program(2),
-        PlayItem.Enseguida,
-        PlayItem.Bumper,
-        PlayItem.StandaloneCommercial,
-        PlayItem.Program(3)
-    )
+    // Release 2009.5.0.0 — antes era un `val` fijo de 4 programas. Ahora se
+    // arma en onCreate() vía buildPlaylist(): con Experimental desactivado
+    // sigue siendo el ciclo clásico de 4 programas (pro1–pro4.mp4); con
+    // Experimental activado, se repite el ciclo Enseguida→Bumper→Comercial→
+    // Programa una vez por cada uno de los N programas que eligió el usuario
+    // (SettingsManager.getProgramCount(), 1–24).
+    internal var playlist: List<PlayItem> = emptyList()
 
     internal var playlistIndex = 0
     internal var currentProgramIndex = 0
@@ -272,6 +273,10 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // Se indexa por currentProgramIndex en playCommercial().
     internal var lastEnseguidaPreComercialRes: Int = -1
     internal var currentScreenBugRes: Int = R.drawable.screenbug
+    // Release (fix build: D8/R8 crash) — GifMovieDrawable propio (Movie API
+    // nativa), cacheado una vez para no re-decodificar el GIF cada vez.
+    internal var screenBugStartGif: GifMovieDrawable? = null
+    internal var screenBugEndGif: GifMovieDrawable? = null
 
     // ── Constants ──────────────────────────────────────────────────────────────
     companion object {
@@ -289,9 +294,10 @@ class LiveDiscoveryKids : AppCompatActivity() {
         //     cuando aparece screenbug_end (programDuration - 20s)
         //   screenbug_end (GIF): mostrar 20s antes del final, ocultar al final del programa
         internal const val SCREENBUG_START_DELAY_MS = 20_000L
-        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 5_000L   // Duración estimada del GIF start
-        internal const val SCREENBUG_MID_DELAY_AFTER_START_MS = 15_000L    // Delay antes de mostrar el PNG, después de que start se oculta
+        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 15_000L  // Se oculta 15s después de mostrarse (antes: 5s)
+        internal const val SCREENBUG_MID_DELAY_AFTER_START_MS = 0L           // El PNG aparece inmediatamente al ocultarse screenbug_start (antes: 15s de espera)
         internal const val SCREENBUG_END_SHOW_BEFORE_MS = 20_000L          // Mostrar screenbug_end 20s antes del final
+        internal const val SCREENBUG_END_VISIBLE_DURATION_MS = 5_000L      // Se oculta 5s después de mostrarse (antes se quedaba visible hasta el final del segmento, por lo que el GIF se veía repetirse en loop)
 
         /** No commercial break is scheduled within this many ms of the program end. */
         internal const val BREAK_CUTOFF_MS = 3 * 60 * 1_000L         // 3 min
@@ -332,30 +338,27 @@ class LiveDiscoveryKids : AppCompatActivity() {
          * (Actualización La Era Doki / nuevo Discovery Kids).
          */
         internal val BUMPERS = listOf(
+            R.raw.bumper6,
             R.raw.bumper,
             R.raw.bumper2,
             R.raw.bumper3,
             R.raw.bumper4,
-            R.raw.bumper5,
-            R.raw.bumper6,
-            R.raw.bumper7,
-            R.raw.bumper8,
-            R.raw.bumper9,
-            R.raw.bumper10,
-            R.raw.bumper11,
-            R.raw.bumper12,
-            R.raw.bumper13
+            R.raw.bumper5
+            
         )
 
         /**
          * Enseguidas post-programa (van entre el fin del programa y el comercial standalone).
          * Beta 3.0.0.3: selección aleatoria con anti-repetición.
          * Se eliminó enseguida5 y la selección por horario.
-         * enseguida1 y enseguida2 actualizados a la Era 2002.
+         *
+         * Release 2009.5.0.0 — "Parque Imaginario": enseguida1 y enseguida2
+         * actualizados de assets, y enseguida2 vuelve a la lista (elección
+         * aleatoria entre los dos, igual que ya_regresa1/ya_regresa2 y
+         * continuamos1/continuamos2). enseguida3/enseguida4 quedan eliminados.
          */
         internal val ENSEGUIDAS_POST_PROGRAMA = listOf(
-            R.raw.enseguida1,
-            R.raw.enseguida2
+            R.raw.enseguida1
         )
 
         /**
@@ -368,9 +371,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
          */
         internal val ENSEGUIDAS_PRE_COMERCIAL = listOf(
             R.raw.ya_regresa1,
-            R.raw.ya_regresa2,
-            R.raw.ya_regresa3,
-            R.raw.ya_regresa4
+            R.raw.ya_regresa2
         )
 
         /**
@@ -379,9 +380,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
          */
         internal val ENSEGUIDA_YA_VOLVEMOS_MAP = mapOf(
             R.raw.ya_regresa1 to R.raw.continuamos1,
-            R.raw.ya_regresa2 to R.raw.continuamos2,
-            R.raw.ya_regresa3 to R.raw.continuamos3,
-            R.raw.ya_regresa4 to R.raw.continuamos4
+            R.raw.ya_regresa2 to R.raw.continuamos2
         )
     }
 
@@ -399,10 +398,27 @@ class LiveDiscoveryKids : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        videoView = findViewById(R.id.videoView)
+        // Release 2009.5.0.0: el DkVideoView (VideoView clásico o TextureView,
+        // según Configuración) se crea en código y se agrega al placeholder
+        // que dejó activity_main.xml — ver DkVideoView.kt.
+        val videoViewContainer = findViewById<FrameLayout>(R.id.videoViewContainer)
+        videoView = DkVideoView.create(this)
+        videoViewContainer.addView(
+            videoView,
+            FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.MATCH_PARENT).apply {
+                gravity = android.view.Gravity.CENTER
+            }
+        )
+
+        // Release 2009.5.0.0 — playlist dinámica: con Experimental activado,
+        // la cantidad de programas la elige el usuario (1–24, ver
+        // DiscoveryKidsLauncherActivity); con Experimental desactivado se
+        // mantiene el comportamiento clásico de 4 programas fijos.
+        playlist = buildPlaylist()
 
         screenBug = findViewById(R.id.screenBug)
         screenBug.alpha = 0f
+        preloadScreenBugAssets()  // PERF FIX: precarga los GIFs para que se muestren sin lag
         prevButton = findViewById(R.id.btnPrevious)
         nextButton = findViewById(R.id.btnNext)
         settingsButton = findViewById(R.id.btnSettings)  // Preview 2006.4.1.0.11
@@ -439,6 +455,37 @@ class LiveDiscoveryKids : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 showExitConfirmationDialog()
+            }
+        })
+
+        checkForUpdateOnLaunch()
+    }
+
+    /**
+     * Release 2009.5.0.0 — NO es experimental. Al entrar a la app se consulta
+     * en silencio si hay una versión nueva en GitHub (mismo AppUpdater.checkForUpdate()
+     * que ya usaba SettingsActivity → "Buscar actualizaciones", incluyendo el
+     * switch "Habilitar versiones Preview"). Si hay novedad, se muestra un
+     * AlertDialog PROPIO — fuera de Configuración y de UpdateActivity — con la
+     * opción de ir al Actualizador ahora o más tarde. Si no hay novedad, o si
+     * falla la consulta (sin internet, etc.), no se muestra nada: nunca
+     * interrumpe la reproducción con un error.
+     */
+    private fun checkForUpdateOnLaunch() {
+        AppUpdater.checkForUpdate(this, object : AppUpdater.CheckCallback {
+            override fun onUpToDate() { /* silencioso */ }
+            override fun onError(message: String) { /* silencioso — nunca interrumpe el canal */ }
+            override fun onUpdateAvailable(remoteVersion: String, apkUrl: String, releaseNotesUrl: String) {
+                if (isFinishing || isDestroyed) return
+                AlertDialog.Builder(this@LiveDiscoveryKids)
+                    .setTitle("Nueva actualización disponible")
+                    .setMessage("Hay una nueva versión ($remoteVersion) de Discovery Kids lista para instalar.")
+                    .setPositiveButton("Actualizar") { _, _ ->
+                        startActivity(Intent(this@LiveDiscoveryKids, UpdateActivity::class.java))
+                    }
+                    .setNegativeButton("Más tarde", null)
+                    .setCancelable(true)
+                    .show()
             }
         })
     }
@@ -779,6 +826,32 @@ internal fun LiveDiscoveryKids.playEnseguida() {
 // correctamente desde la Enseguida del siguiente ciclo al terminar el programa.
 // ══════════════════════════════════════════════════════════════════════════
 
+/**
+ * Release 2009.5.0.0 — cantidad de programas activa en esta sesión.
+ * Con Experimental desactivado, siempre 4 (comportamiento clásico,
+ * pro1–pro4.mp4). Con Experimental activado, la que eligió el usuario en
+ * Discovery Kids Launcher (1–24, SettingsManager.getProgramCount()).
+ */
+internal fun LiveDiscoveryKids.totalProgramCount(): Int =
+    if (SettingsManager.isExperimentalEnabled(this)) SettingsManager.getProgramCount(this) else 4
+
+/**
+ * Release 2009.5.0.0 — arma el playlist: Enseguida → Bumper →
+ * StandaloneCommercial → Programa(i), repetido una vez por cada programa
+ * (ver totalProgramCount()). Reemplaza al `val playlist` fijo de 4 ciclos
+ * que existía antes de esta Release.
+ */
+internal fun LiveDiscoveryKids.buildPlaylist(): List<LiveDiscoveryKids.PlayItem> {
+    val items = mutableListOf<LiveDiscoveryKids.PlayItem>()
+    repeat(totalProgramCount()) { i ->
+        items.add(LiveDiscoveryKids.PlayItem.Enseguida)
+        items.add(LiveDiscoveryKids.PlayItem.Bumper)
+        items.add(LiveDiscoveryKids.PlayItem.StandaloneCommercial)
+        items.add(LiveDiscoveryKids.PlayItem.Program(i))
+    }
+    return items
+}
+
 internal fun LiveDiscoveryKids.goToAdjacentProgram(direction: Int) {
     // Release 4.3.1 — BUG FIX: si todavía no arrancó ningún programa en la
     // sesión (ej: Prev/Next tocado durante la Enseguida/Bumper/Comercial
@@ -856,7 +929,7 @@ internal fun LiveDiscoveryKids.goToAdjacentProgram(direction: Int) {
 internal fun LiveDiscoveryKids.findAvailableProgramIndex(startIndex: Int, direction: Int): Int? {
     if (direction == 0) return null
 
-    val totalPrograms = 4
+    val totalPrograms = totalProgramCount()   // Release 2009.5.0.0 — antes fijo en 4
     var candidate = startIndex
 
     repeat(totalPrograms) {
@@ -950,6 +1023,7 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
         mp.isLooping = false
 
         programDuration = mp.duration
+        checkVideoResolutionAndWarn(mp)
 
         if (isFirstPlay) {
             breakQueue = calcBreaks(programDuration).toMutableList()
@@ -1022,7 +1096,9 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     
     if (elapsed < startHideAt && segmentDuration > startHideAt) {
         val hideDelay = (startHideAt - elapsed).coerceAtLeast(0L)
-        post(hideDelay) { fadeOutBug() }
+        // BUG FIX: antes usaba fadeOutBug() (con animación); el screenbug_start
+        // debe desaparecer de golpe, sin fadeout.
+        post(hideDelay) { setBugAlpha(0f) }
     }
     
     // --- PHASE 2: screenbug (PNG) ---
@@ -1044,7 +1120,10 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     
     // --- PHASE 3: screenbug_end (GIF) ---
     val endShowAt = segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
-    val endHideAt = segmentDuration
+    // BUG FIX: antes endHideAt = segmentDuration, así que quedaba visible los
+    // 20s completos de la ventana final y el GIF (más corto) se veía repetirse
+    // en loop. Ahora se oculta 5s después de mostrarse, igual que screenbug_start.
+    val endHideAt = endShowAt + LiveDiscoveryKids.SCREENBUG_END_VISIBLE_DURATION_MS
     
     if (elapsed < endShowAt && segmentDuration > endShowAt) {
         val endDelay = (endShowAt - elapsed).coerceAtLeast(0L)
@@ -1187,11 +1266,14 @@ internal fun LiveDiscoveryKids.playCommercial(resumeProgramAtMs: Int) {
     // Release 4.0.1 — BUG FIX: ya_regresa determinístico por programa.
     // currentProgramIndex (0-based) indexa directamente ENSEGUIDAS_PRE_COMERCIAL,
     // garantizando que cada programa siempre muestre su propio ya_regresa/continuamos.
-    val chosenPreComercial = LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL[currentProgramIndex % LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL.size]
-    lastEnseguidaPreComercialRes = chosenPreComercial
-
-    val chosenYaVolvemos = LiveDiscoveryKids.ENSEGUIDA_YA_VOLVEMOS_MAP[chosenPreComercial]
-        ?: R.raw.continuamos1   // fallback defensivo
+    //
+    // Release 2009.5.0.0 — resolveYaRegresaUri()/resolveContinuamosUri() envuelven
+    // esa misma lógica clásica, pero devuelven el video PERSONALIZADO del
+    // usuario si activó "Personalizado" para este programa en el Discovery
+    // Kids Launcher (Experimental). lastEnseguidaPreComercialRes se mantiene
+    // como referencia informativa (ya no se usa para calcular el continuamos).
+    val chosenPreComercial = resolveYaRegresaUri(currentProgramIndex)
+    val chosenYaVolvemos = resolveContinuamosUri(currentProgramIndex)
 
     // Release 2006.4.1.1 — se promueven a campos de instancia para que
     // onResume() pueda reconstruir exactamente este bloque comercial
@@ -1214,16 +1296,24 @@ internal fun LiveDiscoveryKids.playCommercial(resumeProgramAtMs: Int) {
         .start()
 }
 
-/** Paso 1 del bloque comercial: ya_regresa (pre-comercial). FadeIn 1 s, sin FadeOut de entrada (ya lo hizo el caller). */
+/**
+ * Paso 1 del bloque comercial: ya_regresa (pre-comercial). FadeIn 1 s, sin
+ * FadeOut de entrada (ya lo hizo el caller).
+ *
+ * Release 2009.5.0.0 — [chosenPreComercial] y [chosenYaVolvemos] pasan de
+ * Int (resource id) a Uri: pueden ser un recurso empaquetado (comportamiento
+ * clásico, vía rawUri()) o un video elegido por el usuario (SAF), resueltos
+ * antes de llegar acá por resolveYaRegresaUri()/resolveContinuamosUri().
+ */
 internal fun LiveDiscoveryKids.playCommercialStepPreComercial(
-    chosenPreComercial: Int,
+    chosenPreComercial: Uri,
     chosenCommercial: Int,
-    chosenYaVolvemos: Int,
+    chosenYaVolvemos: Uri,
     resumeProgramAtMs: Int,
     startOffsetMs: Int
 ) {
     commercialStep = LiveDiscoveryKids.CommercialStep.PRE_COMERCIAL
-    currentClipUri = rawUri(chosenPreComercial)
+    currentClipUri = chosenPreComercial
     currentClipPositionMs = startOffsetMs
     currentClipOnComplete = null   // este paso no usa playUriWithTransition; se maneja manualmente
     startPositionTracker()
@@ -1241,11 +1331,11 @@ internal fun LiveDiscoveryKids.playCommercialStepPreComercial(
 
         // Paso 2: comercial — FadeOut 500 ms (TRANSITION_FADE_OUT_MS)
         playUriWithTransition(rawUri(chosenCommercial)) {
-            Log.d(LiveDiscoveryKids.TAG, "▶ YA VOLVEMOS post-comercial [res=$chosenYaVolvemos]")
+            Log.d(LiveDiscoveryKids.TAG, "▶ YA VOLVEMOS post-comercial [uri=$chosenYaVolvemos]")
             commercialStep = LiveDiscoveryKids.CommercialStep.POST_COMERCIAL
 
             // Paso 3: continuamos (FadeOut 500 ms / FadeIn 1 s)
-            playUriWithTransition(rawUri(chosenYaVolvemos)) {
+            playUriWithTransition(chosenYaVolvemos) {
                 val uri = currentProgramUri ?: run {
                     Log.e(LiveDiscoveryKids.TAG, "No currentProgramUri – advancing")
                     playlistIndex++
@@ -1258,7 +1348,7 @@ internal fun LiveDiscoveryKids.playCommercialStepPreComercial(
             }
         }
     }
-    videoView.setVideoURI(rawUri(chosenPreComercial))
+    videoView.setVideoURI(chosenPreComercial)
     videoView.requestFocus()
 }
 
@@ -1267,15 +1357,24 @@ internal fun LiveDiscoveryKids.playCommercialStepPreComercial(
  * y la posición donde estaba al pasar a segundo plano, usando los mismos
  * recursos ya elegidos (commercialChosenPreComercial/Commercial/YaVolvemos)
  * en vez de volver a sortear. Se llama desde onResume().
+ *
+ * Release 2009.5.0.0 — commercialChosenPreComercial/YaVolvemos ahora son
+ * Uri? (nullable porque son campos de instancia con valor inicial null);
+ * si por algún motivo son null acá (no debería pasar en un resume real, ya
+ * que playCommercial() siempre los fija primero), se recalculan con
+ * resolveYaRegresaUri()/resolveContinuamosUri() como fallback defensivo.
  */
 internal fun LiveDiscoveryKids.resumeCommercialBlock(startOffsetMs: Int) {
+    val preComercialUri = commercialChosenPreComercial ?: resolveYaRegresaUri(currentProgramIndex)
+    val yaVolvemosUri = commercialChosenYaVolvemos ?: resolveContinuamosUri(currentProgramIndex)
+
     when (commercialStep) {
         LiveDiscoveryKids.CommercialStep.PRE_COMERCIAL -> {
             Log.d(LiveDiscoveryKids.TAG, "onResume – reanudando ya_regresa (pre-comercial) en ${startOffsetMs}ms")
             playCommercialStepPreComercial(
-                commercialChosenPreComercial,
+                preComercialUri,
                 commercialChosenCommercial,
-                commercialChosenYaVolvemos,
+                yaVolvemosUri,
                 commercialResumeMs,
                 startOffsetMs = startOffsetMs
             )
@@ -1283,9 +1382,9 @@ internal fun LiveDiscoveryKids.resumeCommercialBlock(startOffsetMs: Int) {
         LiveDiscoveryKids.CommercialStep.COMERCIAL -> {
             Log.d(LiveDiscoveryKids.TAG, "onResume – reanudando comercial en ${startOffsetMs}ms")
             resumeUriWithSeek(rawUri(commercialChosenCommercial), startOffsetMs) {
-                Log.d(LiveDiscoveryKids.TAG, "▶ YA VOLVEMOS post-comercial [res=$commercialChosenYaVolvemos]")
+                Log.d(LiveDiscoveryKids.TAG, "▶ YA VOLVEMOS post-comercial [uri=$yaVolvemosUri]")
                 commercialStep = LiveDiscoveryKids.CommercialStep.POST_COMERCIAL
-                playUriWithTransition(rawUri(commercialChosenYaVolvemos)) {
+                playUriWithTransition(yaVolvemosUri) {
                     val uri = currentProgramUri ?: run {
                         Log.e(LiveDiscoveryKids.TAG, "No currentProgramUri – advancing")
                         playlistIndex++
@@ -1299,7 +1398,7 @@ internal fun LiveDiscoveryKids.resumeCommercialBlock(startOffsetMs: Int) {
         }
         LiveDiscoveryKids.CommercialStep.POST_COMERCIAL -> {
             Log.d(LiveDiscoveryKids.TAG, "onResume – reanudando continuamos en ${startOffsetMs}ms")
-            resumeUriWithSeek(rawUri(commercialChosenYaVolvemos), startOffsetMs) {
+            resumeUriWithSeek(yaVolvemosUri, startOffsetMs) {
                 val uri = currentProgramUri ?: run {
                     Log.e(LiveDiscoveryKids.TAG, "No currentProgramUri – advancing")
                     playlistIndex++
@@ -1543,6 +1642,24 @@ internal fun LiveDiscoveryKids.resumeUriWithSeek(
 // ══════════════════════════════════════════════════════════════════════════
 
 internal fun LiveDiscoveryKids.resolveProgram(index: Int): Uri? {
+    // Release 2009.5.0.0 — si Experimental está activado y el usuario eligió
+    // un video propio para este programa desde Discovery Kids Launcher (SAF,
+    // sin necesidad de renombrar/copiar nada a Movies), se usa ese Uri
+    // directamente. La Uri se persiste con takePersistableUriPermission()
+    // al elegirla (ver DiscoveryKidsLauncherActivity.pickProgramVideo()), así
+    // que sigue siendo válida entre reinicios de la app.
+    if (SettingsManager.isExperimentalEnabled(this)) {
+        val customUri = SettingsManager.getProgramUri(this, index)
+        if (!customUri.isNullOrBlank()) {
+            return try {
+                Uri.parse(customUri)
+            } catch (e: Exception) {
+                Log.e(LiveDiscoveryKids.TAG, "Uri de programa $index inválida: $customUri", e)
+                null
+            }
+        }
+    }
+
     val fileName = "pro${index + 1}.mp4"
 
     // 1. Direct path in Movies directory (works on Android ≤ 9 or with MANAGE_EXTERNAL)
@@ -1585,6 +1702,46 @@ internal fun LiveDiscoveryKids.resolveProgram(index: Int): Uri? {
 // ══════════════════════════════════════════════════════════════════════════
 
 internal fun LiveDiscoveryKids.rawUri(resId: Int): Uri = Uri.parse("android.resource://$packageName/$resId")
+
+/**
+ * Release 2009.5.0.0 — resuelve el ya_regresa (pre-comercial) que le toca al
+ * programa [programIndex]. Si Experimental está activado y el usuario marcó
+ * "Personalizado" para ese programa (SettingsManager.isYaRegresaCustom),
+ * devuelve el video que eligió; si no, cae al comportamiento clásico
+ * (ENSEGUIDAS_PRE_COMERCIAL indexado por programa, vía rawUri()).
+ */
+internal fun LiveDiscoveryKids.resolveYaRegresaUri(programIndex: Int): Uri {
+    if (SettingsManager.isExperimentalEnabled(this) && SettingsManager.isYaRegresaCustom(this, programIndex)) {
+        val customUri = SettingsManager.getYaRegresaUri(this, programIndex)
+        if (!customUri.isNullOrBlank()) {
+            try { return Uri.parse(customUri) } catch (e: Exception) {
+                Log.e(LiveDiscoveryKids.TAG, "Uri de ya_regresa personalizado inválida (programa $programIndex)", e)
+            }
+        }
+    }
+    val defaultRes = LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL[programIndex % LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL.size]
+    return rawUri(defaultRes)
+}
+
+/**
+ * Release 2009.5.0.0 — análogo a resolveYaRegresaUri() pero para el
+ * continuamos (post-comercial) del programa [programIndex]. El comportamiento
+ * clásico usa el mapeo ENSEGUIDA_YA_VOLVEMOS_MAP a partir del ya_regresa
+ * predeterminado de ese mismo programa (no del que se haya personalizado).
+ */
+internal fun LiveDiscoveryKids.resolveContinuamosUri(programIndex: Int): Uri {
+    if (SettingsManager.isExperimentalEnabled(this) && SettingsManager.isContinuamosCustom(this, programIndex)) {
+        val customUri = SettingsManager.getContinuamosUri(this, programIndex)
+        if (!customUri.isNullOrBlank()) {
+            try { return Uri.parse(customUri) } catch (e: Exception) {
+                Log.e(LiveDiscoveryKids.TAG, "Uri de continuamos personalizado inválida (programa $programIndex)", e)
+            }
+        }
+    }
+    val defaultPreComercial = LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL[programIndex % LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL.size]
+    val defaultRes = LiveDiscoveryKids.ENSEGUIDA_YA_VOLVEMOS_MAP[defaultPreComercial] ?: R.raw.continuamos1
+    return rawUri(defaultRes)
+}
 
 
 
@@ -1675,11 +1832,21 @@ internal fun LiveDiscoveryKids.stopBgMusic() {
 
 internal fun LiveDiscoveryKids.startChannel() {
     val prefs = getSharedPreferences(LiveDiscoveryKids.PREFS_NAME, Context.MODE_PRIVATE)
-    if (prefs.getBoolean(LiveDiscoveryKids.PREF_HAS_STATE, false)) {
+    val plIdx = prefs.getInt(LiveDiscoveryKids.PREF_PLAYLIST_IDX, 0)
+    val progIdx = prefs.getInt(LiveDiscoveryKids.PREF_PROGRAM_IDX, 0)
+    // Release 2009.5.0.0 — con Experimental activado, la cantidad de
+    // programas (y por lo tanto el tamaño del playlist) puede cambiar entre
+    // sesiones. Si el estado guardado de una sesión anterior ya no encaja
+    // en el playlist actual (índice fuera de rango), se descarta en vez de
+    // arriesgar un crash al indexar playlist[plIdx] — se arranca desde cero.
+    val savedStateFitsCurrentPlaylist = plIdx < playlist.size && progIdx < totalProgramCount()
+
+    if (prefs.getBoolean(LiveDiscoveryKids.PREF_HAS_STATE, false) && savedStateFitsCurrentPlaylist) {
         // Hay sesión guardada → preguntar al usuario
         showResumeDialog(prefs)
     } else {
-        // Sin sesión → arrancar desde el principio
+        // Sin sesión (o sesión inválida para el playlist actual) → arrancar desde el principio
+        clearSavedState()
         playlistIndex = 0
         advance()
     }
@@ -1969,36 +2136,72 @@ internal fun LiveDiscoveryKids.cancelAllTasks() {
  * automáticamente vía .load(resId). Para el PNG estático (fase 2) Glide
  * también funciona igual de bien, así que se unifica el path para las 3 fases.
  */
+/**
+ * BUG FIX (histórico): ImageView.setImageResource() con un .gif solo decodifica
+ * el primer frame (no anima). screenbug_start.gif y screenbug_end.gif se veían
+ * congelados por esto.
+ *
+ * Fix (librería GIF liviana): android-gif-drawable decodifica el GIF nativo y
+ * expone un Drawable Animatable normal — sin el overhead de un pipeline de
+ * imagen genérico como Glide. Los GifDrawable de start/end se cachean una vez
+ * en preloadScreenBugAssets() y aquí solo se reinician (seekTo(0) + start())
+ * para que reproduzcan desde el primer frame cada vez que se muestran.
+ */
 internal fun LiveDiscoveryKids.fadeInBug() {
-    Log.d(LiveDiscoveryKids.TAG, "ScreenBug FADE IN [res=$currentScreenBugRes]")
-    Glide.with(screenBug)
-        .load(currentScreenBugRes)
-        .into(screenBug)
-    screenBug.animate()
-        .alpha(1f)
-        .setDuration(LiveDiscoveryKids.FADE_MS)
-        .start()
+    Log.d(LiveDiscoveryKids.TAG, "ScreenBug SHOW [res=$currentScreenBugRes]")
+    showScreenBugResource(currentScreenBugRes)
+    setBugAlpha(1f)
 }
 
 /** Release 2009.4.6.1 — variante de fadeInBug() que toma un resource específico (para screenbug de 3 fases). */
 internal fun LiveDiscoveryKids.fadeInBugWithResource(res: Int) {
-    Log.d(LiveDiscoveryKids.TAG, "ScreenBug FADE IN [res=$res]")
+    Log.d(LiveDiscoveryKids.TAG, "ScreenBug SHOW [res=$res]")
     currentScreenBugRes = res
-    Glide.with(screenBug)
-        .load(res)
-        .into(screenBug)
-    screenBug.animate()
-        .alpha(1f)
-        .setDuration(LiveDiscoveryKids.FADE_MS)
-        .start()
+    showScreenBugResource(res)
+    setBugAlpha(1f)
+}
+
+/** Aplica el resource correcto al ImageView: PNG estático directo, GIF cacheado reiniciado desde el frame 0. */
+private fun LiveDiscoveryKids.showScreenBugResource(res: Int) {
+    when (res) {
+        R.drawable.screenbug -> screenBug.setImageResource(res)  // PNG estático, sin animación
+        R.drawable.screenbug_start -> screenBugStartGif?.let {
+            it.seekToStart()
+            it.start()
+            screenBug.setImageDrawable(it)
+        } ?: screenBug.setImageResource(res)  // fallback si el preload aún no corrió
+        R.drawable.screenbug_end -> screenBugEndGif?.let {
+            it.seekToStart()
+            it.start()
+            screenBug.setImageDrawable(it)
+        } ?: screenBug.setImageResource(res)
+        else -> screenBug.setImageResource(res)
+    }
+}
+
+/**
+ * Precarga y cachea los GifMovieDrawable de screenbug_start / screenbug_end
+ * en memoria una sola vez, para no re-decodificar el GIF cada vez que se
+ * muestra. Llamar una sola vez en onCreate(), antes de que arranque
+ * cualquier programa.
+ */
+@Suppress("DEPRECATION")
+internal fun LiveDiscoveryKids.preloadScreenBugAssets() {
+    try {
+        resources.openRawResource(R.drawable.screenbug_start).use { stream ->
+            android.graphics.Movie.decodeStream(stream)?.let { screenBugStartGif = GifMovieDrawable(it) }
+        }
+        resources.openRawResource(R.drawable.screenbug_end).use { stream ->
+            android.graphics.Movie.decodeStream(stream)?.let { screenBugEndGif = GifMovieDrawable(it) }
+        }
+    } catch (e: Exception) {
+        Log.e(LiveDiscoveryKids.TAG, "Error precargando GIFs de screenbug", e)
+    }
 }
 
 internal fun LiveDiscoveryKids.fadeOutBug() {
-    Log.d(LiveDiscoveryKids.TAG, "ScreenBug FADE OUT")
-    screenBug.animate()
-        .alpha(0f)
-        .setDuration(LiveDiscoveryKids.FADE_MS)
-        .start()
+    Log.d(LiveDiscoveryKids.TAG, "ScreenBug HIDE")
+    setBugAlpha(0f)
 }
 
 /** Instantly sets alpha without animation (used during transitions). */
@@ -2134,6 +2337,37 @@ internal fun LiveDiscoveryKids.goFullscreen() {
  *     ON → match_parent (alto) / wrap_content (ancho): el video se estira
  *     para llenar el ancho del marco 4:3 (comportamiento histórico).
  */
+/**
+ * Release 2009.5.0.0 — si el programa recién preparado es de 720p o
+ * superior (alto ≥ 720px) y todavía se está usando el VideoView clásico
+ * (SettingsManager.isTextureViewEnabled() == false), muestra un AlertDialog
+ * avisando que la transmisión podría no verse bien (el ScreenBug queda
+ * detrás del video con VideoView en esas resoluciones — ver DkVideoView.kt)
+ * y recomienda activar "Usar TextureView" en Configuración. Se muestra una
+ * sola vez por sesión (hasWarnedAboutResolution) para no interrumpir cada
+ * programa con el mismo aviso.
+ */
+internal fun LiveDiscoveryKids.checkVideoResolutionAndWarn(mp: MediaPlayer) {
+    if (hasWarnedAboutResolution) return
+    if (SettingsManager.isTextureViewEnabled(this)) return   // ya está en el modo compatible
+
+    val height = mp.videoHeight
+    if (height < 720) return   // 480p o inferior: sin problema conocido
+
+    hasWarnedAboutResolution = true
+    if (isFinishing || isDestroyed) return
+
+    AlertDialog.Builder(this)
+        .setTitle("Resolución de video alta")
+        .setMessage("Este programa es de $height p (720p o superior). La transmisión podría no funcionar correctamente — el ScreenBug puede quedar oculto detrás del video.\n\nSe recomienda activar \"Usar TextureView\" en Configuración → Compatibilidad de video.")
+        .setPositiveButton("Ir a Configuración") { _, _ ->
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        .setNegativeButton("Ahora no", null)
+        .setCancelable(true)
+        .show()
+}
+
 internal fun LiveDiscoveryKids.applySettings() {
     crtOverlay.effectEnabled = SettingsManager.isCrtEffectEnabled(this)
     bugShowDelayMs = SettingsManager.getScreenbugDelaySec(this) * 1_000L
@@ -2231,4 +2465,3 @@ internal fun LiveDiscoveryKids.displayInfo() {
 
     versionInfo.text = versionInfoText
 }
-

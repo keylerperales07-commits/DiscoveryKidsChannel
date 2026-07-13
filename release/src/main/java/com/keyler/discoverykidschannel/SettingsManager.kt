@@ -35,6 +35,34 @@ import android.content.SharedPreferences
  * consulta isProgramEnabled() en playProgram() y findAvailableProgramIndex()
  * para saltear los programas desactivados, igual que ya salteaba los que
  * faltaban en la carpeta Movies.
+ *
+ * Release 2009.5.0.0 — "Parque Imaginario" (Fase 4, inicio rama 5.x). NUEVO:
+ *   - KEY_EXPERIMENTAL_ENABLED: interruptor maestro de la sección "Experimental"
+ *     de Configuración (desactivado por defecto). Habilita el nuevo Discovery
+ *     Kids Launcher como pantalla de inicio real (en vez de pasar directo a
+ *     LiveDiscoveryKids) y toda la configuración avanzada de programas
+ *     (cantidad de programas, video elegido por el usuario, ya_regresa /
+ *     continuamos personalizados por programa). Ver DiscoveryKidsLauncherActivity.
+ *   - KEY_PROGRAM_COUNT: cantidad de programas que arma la programación
+ *     (1–24). Solo tiene efecto con Experimental activado; con Experimental
+ *     desactivado el canal sigue el comportamiento clásico de 4 programas
+ *     fijos (pro1–pro4.mp4 en la carpeta Movies).
+ *   - KEY_PROGRAM_URI_PREFIX: Uri (content://, persistida via SAF) del video
+ *     que el usuario eligió para el programa N. Si no hay Uri guardada,
+ *     resolveProgram() cae al comportamiento clásico (buscar pro{N}.mp4).
+ *   - KEY_YAREGRESA_CUSTOM_PREFIX / KEY_YAREGRESA_URI_PREFIX y
+ *     KEY_CONTINUAMOS_CUSTOM_PREFIX / KEY_CONTINUAMOS_URI_PREFIX: por
+ *     programa, si el usuario activó "Personalizado" para el ya_regresa o el
+ *     continuamos de ESE programa (en vez del predeterminado que trae la
+ *     app) y qué Uri eligió. Ver resolveYaRegresaUri()/resolveContinuamosUri()
+ *     en LiveDiscoveryKids.kt.
+ *   - KEY_TEXTURE_VIEW_ENABLED: NO es experimental (ver spec de la Release).
+ *     Activa el motor de video basado en TextureView (DkVideoView →
+ *     TextureVideoView) en vez del VideoView clásico, necesario para que
+ *     videos de 720p o superior se vean bien (con VideoView, el ScreenBug
+ *     queda oculto detrás del video en esas resoluciones por aceleración de
+ *     hardware). Desactivado por defecto — el AlertDialog de "video no es
+ *     480p" recomienda activarlo.
  */
 object SettingsManager {
 
@@ -49,6 +77,16 @@ object SettingsManager {
     private const val KEY_PREVIEW_UPDATES_ENABLED = "preview_updates_enabled"
     private const val KEY_PROGRAM_ENABLED_PREFIX = "program_enabled_"   // Release 4.6.0
 
+    // ── Release 2009.5.0.0 — Experimental / Discovery Kids Launcher ─────────
+    private const val KEY_EXPERIMENTAL_ENABLED = "experimental_enabled"
+    private const val KEY_PROGRAM_COUNT = "program_count"
+    private const val KEY_PROGRAM_URI_PREFIX = "program_uri_"
+    private const val KEY_YAREGRESA_CUSTOM_PREFIX = "yaregresa_custom_"
+    private const val KEY_YAREGRESA_URI_PREFIX = "yaregresa_uri_"
+    private const val KEY_CONTINUAMOS_CUSTOM_PREFIX = "continuamos_custom_"
+    private const val KEY_CONTINUAMOS_URI_PREFIX = "continuamos_uri_"
+    private const val KEY_TEXTURE_VIEW_ENABLED = "texture_view_enabled"
+
     // ── Valores por defecto ─────────────────────────────────────────────────
     const val DEFAULT_BG_MUSIC_ENABLED = true
     const val DEFAULT_CRT_EFFECT_ENABLED = true
@@ -58,6 +96,13 @@ object SettingsManager {
     const val DEFAULT_FORCE_ASPECT_RATIO = false
     const val DEFAULT_PREVIEW_UPDATES_ENABLED = false
     const val DEFAULT_PROGRAM_ENABLED = true   // Release 4.6.0 — todos activados por defecto
+    const val DEFAULT_EXPERIMENTAL_ENABLED = false   // Release 2009.5.0.0
+    const val DEFAULT_PROGRAM_COUNT = 4
+    const val MIN_PROGRAM_COUNT = 1
+    const val MAX_PROGRAM_COUNT = 24
+    const val DEFAULT_YAREGRESA_CUSTOM = false
+    const val DEFAULT_CONTINUAMOS_CUSTOM = false
+    const val DEFAULT_TEXTURE_VIEW_ENABLED = false
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -140,5 +185,79 @@ object SettingsManager {
 
     fun setProgramEnabled(context: Context, index: Int, enabled: Boolean) {
         prefs(context).edit().putBoolean(KEY_PROGRAM_ENABLED_PREFIX + index, enabled).apply()
+    }
+
+    // ── Experimental (Release 2009.5.0.0) ───────────────────────────────────
+    // Interruptor maestro: habilita el Discovery Kids Launcher como pantalla
+    // de inicio real y la configuración avanzada de programas. Al cambiarlo,
+    // SettingsActivity muestra un diálogo para reiniciar la app ahora o más
+    // tarde — ver showExperimentalRestartDialog() en SettingsActivity.
+    fun isExperimentalEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_EXPERIMENTAL_ENABLED, DEFAULT_EXPERIMENTAL_ENABLED)
+
+    fun setExperimentalEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_EXPERIMENTAL_ENABLED, enabled).apply()
+    }
+
+    // ── Cantidad de programas (1–24) — solo aplica con Experimental activado ──
+    fun getProgramCount(context: Context): Int =
+        prefs(context).getInt(KEY_PROGRAM_COUNT, DEFAULT_PROGRAM_COUNT).coerceIn(MIN_PROGRAM_COUNT, MAX_PROGRAM_COUNT)
+
+    fun setProgramCount(context: Context, count: Int) {
+        prefs(context).edit().putInt(KEY_PROGRAM_COUNT, count.coerceIn(MIN_PROGRAM_COUNT, MAX_PROGRAM_COUNT)).apply()
+    }
+
+    // ── Video elegido por el usuario para el programa [index] (SAF, content://) ──
+    // Uri en formato String (persistida vía ContentResolver.takePersistableUriPermission
+    // al elegirla, ver DiscoveryKidsLauncherActivity.pickProgramVideo()).
+    // null/vacío → resolveProgram() cae al comportamiento clásico (pro{N}.mp4).
+    fun getProgramUri(context: Context, index: Int): String? =
+        prefs(context).getString(KEY_PROGRAM_URI_PREFIX + index, null)
+
+    fun setProgramUri(context: Context, index: Int, uri: String?) {
+        prefs(context).edit().putString(KEY_PROGRAM_URI_PREFIX + index, uri).apply()
+    }
+
+    // ── ya_regresa personalizado por programa ───────────────────────────────
+    fun isYaRegresaCustom(context: Context, index: Int): Boolean =
+        prefs(context).getBoolean(KEY_YAREGRESA_CUSTOM_PREFIX + index, DEFAULT_YAREGRESA_CUSTOM)
+
+    fun setYaRegresaCustom(context: Context, index: Int, custom: Boolean) {
+        prefs(context).edit().putBoolean(KEY_YAREGRESA_CUSTOM_PREFIX + index, custom).apply()
+    }
+
+    fun getYaRegresaUri(context: Context, index: Int): String? =
+        prefs(context).getString(KEY_YAREGRESA_URI_PREFIX + index, null)
+
+    fun setYaRegresaUri(context: Context, index: Int, uri: String?) {
+        prefs(context).edit().putString(KEY_YAREGRESA_URI_PREFIX + index, uri).apply()
+    }
+
+    // ── continuamos personalizado por programa ──────────────────────────────
+    fun isContinuamosCustom(context: Context, index: Int): Boolean =
+        prefs(context).getBoolean(KEY_CONTINUAMOS_CUSTOM_PREFIX + index, DEFAULT_CONTINUAMOS_CUSTOM)
+
+    fun setContinuamosCustom(context: Context, index: Int, custom: Boolean) {
+        prefs(context).edit().putBoolean(KEY_CONTINUAMOS_CUSTOM_PREFIX + index, custom).apply()
+    }
+
+    fun getContinuamosUri(context: Context, index: Int): String? =
+        prefs(context).getString(KEY_CONTINUAMOS_URI_PREFIX + index, null)
+
+    fun setContinuamosUri(context: Context, index: Int, uri: String?) {
+        prefs(context).edit().putString(KEY_CONTINUAMOS_URI_PREFIX + index, uri).apply()
+    }
+
+    // ── TextureView (Release 2009.5.0.0 — NO experimental) ──────────────────
+    // OFF (default) → DkVideoView instancia un VideoView clásico.
+    // ON             → DkVideoView instancia un TextureVideoView (compatible
+    //                   con 720p+ sin tapar el ScreenBug). Requiere reabrir
+    //                   el canal para tomar efecto (el tipo de superficie no
+    //                   se puede cambiar con la Activity ya creada).
+    fun isTextureViewEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_TEXTURE_VIEW_ENABLED, DEFAULT_TEXTURE_VIEW_ENABLED)
+
+    fun setTextureViewEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_TEXTURE_VIEW_ENABLED, enabled).apply()
     }
 }

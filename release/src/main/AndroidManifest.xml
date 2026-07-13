@@ -25,18 +25,17 @@
         android:label="@string/release_app_name" 
         android:supportsRtl="true" 
         android:theme="@style/AppTheme">
+        <!-- Release 2009.5.0.0: ya no es la Activity de inicio (intent-filter
+             MAIN/LAUNCHER se movió a DiscoveryKidsLauncherActivity, más abajo).
+             Sigue exported=true porque se sigue lanzando con un Intent
+             explícito desde esa Activity (y desde SettingsActivity, al
+             reiniciar tras cambiar Experimental/TextureView). -->
         <activity 
             android:name="LiveDiscoveryKids" 
             android:exported="true"
             android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
             android:windowSoftInputMode="stateHidden">
-            <intent-filter>
-                <action 
-                    android:name="android.intent.action.MAIN" />
-                <category 
-                    android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
 
         <!-- Preview 2006.4.1.0.11: pantalla de Configuración (música, debug, brillo CRT) -->
@@ -54,14 +53,27 @@
             android:theme="@style/SettingsTheme"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout" />
 
-        <!-- Release 4.6.0: Discovery Kids Launcher — elegir qué programas salen al aire -->
+        <!-- Release 2009.5.0.0: Discovery Kids Launcher pasa a ser la Activity
+             de inicio REAL de la app (intent-filter MAIN/LAUNCHER movido acá
+             desde LiveDiscoveryKids). Con Experimental desactivado (default),
+             redirige de inmediato a LiveDiscoveryKids sin mostrar nada — ver
+             DiscoveryKidsLauncherActivity.onCreate(). Portrait, LauncherTheme
+             (dk_font) — antes (Release 4.6.0) era exported=false y usaba
+             SettingsTheme, porque era una pantalla secundaria abierta solo
+             desde Configuración. -->
         <activity 
             android:name=".DiscoveryKidsLauncherActivity"
-            android:exported="false"
+            android:exported="true"
             android:screenOrientation="portrait"
-            android:theme="@style/SettingsTheme"
-            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout" />
-
+            android:theme="@style/LauncherTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout">
+            <intent-filter>
+                <action 
+                    android:name="android.intent.action.MAIN" />
+                <category 
+                    android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <!-- Preview 2006.4.2.0.20: FileProvider para que AppUpdater pueda exponer
              el .apk descargado (carpeta privada de la app) al instalador del

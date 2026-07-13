@@ -61,6 +61,24 @@ import androidx.appcompat.widget.SwitchCompat
  * programas", que abre el nuevo DiscoveryKidsLauncherActivity (mismo
  * patrón que "Buscar actualizaciones" → UpdateActivity: startActivity
  * simple, toda la lógica vive en la otra Activity).
+ *
+ * Release 2009.5.0.0 — "Parque Imaginario":
+ *   - ELIMINADO: sección "Programación" / item "Elegir programas". Discovery
+ *     Kids Launcher pasó a ser la Activity de inicio real de la app (ver
+ *     AndroidManifest.xml y DiscoveryKidsLauncherActivity.onCreate()), así
+ *     que ya no hace falta un atajo desde acá — se accede abriendo la app.
+ *   - NUEVO: sección "Experimental" con el switch maestro "Habilitar
+ *     funciones experimentales" (desactivado por defecto). Al cambiarlo se
+ *     guarda inmediatamente en SettingsManager y se muestra un AlertDialog
+ *     ofreciendo reiniciar la app ahora o más tarde — ver
+ *     showExperimentalRestartDialog(). Activarlo habilita el Discovery Kids
+ *     Launcher como pantalla de inicio real (en vez de pasar directo al
+ *     canal) y toda su configuración avanzada de programas.
+ *   - NUEVO: sección "Compatibilidad de video" con el switch "Usar
+ *     TextureView" (desactivado por defecto, NO es experimental). Activa el
+ *     motor de video basado en TextureView (ver DkVideoView.kt) para que
+ *     videos de 720p o superior no tapen el ScreenBug. Requiere reabrir el
+ *     canal para tomar efecto.
  */
 class SettingsActivity : AppCompatActivity() {
 
@@ -68,6 +86,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var switchCrtEffect: SwitchCompat
     private lateinit var switchForceAspectRatio: SwitchCompat
     private lateinit var switchPreviewUpdates: SwitchCompat
+    private lateinit var switchExperimental: SwitchCompat       // Release 2009.5.0.0
+    private lateinit var switchTextureView: SwitchCompat        // Release 2009.5.0.0
 
     private lateinit var itemScreenbugDelay: LinearLayout
     private lateinit var txtScreenbugDelayValue: TextView
@@ -77,8 +97,6 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var itemCheckUpdate: LinearLayout
     private lateinit var txtCheckUpdateValue: TextView
-
-    private lateinit var itemChooseLauncher: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,7 +127,8 @@ class SettingsActivity : AppCompatActivity() {
         itemCheckUpdate = findViewById(R.id.itemCheckUpdate)
         txtCheckUpdateValue = findViewById(R.id.txtCheckUpdateValue)
 
-        itemChooseLauncher = findViewById(R.id.itemChooseLauncher)
+        switchExperimental = findViewById(R.id.switchExperimental)
+        switchTextureView = findViewById(R.id.switchTextureView)
     }
 
     /** Carga los valores guardados en SettingsManager y los refleja en cada control. */
@@ -118,6 +137,8 @@ class SettingsActivity : AppCompatActivity() {
         switchCrtEffect.isChecked = SettingsManager.isCrtEffectEnabled(this)
         switchForceAspectRatio.isChecked = SettingsManager.isForceAspectRatioEnabled(this)
         switchPreviewUpdates.isChecked = SettingsManager.isPreviewUpdatesEnabled(this)
+        switchExperimental.isChecked = SettingsManager.isExperimentalEnabled(this)
+        switchTextureView.isChecked = SettingsManager.isTextureViewEnabled(this)
 
         refreshScreenbugDelayLabel()
         refreshCommercialIntervalLabel()
@@ -160,9 +181,49 @@ class SettingsActivity : AppCompatActivity() {
 
         itemCheckUpdate.setOnClickListener { checkForUpdate() }
 
-        itemChooseLauncher.setOnClickListener {
-            startActivity(android.content.Intent(this, DiscoveryKidsLauncherActivity::class.java))
+        // ── Experimental (Release 2009.5.0.0) ───────────────────────────────
+        findViewById<LinearLayout>(R.id.itemExperimental).setOnClickListener {
+            switchExperimental.isChecked = !switchExperimental.isChecked
         }
+        switchExperimental.setOnCheckedChangeListener { _, isChecked ->
+            SettingsManager.setExperimentalEnabled(this, isChecked)
+            showRestartDialog()
+        }
+
+        // ── Compatibilidad de video / TextureView (Release 2009.5.0.0) ──────
+        findViewById<LinearLayout>(R.id.itemTextureView).setOnClickListener {
+            switchTextureView.isChecked = !switchTextureView.isChecked
+        }
+        switchTextureView.setOnCheckedChangeListener { _, isChecked ->
+            SettingsManager.setTextureViewEnabled(this, isChecked)
+            showRestartDialog()
+        }
+    }
+
+    /**
+     * Release 2009.5.0.0 — diálogo genérico de "reiniciar ahora o más
+     * tarde", usado tanto por el switch de Experimental como por el de
+     * TextureView (ninguno de los dos puede tomar efecto con las Activities
+     * ya creadas: el Launcher decide si redirige al canal en su propio
+     * onCreate(), y el tipo de superficie de video se fija una sola vez al
+     * crear el DkVideoView). "Reiniciar ahora" relanza la app desde
+     * DiscoveryKidsLauncherActivity y mata el proceso actual con
+     * Runtime.exit(); "Más tarde" simplemente cierra el diálogo — el cambio
+     * ya quedó guardado y se aplicará la próxima vez que se abra la app.
+     */
+    private fun showRestartDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Reiniciar la app")
+            .setMessage("Este cambio necesita que reinicies la app para aplicarse. ¿Reiniciar ahora?")
+            .setPositiveButton("Reiniciar ahora") { _, _ ->
+                val intent = android.content.Intent(this, DiscoveryKidsLauncherActivity::class.java)
+                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                Runtime.getRuntime().exit(0)
+            }
+            .setNegativeButton("Más tarde", null)
+            .setCancelable(true)
+            .show()
     }
 
     // ── Diálogo: Duración del Screenbug ─────────────────────────────────────

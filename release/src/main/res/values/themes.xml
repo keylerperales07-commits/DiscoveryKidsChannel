@@ -6,7 +6,13 @@
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:statusBarColor">@android:color/black</item>
         <item name="android:navigationBarColor">@android:color/black</item>
-        <item name="android:fontFamily">@font/googlesans</item>
+        <!-- Release 2009.5.0.0: dk_font en vez de googlesans — ver spec de la
+             Release ("dk_font se aplica también a LiveDiscoveryKids, pero no
+             a Configuración ni al Actualizador"). Los TextViews de debug
+             (debugInfo/versionInfo en activity_main.xml) mantienen su
+             android:fontFamily="@font/googlesans" explícito, que tiene
+             prioridad sobre este default del theme. -->
+        <item name="android:fontFamily">@font/dk_font</item>
     </style>
 
     <!-- ══ SettingsActivity (Preview 2006.4.1.0.12) ══
@@ -18,5 +24,16 @@
         <item name="android:statusBarColor">@color/dk_bg</item>
         <item name="android:navigationBarColor">@color/dk_bg</item>
         <item name="android:fontFamily">@font/googlesans</item>
+    </style>
+
+    <!-- ══ Discovery Kids Launcher (Release 2009.5.0.0) ══
+         Pantalla de inicio real de la app (detrás de Experimental). Usa
+         dk_font (a diferencia de SettingsTheme, que se queda en googlesans
+         para Configuración y el Actualizador). -->
+    <style name="LauncherTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/dk_bg</item>
+        <item name="android:statusBarColor">@color/dk_launcher_gradient_top</item>
+        <item name="android:navigationBarColor">@color/dk_bg</item>
+        <item name="android:fontFamily">@font/dk_font</item>
     </style>
 </resources>

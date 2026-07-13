@@ -7,13 +7,13 @@ plugins {
 android {
     namespace 'com.keyler.discoverykidschannel'
     compileSdk 34
-    
+
     defaultConfig {
         applicationId "com.keyler.discoverykidschannel"
         minSdk 23
         targetSdk 36
-        versionCode 04060165
-        versionName "2008.4.6.1.02"
+        versionCode 05000001
+        versionName "2009.5.0.0.01"
         vectorDrawables { 
             useSupportLibrary true
         }
@@ -40,6 +40,7 @@ android {
             // manteniendo los Log activos mediante regla keep en proguard-debug.pro.
             // Mismo applicationId y misma firma que release → el APK debug puede
             // actualizar (y ser actualizado por) el APK release en el mismo dispositivo.
+            //
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'proguard-debug.pro'
@@ -57,10 +58,9 @@ android {
         
     }
     
-    /*aaptOptions {
+    aaptOptions {
         noCompress "mp4"
     }
-    */
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
@@ -75,9 +75,9 @@ dependencies {
     implementation("com.google.android.material:material:1.9.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.activity:activity-ktx:1.7.2")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-
-    // Release (fix) — Glide para decodificar y animar GIFs en el ScreenBug
-    // (ImageView.setImageResource() con un .gif solo muestra el primer frame).
-    implementation("com.github.bumptech.glide:glide:4.16.0")
 }
+// Nota: los GIFs del ScreenBug ahora se reproducen con GifMovieDrawable.kt
+// (android.graphics.Movie, nativo del SDK) — sin dependencias externas, para
+// evitar el crash de D8/R8 al procesar el jar de android-gif-drawable.
