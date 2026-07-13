@@ -14,8 +14,9 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v4.6.1-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v5.0.0-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era-2009-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Fase-4-orange?style=flat-square"/>
 </p>
 
 ---
@@ -50,7 +51,9 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Enseguida → StandaloneCommercial → Bumper → Programa), igual que cambiar de canal en TV real
 - ⚙️ **Pantalla de Configuración** — Accesible desde el botón de ajustes, con lista simple estilo Android Settings. Permite alternar música de fondo, efecto CRT y Forzar 4:3, y ajustar la duración del Screenbug y el intervalo entre comerciales — cada opción muestra su valor predeterminado
 - 🔄 **Actualizador integrado** — Desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub; si hay una versión más nueva, descarga el `.apk` con OkHttp (mostrando progreso y tamaño en vivo) y abre el instalador del sistema. Un switch "Habilitar versiones Preview" (desactivado por defecto) permite que también instale releases Preview, no solo estables. La pantalla del Actualizador calca el diseño nativo de "Actualización del sistema" de Android
-- 🎬 **Discovery Kids Launcher** — Desde Configuración → "Elegir programas", una pantalla nueva (mismo diseño que Configuración) donde elegís con un switch cuáles de los 4 programas querés que salgan al aire. El que desactivás se saltea en la programación y en la navegación Prev/Next, igual que si el archivo no estuviera en Videos
+- 🔔 **Aviso de actualización al abrir la app** — Además de "Buscar actualizaciones" en Configuración, la app consulta en silencio al entrar y muestra un AlertDialog propio si hay una versión nueva (Release 2009.5.0.0)
+- 🧪 **Discovery Kids Launcher (Experimental)** — Con "Habilitar funciones experimentales" activado en Configuración, la app abre en una pantalla nueva (MenuBar con degradado azul→cian y logo) desde donde elegís el video de cada programa con el selector de archivos del sistema (sin renombrar ni copiar nada a Videos), cuántos programas querés (hasta 24) y, si querés, un ya_regresa/continuamos propio para cada uno. Desactivado, la app sigue abriendo directo al canal con los 4 programas clásicos (Release 2009.5.0.0)
+- 🖥️ **Compatibilidad con video 720p+** — Nuevo motor de video opcional basado en TextureView (Configuración → "Compatibilidad de video" → "Usar TextureView"), para que el ScreenBug no quede oculto detrás de videos de alta resolución. Si detecta un programa de 720p o más sin esta opción activada, la app avisa con un diálogo (Release 2009.5.0.0)
 
 ---
 
@@ -61,6 +64,8 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 **1. Descargá 4 videos a tu gusto**
 
 Pueden ser episodios de tu serie favorita, películas cortas, o cualquier contenido que quieras ver como si fuera un canal de TV. El formato recomendado es `.mp4`.
+
+> 🧪 **Alternativa (Experimental):** si activás "Habilitar funciones experimentales" en Configuración, la app abre en el Discovery Kids Launcher, donde podés elegir el video de cada programa con el selector de archivos del sistema — sin necesidad de renombrarlo ni copiarlo a Videos — y elegir cuántos programas querés (hasta 24). Si preferís el método clásico de abajo, dejá Experimental desactivado.
 ## ⚠️ Nota técnica
 
 > Los videos de programas (`pro1–4.mp4`) deben estar en **resolución 480p o inferior**. De lo contrario tendras problemas de programación.
@@ -114,9 +119,10 @@ DiscoveryKidsChannel/
 |------------|-----------|
 | **Kotlin** | Lenguaje principal |
 | **Android SDK** | Plataforma base |
-| **VideoView** | Motor de reproducción de video |
+| **VideoView / TextureView** | Motor de reproducción de video (TextureView opcional, para 720p+) |
 | **MediaPlayer** | Gestión de audio y medios |
-| **SharedPreferences** | Persistencia de sesión |
+| **Storage Access Framework** | Selección de videos propios por programa (Discovery Kids Launcher) |
+| **SharedPreferences** | Persistencia de sesión y configuración |
 | **Handler / Looper** | Planificación y temporización |
 | **Choreographer** | Renderizado frame a frame y guardado de posición en tiempo real |
 | **AndroidX** | Compatibilidad moderna con Android |
@@ -163,20 +169,31 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v4.6.1` *(Release · Era Doki 1.0 · Era 2009)*
-> *Cambio de Era (2008→2009), 3 Screenbug secuenciales, y 2 bug fixes críticos.*
+### 🚀 Última versión estable — `v5.0.0` *(Release · Era Doki 1.0 · Era 2009 · "Parque Imaginario")*
+> *Primera versión de la rama 5.x — arranca la Fase 4. Discovery Kids Launcher pasa a ser la pantalla de inicio (Experimental), con selector de video por programa, hasta 24 programas y ya_regresa/continuamos personalizados. AlertDialog para video 720p+, motor de video TextureView opcional, y aviso de actualización al abrir la app.*
 
-- 🎬 **3 Screenbug secuenciales** — animación de entrada (start.gif), imagen estática (screenbug.png), animación de salida (end.gif) en momentos específicos del programa.
-- 🎬 Se agregó **bumper6** como indicando que esta cerca la fase 4.
-- 🐛 **AppUpdater arreglado** — ya no cree que hay versión más nueva cuando actualizas de una preview a la release final de la misma versión.
-- 🐛 **Prev/Next arreglado** — ahora navega en orden real a través del playlist, no saltando entre programas.
+- 🧪 **Discovery Kids Launcher (Experimental)** — nueva pantalla de inicio real de la app, detrás de "Habilitar funciones experimentales" en Configuración (desactivado por defecto). Elegí el video de cada programa sin renombrar ni copiar nada, cuántos programas querés (1–24) y personalizá el ya_regresa/continuamos de cada uno.
+- 🖥️ **Compatibilidad de video 720p+** — nuevo motor de video opcional (TextureView) para que el ScreenBug no quede detrás del video en resoluciones altas; aviso automático si detecta un programa así sin la opción activada.
+- 🔔 **Aviso de actualización al abrir la app** — además de "Buscar actualizaciones" en Configuración, ahora también se consulta solo al entrar.
+- ⚙️ Se eliminó de Configuración el ítem "Elegir programas" (ahora vive en Discovery Kids Launcher).
+
+<details>
+<summary>📜 Versiones estables anteriores</summary>
+
+**`v4.6.1`** *(Era Doki 1.0 · Era 2009)* — Cambio de Era (2008→2009), 3 Screenbug secuenciales, y 2 bug fixes críticos.
+- 🎬 3 Screenbug secuenciales — animación de entrada (start.gif), imagen estática (screenbug.png), animación de salida (end.gif) en momentos específicos del programa.
+- 🎬 Se agregó bumper6 como indicando que esta cerca la fase 4.
+- 🐛 AppUpdater arreglado — ya no cree que hay versión más nueva cuando actualizas de una preview a la release final de la misma versión.
+- 🐛 Prev/Next arreglado — ahora navega en orden real a través del playlist, no saltando entre programas.
+
+</details>
 
 
 ---
 
 ## ⚠️ Notas Importantes
 
-- **Los videos de programas (`pro1–4.mp4`) deben estar en resolución 480p o inferior.** Resoluciones de 720p en adelante causan que `VideoView` active aceleración de hardware, lo que hace que el ScreenBug quede oculto detrás del video. Esta es una limitación conocida del sistema actual que se resolverá en una versión futura con `TextureView`.
+- **Los videos de programas (`pro1–4.mp4`) deben estar en resolución 480p o inferior si usás el motor de video clásico (VideoView).** Resoluciones de 720p en adelante causan que `VideoView` active aceleración de hardware, lo que hace que el ScreenBug quede oculto detrás del video. Desde la Release 2009.5.0.0 podés activar "Usar TextureView" en Configuración → "Compatibilidad de video" para reproducir 720p+ sin ese problema (requiere reabrir el canal); si no la activás, la app te avisa con un diálogo apenas detecta un video así.
 - La primera sincronización de Gradle puede tardar varios minutos según la velocidad de conexión.
 - Gradle descargará todas las dependencias necesarias automáticamente.
 - Otorgá los permisos de almacenamiento si el sistema lo solicita.

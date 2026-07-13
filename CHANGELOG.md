@@ -6,6 +6,67 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2009.5.0.0] — 🚀 Release · Era Doki 1.0 · Era 2009 · "Parque Imaginario" — 2026-07-13
+
+> *Release del 13 de julio de 2026. Primera versión de la rama 5.x — arranca la Fase 4 del proyecto ("Parque Imaginario"). Cambio más grande hasta la fecha: Discovery Kids Launcher pasa de ser una pantalla secundaria a ser la Activity de inicio real de la app, con selector de video por programa (SAF, sin renombrar/copiar nada), cantidad de programas configurable (hasta 24) y ya_regresa/continuamos personalizados por programa — todo detrás de un interruptor "Experimental" nuevo en Configuración, desactivado por defecto. Fuera de Experimental: AlertDialog de aviso para videos de 720p+, un motor de video alternativo basado en TextureView para resolver ese problema, y aviso automático de actualización al entrar a la app.*
+
+### 🧪 Experimental — Discovery Kids Launcher como pantalla de inicio
+
+**Nueva sección "Experimental" en Configuración**
+
+- Switch maestro "Habilitar funciones experimentales" (desactivado por defecto). Al cambiarlo se guarda al toque y se muestra un AlertDialog ofreciendo reiniciar la app ahora ("Reiniciar ahora" relanza desde Discovery Kids Launcher y mata el proceso con `Runtime.exit()`) o más tarde (el cambio ya quedó guardado, se aplica la próxima vez que se abra la app).
+- Con Experimental **desactivado** (comportamiento por defecto, idéntico al de antes de esta Release): abrir la app pasa directo al canal (4 programas fijos, pro1–pro4.mp4 en Movies), exactamente como siempre.
+- Con Experimental **activado**: la app abre en el Discovery Kids Launcher rediseñado en vez de ir directo al canal.
+
+**Discovery Kids Launcher — rediseño completo, ahora es la Activity de inicio real**
+
+- El intent-filter `MAIN`/`LAUNCHER` se mueve de `LiveDiscoveryKids` a `DiscoveryKidsLauncherActivity` en `AndroidManifest.xml`. Con Experimental desactivado, `onCreate()` redirige de inmediato a `LiveDiscoveryKids` y hace `finish()` sin mostrar nada — la Activity es transparente para quien no activó Experimental.
+- Diseño nuevo: MenuBar superior fijo con degradado azul→cian (`bg_launcher_menubar.xml`) y el logo (`icon.webp`), fuente `dk_font` en vez de `googlesans` (aplica también dentro de `LiveDiscoveryKids`, pero **no** en `SettingsActivity` ni en `UpdateActivity`, que se quedan en `googlesans`). Ícono de ajustes en la esquina en vez de texto.
+- Botón "Iniciar canal" → arranca `LiveDiscoveryKids`. Ícono de ajustes en el MenuBar → `SettingsActivity` (ya accesible desde acá, no solo desde el canal).
+- Sección "Programas": ítem "Cantidad de programas" (diálogo numérico, 1–24, predeterminado 4 — `SettingsManager.getProgramCount()`), y una fila por programa (`item_program_config.xml`, inflada en código porque puede haber hasta 24 filas).
+- Cada fila permite: elegir el video del programa vía selector de archivos del sistema (Storage Access Framework, `ACTION_OPEN_DOCUMENT`) — **ya no hace falta renombrarlo `pro{N}.mp4` ni copiarlo a la carpeta Movies**; y, para el ya_regresa y el continuamos de ESE programa, un switch "Personalizado" (desactivado por defecto = usa el que trae la app) que al activarse muestra un botón para elegir un video propio.
+- Toda Uri elegida se persiste con `ContentResolver.takePersistableUriPermission()` para seguir siendo válida entre reinicios de la app (sin esto, el permiso de lectura de SAF expira al cerrar la app).
+
+**Configuración avanzada de programas — cambios en `LiveDiscoveryKids.kt`**
+
+- El `playlist` fijo de 4 ciclos (Enseguida→Bumper→Comercial→Programa × 4) pasa de `val` a `var`, armado por la nueva `buildPlaylist()` en `onCreate()`: con Experimental desactivado sigue siendo 4 programas; con Experimental activado, se arma un ciclo por cada uno de los N programas elegidos (`SettingsManager.getProgramCount()`, 1–24). `findAvailableProgramIndex()` (Prev/Next) y `totalProgramCount()` se actualizaron para usar esta cantidad dinámica en vez del `4` fijo de antes.
+- `resolveProgram()` ahora, con Experimental activado, revisa primero si hay una Uri elegida por el usuario para ese índice (`SettingsManager.getProgramUri()`) antes de caer al comportamiento clásico de buscar `pro{N}.mp4`.
+- Nuevas `resolveYaRegresaUri()` / `resolveContinuamosUri()`: devuelven el video personalizado del programa si el usuario activó "Personalizado" para él, o si no, el comportamiento clásico (`ENSEGUIDAS_PRE_COMERCIAL`/`ENSEGUIDA_YA_VOLVEMOS_MAP` indexado por programa). `playCommercial()`, `playCommercialStepPreComercial()` y `resumeCommercialBlock()` se actualizaron para trabajar con `Uri` en vez de un resource id `Int` fijo (`commercialChosenPreComercial`/`commercialChosenYaVolvemos` cambian de tipo).
+- **BUG FIX defensivo**: si la cantidad de programas cambia entre sesiones (posible con Experimental activado) y el estado guardado de sesión anterior (`playlistIndex`/`currentProgramIndex`) ya no encaja en el playlist actual, `startChannel()` descarta ese estado y arranca desde cero en vez de arriesgar un índice fuera de rango.
+
+### 🖥️ Compatibilidad de video (NO experimental)
+
+**Motor de video alternativo — TextureView**
+
+- Nuevo `DkVideoView.kt`: capa de abstracción (`FrameLayout` abstracto) con la misma API que ya usaba todo el código contra `videoView` (`setVideoURI`, `start`, `pause`, `stopPlayback`, `seekTo`, `isPlaying`, `currentPosition`, `setOnPreparedListener`, `setOnCompletionListener`) — cero cambios en los call-sites existentes de `LiveDiscoveryKids.kt`.
+  - `LegacyVideoView`: envuelve un `VideoView` clásico. Sigue siendo el comportamiento por defecto.
+  - `TextureVideoView`: `MediaPlayer` + `TextureView` manejados a mano, con `onMeasure()` calculando el ancho a partir del alto y la relación de aspecto real del video (reproduce el efecto de `layout_width="wrap_content"` que ya tenía `VideoView`, porque `TextureView` por sí sola simplemente estira su contenido).
+- Nuevo switch "Usar TextureView" en Configuración → "Compatibilidad de video" (desactivado por defecto). Al cambiarlo se muestra el mismo diálogo de reiniciar ahora/más tarde que Experimental — el tipo de superficie de video se fija una sola vez al crear la Activity, no se puede intercambiar en caliente.
+- `activity_main.xml`: el `<VideoView>` fijo se reemplaza por un `<FrameLayout android:id="@+id/videoViewContainer">` vacío; `LiveDiscoveryKids.onCreate()` instancia el `DkVideoView` correcto (`DkVideoView.create()`) y lo agrega ahí en código.
+
+**AlertDialog de resolución alta (720p+)**
+
+- Nueva `checkVideoResolutionAndWarn()`, llamada desde el `onPrepared` de `beginProgramSegment()`: si el programa recién preparado mide 720p o más de alto y todavía se está usando `VideoView` clásico (no TextureView), muestra un AlertDialog explicando que la transmisión podría no funcionar correctamente (el ScreenBug puede quedar oculto detrás del video) y recomendando activar "Usar TextureView". Se muestra una sola vez por sesión.
+
+### 🔔 Aviso de actualización al entrar a la app (NO experimental)
+
+- Nueva `checkForUpdateOnLaunch()` en `LiveDiscoveryKids.onCreate()`: usa el mismo `AppUpdater.checkForUpdate()` que ya usaba Configuración → "Buscar actualizaciones" (respeta el switch "Habilitar versiones Preview"). Si hay una versión más nueva, muestra un AlertDialog propio — **fuera** de Configuración y de `UpdateActivity` — ofreciendo ir al Actualizador o posponerlo. Si no hay novedad o falla la consulta (sin internet, etc.), no muestra nada: nunca interrumpe la reproducción con un error.
+
+### ⚙️ Configuración — reorganización de Configuración
+
+- **ELIMINADO**: la sección "Programación" / ítem "Elegir programas" de `SettingsActivity`. Discovery Kids Launcher ya no se abre desde Configuración — es la Activity de inicio de la app (ver arriba), así que el atajo quedaba duplicado.
+
+### 🎬 Contenido — assets actualizados
+
+- `enseguida1`/`enseguida2` actualizados; `enseguida2` vuelve a la rotación aleatoria de `ENSEGUIDAS_POST_PROGRAMA` (antes solo estaba `enseguida1` en el código, aunque el comentario ya mencionaba a los dos). `enseguida3`/`enseguida4` quedan eliminados.
+- Los 4 comerciales (`comercial1`–`comercial4`) y `ya_regresa1`/`ya_regresa2`/`continuamos1`/`continuamos2` actualizados de contenido para la Era 2009/Fase 4 (sin cambios de código — la rotación y el mapeo ya excluían 3/4 desde antes).
+- Nuevo logo de la app (`icon.webp`).
+
+> **Alcance:** cambios de código en `AndroidManifest.xml` (intent-filter MAIN/LAUNCHER movido a `DiscoveryKidsLauncherActivity`), `DiscoveryKidsLauncherActivity.kt` (reescritura completa), `SettingsActivity.kt`/`activity_settings.xml` (nuevas secciones Experimental y Compatibilidad de video, eliminada Programación), `SettingsManager.kt` (nuevas keys: Experimental, cantidad de programas, Uri por programa, ya_regresa/continuamos personalizado por programa, TextureView), `LiveDiscoveryKids.kt` (playlist dinámico, `resolveProgram`/`resolveYaRegresaUri`/`resolveContinuamosUri`, chequeo de resolución, aviso de actualización al iniciar, guard de sesión guardada inválida), nuevo `DkVideoView.kt`, nuevo layout `item_program_config.xml`, `activity_launcher.xml` reescrito, `activity_main.xml` (VideoView → placeholder), nuevos drawables (`bg_launcher_menubar.xml`, `ic_play.xml`, `ic_video_pick.xml`) y colores (`dk_launcher_gradient_top/bottom`). `build.gradle`: `versionName` a `2009.5.0.0`.
+
+---
+
+
 ## [2009.4.6.1] — 🚀 Release · Era Doki 1.0 · Era 2009 — 2026-07-11
 
 > *Release del 11 de julio de 2026. Cambio de Era (2008→2009) e implementación del sistema de 3 Screenbug secuenciales. Además, 2 bug fixes críticos: Prev/Next ahora navega en orden real del playlist, y el Actualizador ya no cree que hay versión nueva cuando actualizas de una preview a la release final de la misma versión.*
@@ -1640,6 +1701,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2009.5.0.0           | 2026-07-13 | 🚀 Release | "Parque Imaginario" (inicio Fase 4, rama 5.x): Discovery Kids Launcher pasa a ser la Activity de inicio (detrás de Experimental) con selector de video por programa, hasta 24 programas y ya_regresa/continuamos personalizados; AlertDialog 720p+, motor TextureView opcional, aviso de actualización al abrir la app |
 | 2009.4.6.1           | 2026-07-11 | 🚀 Release | Cambio de Era 2008→2009; 3 Screenbug secuenciales (start.gif/screenbug.png/end.gif); fix AppUpdater con BUILD segment; fix Prev/Next navegación en orden del playlist |
 | 2008.4.6.0           | 2026-07-10 | 🚀 Release | LiveDiscoveryKids.kt reunificado (reversión de la reorganización 4.1.0.21, sin cambios de comportamiento); nuevo Discovery Kids Launcher para elegir qué programas salen al aire |
 | 2008.4.5.0.50-preview| 2026-07-07 | 🧪 Preview | UpdateActivity rediseñada 2: calca la pantalla nativa "Actualización del sistema" de Android — ícono/título/subtítulos alineados a la izquierda, barra fina de progreso, renglones de lista con flecha ">" en vez de botones |
