@@ -29,7 +29,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Programa 1"
-        android:textColor="@color/dk_text_primary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="17sp"
         android:fontFamily="@font/dk_font" />
 
@@ -38,7 +38,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Sin video elegido"
-        android:textColor="@color/dk_text_secondary"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="13sp"
         android:fontFamily="@font/dk_font"
         android:layout_marginTop="2dp"
@@ -52,7 +52,7 @@
         android:gravity="center_vertical"
         android:clickable="true"
         android:focusable="true"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="?attr/selectableItemBackground"
         android:paddingStart="4dp"
         android:paddingEnd="12dp"
         android:paddingTop="6dp"
@@ -69,12 +69,12 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="Elegir video del programa"
-            android:textColor="@color/dk_accent"
+            android:textColor="?attr/colorPrimary"
             android:textSize="14sp"
             android:fontFamily="@font/dk_font" />
     </LinearLayout>
 
-    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginTop="12dp" android:layout_marginBottom="8dp" />
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" android:layout_marginTop="12dp" android:layout_marginBottom="8dp" />
 
     <!-- ── Ya regresa: Predeterminado / Personalizado ── -->
     <LinearLayout
@@ -88,7 +88,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Ya regresa personalizado"
-            android:textColor="@color/dk_text_primary"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="14sp"
             android:fontFamily="@font/dk_font" />
 
@@ -107,7 +107,7 @@
         android:visibility="gone"
         android:clickable="true"
         android:focusable="true"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="?attr/selectableItemBackground"
         android:paddingStart="4dp"
         android:paddingEnd="12dp"
         android:paddingTop="6dp"
@@ -124,7 +124,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="Elegir video de ya_regresa"
-            android:textColor="@color/dk_accent"
+            android:textColor="?attr/colorPrimary"
             android:textSize="13sp"
             android:fontFamily="@font/dk_font" />
     </LinearLayout>
@@ -142,7 +142,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Continuamos personalizado"
-            android:textColor="@color/dk_text_primary"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="14sp"
             android:fontFamily="@font/dk_font" />
 
@@ -161,7 +161,7 @@
         android:visibility="gone"
         android:clickable="true"
         android:focusable="true"
-        android:background="?android:attr/selectableItemBackground"
+        android:background="?attr/selectableItemBackground"
         android:paddingStart="4dp"
         android:paddingEnd="12dp"
         android:paddingTop="6dp"
@@ -178,11 +178,11 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="Elegir video de continuamos"
-            android:textColor="@color/dk_accent"
+            android:textColor="?attr/colorPrimary"
             android:textSize="13sp"
             android:fontFamily="@font/dk_font" />
     </LinearLayout>
 
-    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginTop="16dp" />
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" android:layout_marginTop="16dp" />
 
 </LinearLayout>

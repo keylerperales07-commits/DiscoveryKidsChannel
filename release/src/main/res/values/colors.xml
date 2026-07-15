@@ -12,7 +12,35 @@
 
     <!-- ══ Discovery Kids Launcher (Release 2009.5.0.0) ══
          MenuBar superior: degradado azul (arriba) → cian (abajo), logo +
-         título en dk_font. Ver bg_launcher_menubar.xml y activity_launcher.xml. -->
+         título en dk_font. Ver bg_launcher_menubar.xml y activity_launcher.xml.
+         (Release 2009.5.1.0: el MenuBar custom se reemplazó por la ActionBar
+         original de Android + Material Design 3 — ver más abajo. Este
+         degradado ya no se usa en el Launcher, se deja por compatibilidad.) -->
     <color name="dk_launcher_gradient_top">#1565C0</color>
     <color name="dk_launcher_gradient_bottom">#00BCD4</color>
+
+    <!-- ══ Material Design 3 — Discovery Kids Launcher (Release 2009.5.1.0) ══
+         Esquema CLARO. Semilla: el azul ya usado en la app (#1565C0, el
+         mismo del degradado del menubar anterior), con el cian del propio
+         degradado como "secondary". Ver values-night/colors.xml para la
+         versión oscura (mismos nombres, el sistema elige automáticamente
+         según el tema del dispositivo — DayNight). -->
+    <color name="md3_primary">#0061A4</color>
+    <color name="md3_on_primary">#FFFFFF</color>
+    <color name="md3_primary_container">#D1E4FF</color>
+    <color name="md3_on_primary_container">#001D36</color>
+
+    <color name="md3_secondary">#00658E</color>
+    <color name="md3_on_secondary">#FFFFFF</color>
+    <color name="md3_secondary_container">#C2E8FF</color>
+    <color name="md3_on_secondary_container">#001E2C</color>
+
+    <color name="md3_background">#FDFCFF</color>
+    <color name="md3_on_background">#1A1C1E</color>
+    <color name="md3_surface">#FDFCFF</color>
+    <color name="md3_on_surface">#1A1C1E</color>
+    <color name="md3_surface_variant">#DFE2EB</color>
+    <color name="md3_on_surface_variant">#43474E</color>
+    <color name="md3_outline">#73777F</color>
+    <color name="md3_outline_variant">#C3C7CF</color>
 </resources>

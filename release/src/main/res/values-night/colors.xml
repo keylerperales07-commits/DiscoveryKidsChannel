@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ ESTO TIENE LICENCIA GNU LICENSE APACHE
+
+ NO ELIMINAR NINGUN COMENTARIO AGREGADO
+-->
+<!--
+    values-night/colors.xml — Release 2009.5.1.0
+
+    Esquema OSCURO de Material Design 3 para el Discovery Kids Launcher.
+    Mismos nombres de color que values/colors.xml (esquema claro) — Android
+    elige automáticamente este archivo cuando el tema del sistema/dispositivo
+    está en modo oscuro (DayNight), sin ningún código adicional.
+
+    Misma semilla azul que el esquema claro (#1565C0 / #0061A4), llevada a
+    los tonos altos (más claros) que corresponden a un esquema oscuro MD3,
+    para que el color siga siendo reconociblemente "el mismo azul" en ambos
+    modos.
+-->
+<resources>
+    <color name="md3_primary">#9ECAFF</color>
+    <color name="md3_on_primary">#003258</color>
+    <color name="md3_primary_container">#00497D</color>
+    <color name="md3_on_primary_container">#D1E4FF</color>
+
+    <color name="md3_secondary">#84D2FF</color>
+    <color name="md3_on_secondary">#00344A</color>
+    <color name="md3_secondary_container">#004C69</color>
+    <color name="md3_on_secondary_container">#C2E8FF</color>
+
+    <color name="md3_background">#1A1C1E</color>
+    <color name="md3_on_background">#E2E2E6</color>
+    <color name="md3_surface">#1A1C1E</color>
+    <color name="md3_on_surface">#E2E2E6</color>
+    <color name="md3_surface_variant">#43474E</color>
+    <color name="md3_on_surface_variant">#C3C7CF</color>
+    <color name="md3_outline">#8D9199</color>
+    <color name="md3_outline_variant">#43474E</color>
+</resources>

@@ -98,6 +98,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // isPlaying, currentPosition, setOnPreparedListener, setOnCompletionListener)
     // se mantiene idéntica — ver DkVideoView.kt.
     internal lateinit var videoView: DkVideoView
+    internal lateinit var videoContainer: AspectRatioFrameLayout
     internal lateinit var screenBug: ImageView
     internal lateinit var versionInfo: TextView
     internal lateinit var debugTextView: TextView
@@ -294,7 +295,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
         //     cuando aparece screenbug_end (programDuration - 20s)
         //   screenbug_end (GIF): mostrar 20s antes del final, ocultar al final del programa
         internal const val SCREENBUG_START_DELAY_MS = 20_000L
-        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 15_000L  // Se oculta 15s después de mostrarse (antes: 5s)
+        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 5_000L  // Se oculta 15s después de mostrarse (antes: 5s)
         internal const val SCREENBUG_MID_DELAY_AFTER_START_MS = 0L           // El PNG aparece inmediatamente al ocultarse screenbug_start (antes: 15s de espera)
         internal const val SCREENBUG_END_SHOW_BEFORE_MS = 20_000L          // Mostrar screenbug_end 20s antes del final
         internal const val SCREENBUG_END_VISIBLE_DURATION_MS = 5_000L      // Se oculta 5s después de mostrarse (antes se quedaba visible hasta el final del segmento, por lo que el GIF se veía repetirse en loop)
@@ -326,6 +327,14 @@ class LiveDiscoveryKids : AppCompatActivity() {
         internal const val PREF_COMMERCIAL_MS = "commercial_resume_ms"
         internal const val PREF_SCREENBUG_RES = "screenbug_res"
         internal const val PREF_BREAK_QUEUE   = "break_queue"
+        // BUG FIX (2009.5.1.0) — "el logo se reinicia al cambiar de activity o
+        // volver de segundo plano": currentSegmentStartMs vivía solo en memoria
+        // y se perdía si el proceso se recreaba (común en boxes de Android TV
+        // con poca RAM). Al restaurar sesión, beginProgramSegment() usaba su
+        // default isNewSegment=true → elapsed se recalculaba en 0 → el ciclo
+        // completo de 3 fases del ScreenBug arrancaba de cero, fuera de lugar.
+        // Ahora se persiste el punto real donde arrancó el segmento.
+        internal const val PREF_SEGMENT_START_MS = "segment_start_ms"
         internal const val PREF_HAS_PLAYED_PROGRAM = "has_played_program"   // Release 4.3.1
 
         /** Lista de comerciales disponibles; se elige uno al azar en cada corte. */
@@ -401,6 +410,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // Release 2009.5.0.0: el DkVideoView (VideoView clásico o TextureView,
         // según Configuración) se crea en código y se agrega al placeholder
         // que dejó activity_main.xml — ver DkVideoView.kt.
+        videoContainer = findViewById(R.id.videoContainer)
         val videoViewContainer = findViewById<FrameLayout>(R.id.videoViewContainer)
         videoView = DkVideoView.create(this)
         videoViewContainer.addView(
@@ -1878,6 +1888,7 @@ internal fun LiveDiscoveryKids.saveChannelState() {
         putString (LiveDiscoveryKids.PREF_ITEM_TYPE,     currentItemType)
         putInt    (LiveDiscoveryKids.PREF_COMMERCIAL_MS, commercialResumeMs)
         putInt    (LiveDiscoveryKids.PREF_SCREENBUG_RES, currentScreenBugRes)
+        putInt    (LiveDiscoveryKids.PREF_SEGMENT_START_MS, currentSegmentStartMs)
         putString (LiveDiscoveryKids.PREF_BREAK_QUEUE,   breakQueueStr)
         putBoolean(LiveDiscoveryKids.PREF_HAS_PLAYED_PROGRAM, hasPlayedAnyProgram)   // Release 4.3.1
         apply()
@@ -1900,6 +1911,9 @@ internal fun LiveDiscoveryKids.showResumeDialog(prefs: SharedPreferences) {
     val commMs       = prefs.getInt(LiveDiscoveryKids.PREF_COMMERCIAL_MS, 0)
     val screenbugRes = prefs.getInt(LiveDiscoveryKids.PREF_SCREENBUG_RES, R.drawable.screenbug)
     val breakQueueStr = prefs.getString(LiveDiscoveryKids.PREF_BREAK_QUEUE, "") ?: ""
+    // BUG FIX (2009.5.1.0): default = posMs (mismo comportamiento que antes)
+    // por si el estado guardado viene de una versión anterior sin esta clave.
+    val segmentStartMs = prefs.getInt(LiveDiscoveryKids.PREF_SEGMENT_START_MS, posMs)
     // Release 4.3.1 — si el estado guardado viene de una versión anterior sin
     // esta clave, se infiere a partir del tipo de ítem: si estaba en medio de
     // un programa o un comercial, necesariamente ya salió al aire un programa.
@@ -1920,7 +1934,7 @@ internal fun LiveDiscoveryKids.showResumeDialog(prefs: SharedPreferences) {
         .setCancelable(false)
         .setPositiveButton(getString(R.string.dialog_resume_positive)) { _, _ ->
             pausedPositionMs = 0
-            resumeSavedState(itemType, plIdx, progIdx, posMs, commMs, screenbugRes, breakQueueStr, hasPlayedProgram, prefs)
+            resumeSavedState(itemType, plIdx, progIdx, posMs, commMs, screenbugRes, breakQueueStr, hasPlayedProgram, segmentStartMs, prefs)
         }
         .setNegativeButton(getString(R.string.dialog_resume_negative)) { _, _ ->
             pausedPositionMs = 0
@@ -1949,6 +1963,7 @@ internal fun LiveDiscoveryKids.resumeSavedState(
     screenbugRes: Int,
     breakQueueStr: String,
     hasPlayedProgram: Boolean,
+    segmentStartMs: Int,
     prefs: SharedPreferences
 ) {
     clearSavedState()
@@ -1971,8 +1986,15 @@ internal fun LiveDiscoveryKids.resumeSavedState(
             if (uri != null) {
                 currentProgramUri = uri
                 breakQueue = restoredBreaks
-                Log.d(LiveDiscoveryKids.TAG, "Restaurando programa en ${posMs}ms, breaks pendientes: $breakQueue")
-                beginProgramSegment(uri, startOffsetMs = posMs, isFirstPlay = false)
+                // BUG FIX (2009.5.1.0): restaurar el punto real donde arrancó
+                // el segmento y pasar isNewSegment=false, para que elapsed se
+                // calcule correctamente (posMs - segmentStartMs) en vez de 0.
+                // Antes, al faltar isNewSegment explícito, se usaba el default
+                // (true) y el ciclo de 3 fases del ScreenBug arrancaba de cero
+                // como si el segmento recién empezara en el punto de resume.
+                currentSegmentStartMs = segmentStartMs
+                Log.d(LiveDiscoveryKids.TAG, "Restaurando programa en ${posMs}ms (segmento arrancó en ${segmentStartMs}ms), breaks pendientes: $breakQueue")
+                beginProgramSegment(uri, startOffsetMs = posMs, isFirstPlay = false, isNewSegment = false)
             } else {
                 Log.w(LiveDiscoveryKids.TAG, "Restauración: pro${progIdx+1}.mp4 no encontrado, avanzando")
                 playlistIndex = 0
@@ -1985,7 +2007,9 @@ internal fun LiveDiscoveryKids.resumeSavedState(
                 currentProgramUri = uri
                 breakQueue = restoredBreaks
                 Log.d(LiveDiscoveryKids.TAG, "Restaurando post-comercial en ${commMs}ms, breaks pendientes: $breakQueue")
-                beginProgramSegment(uri, startOffsetMs = commMs, isFirstPlay = false)
+                // El programa retoma justo después del comercial: acá sí es
+                // legítimamente un segmento nuevo que arranca en commMs.
+                beginProgramSegment(uri, startOffsetMs = commMs, isFirstPlay = false, isNewSegment = true)
             } else {
                 playlistIndex = 0
                 advance()
@@ -2374,13 +2398,17 @@ internal fun LiveDiscoveryKids.applySettings() {
     breakIntervalMinMs = SettingsManager.getCommercialMinMinutes(this) * 60 * 1_000L
     breakIntervalMaxMs = SettingsManager.getCommercialMaxMinutes(this) * 60 * 1_000L
 
+    // BUG FIX (2009.5.1.0): el forzado de 4:3 se aplica acá, en el contenedor
+    // PADRE (videoContainer/AspectRatioFrameLayout), que es el que de verdad
+    // decide el recorte. Antes solo se tocaba el width del videoView hijo, que
+    // no tenía ningún efecto porque el padre ya venía forzado a 4:3 siempre
+    // (ver AspectRatioFrameLayout.kt).
+    videoContainer.forceAspectRatio = SettingsManager.isForceAspectRatioEnabled(this)
+    videoContainer.requestLayout()
+
     val params = videoView.layoutParams as FrameLayout.LayoutParams
+    params.width = FrameLayout.LayoutParams.MATCH_PARENT
     params.height = FrameLayout.LayoutParams.MATCH_PARENT
-    params.width = if (SettingsManager.isForceAspectRatioEnabled(this)) {
-        FrameLayout.LayoutParams.WRAP_CONTENT
-    } else {
-        FrameLayout.LayoutParams.MATCH_PARENT
-    }
     videoView.layoutParams = params
 }
 

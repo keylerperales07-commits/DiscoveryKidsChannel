@@ -14,13 +14,13 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import com.google.android.material.button.MaterialButton
 
 /**
  * DiscoveryKidsLauncherActivity — Release 2009.5.0.0 ("Parque Imaginario")
@@ -91,10 +91,18 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         setTheme(R.style.LauncherTheme)
         setContentView(R.layout.activity_launcher)
 
-        findViewById<ImageButton>(R.id.btnLauncherSettings).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
+        // Release 2009.5.1.0: ActionBar ORIGINAL de Android (Theme.Material3.
+        // DayNight, ver themes.xml) en vez del MenuBar custom hecho a mano.
+        // El botón Configuración pasó a ser un ítem del menú de opciones —
+        // ver onCreateOptionsMenu()/onOptionsItemSelected() más abajo.
+        supportActionBar?.apply {
+            title = "Discovery Kids Launcher"
+            setIcon(R.drawable.icon)
+            setDisplayShowHomeEnabled(true)
+            setDisplayUseLogoEnabled(true)
         }
-        findViewById<LinearLayout>(R.id.btnStartChannel).setOnClickListener {
+
+        findViewById<MaterialButton>(R.id.btnStartChannel).setOnClickListener {
             startActivity(Intent(this, LiveDiscoveryKids::class.java))
         }
 
@@ -115,6 +123,19 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
             startActivity(Intent(this, LiveDiscoveryKids::class.java))
             finish()
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_launcher, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        if (item.itemId == R.id.menuLauncherSettings) {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     // ── Cantidad de programas (1–24) ─────────────────────────────────────────

@@ -5,133 +5,91 @@
  NO ELIMINAR NINGUN COMENTARIO AGREGADO
 -->
 <!--
-    activity_launcher.xml — Release 2009.5.0.0 ("Parque Imaginario")
+    activity_launcher.xml — Release 2009.5.1.0 ("Parque Imaginario")
 
-    Rediseño completo de Discovery Kids Launcher: ya no es una lista estilo
-    Configuración, sino la pantalla de inicio real de la app (detrás del
-    interruptor Experimental — ver DiscoveryKidsLauncherActivity.onCreate()).
-
-    MenuBar superior fijo: logo (icon.webp) + título, degradado azul→cian
-    (bg_launcher_menubar.xml), fuente dk_font. Debajo, contenido scrolleable:
-    botones "Iniciar canal" / "Configuración", y la sección de Programas
-    (cantidad + una fila por programa, generada dinámicamente en código —
-    ver item_program_config.xml — porque puede haber hasta 24).
+    Rediseño a Material Design 3 puro:
+      - Ya no hay un MenuBar custom (LinearLayout con degradado + logo +
+        título hecho a mano) — la Activity ahora declara la ActionBar
+        ORIGINAL de Android (Theme.Material3.DayNight, no NoActionBar — ver
+        themes.xml), con el título e ícono puestos por código
+        (DiscoveryKidsLauncherActivity.onCreate()) y el botón de
+        Configuración como ítem del menú de opciones (menu_launcher.xml) en
+        vez de un ImageButton propio.
+      - "Iniciar canal" ahora es un MaterialButton relleno (estilo M3).
+      - La fila de "Cantidad de programas" vive dentro de un
+        MaterialCardView (elevación M3 estándar).
+      - Colores: todo por atributos de tema (?attr/colorSurface,
+        ?attr/colorOnSurface, etc.) en vez de los dk_* fijos — así el
+        Launcher sigue el esquema claro/oscuro automáticamente (ver
+        values/colors.xml y values-night/colors.xml).
 -->
-<LinearLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/dk_bg">
+    android:background="?attr/colorSurface"
+    android:fillViewport="true"
+    android:scrollbars="none">
 
-    <!-- ══ MenuBar ══ -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="@drawable/bg_launcher_menubar"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:elevation="4dp">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="32dp">
 
-        <ImageView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:src="@drawable/icon"
-            android:contentDescription="Discovery Kids" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:text="Discovery Kids Launcher"
-            android:textColor="@android:color/white"
-            android:textSize="20sp"
-            android:fontFamily="@font/dk_font" />
-
-        <ImageButton
-            android:id="@+id/btnLauncherSettings"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@android:color/transparent"
-            android:src="@drawable/btn_settings"
-            android:contentDescription="Configuración" />
-    </LinearLayout>
-
-    <!-- ══ Contenido ══ -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true"
-        android:scrollbars="none">
-
-        <LinearLayout
+        <!-- Botón principal: Iniciar canal -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStartChannel"
+            style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="32dp">
+            android:layout_margin="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:text="Iniciar canal"
+            android:textSize="16sp"
+            android:fontFamily="@font/dk_font"
+            app:icon="@drawable/ic_play"
+            app:iconGravity="textStart" />
 
-            <!-- Botón principal: Iniciar canal -->
-            <LinearLayout
-                android:id="@+id/btnStartChannel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="20dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/bg_launcher_menubar"
-                android:clickable="true"
-                android:focusable="true"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
-                android:paddingTop="16dp"
-                android:paddingBottom="16dp">
+        <!-- ══ Sección: Programas ══ -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Programas"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/dk_font"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp" />
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_play"
-                    android:contentDescription="Iniciar canal" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Elegí el video de cada programa (ya no hace falta renombrarlo ni copiarlo a Videos) y, si querés, personalizá su ya_regresa y su continuamos."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="13sp"
+            android:fontFamily="@font/dk_font"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="12dp" />
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:text="Iniciar canal"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:fontFamily="@font/dk_font" />
-            </LinearLayout>
+        <!-- Item: Cantidad de programas (valor, abre diálogo 1–24) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="12dp"
+            app:cardElevation="1dp"
+            app:cardCornerRadius="12dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant">
 
-            <!-- ══ Sección: Programas ══ -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Programas"
-                android:textColor="@color/dk_text_secondary"
-                android:textSize="14sp"
-                android:fontFamily="@font/dk_font"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Elegí el video de cada programa (ya no hace falta renombrarlo ni copiarlo a Videos) y, si querés, personalizá su ya_regresa y su continuamos."
-                android:textColor="@color/dk_text_secondary"
-                android:textSize="13sp"
-                android:fontFamily="@font/dk_font"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
-                android:paddingBottom="8dp" />
-
-            <!-- Item: Cantidad de programas (valor, abre diálogo 1–24) -->
             <LinearLayout
                 android:id="@+id/itemProgramCount"
                 android:layout_width="match_parent"
@@ -139,9 +97,9 @@
                 android:orientation="vertical"
                 android:clickable="true"
                 android:focusable="true"
-                android:background="?android:attr/selectableItemBackground"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
+                android:background="?attr/selectableItemBackground"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:paddingTop="14dp"
                 android:paddingBottom="14dp">
 
@@ -149,7 +107,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Cantidad de programas"
-                    android:textColor="@color/dk_text_primary"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="17sp"
                     android:fontFamily="@font/dk_font" />
 
@@ -158,22 +116,21 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="4 de 24 programas (Predeterminado: 4)"
-                    android:textColor="@color/dk_text_secondary"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="13sp"
                     android:fontFamily="@font/dk_font"
-                    android:layout_marginTop="2dp" />
+                    android:layout_marginTop="2dp"
+                    android:alpha="0.8" />
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
+        <!-- Filas de programas: se agregan acá en código, una por programa
+             (item_program_config.xml), ver rebuildProgramList(). -->
+        <LinearLayout
+            android:id="@+id/containerPrograms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
 
-            <!-- Filas de programas: se agregan acá en código, una por programa
-                 (item_program_config.xml), ver rebuildProgramList(). -->
-            <LinearLayout
-                android:id="@+id/containerPrograms"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
-
-        </LinearLayout>
-    </ScrollView>
-</LinearLayout>
+    </LinearLayout>
+</ScrollView>

@@ -6,6 +6,42 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2009.5.1.0] — 🚀 Release · Era Doki 1.0 · Era 2009 · "Parque Imaginario" — 2026-07-15
+
+> *Release enfocada en pulir la 2009.5.0.0: Discovery Kids Launcher rediseñado a Material Design 3 puro (esquema claro/oscuro automático, ActionBar original de Android en vez del MenuBar hecho a mano), 3 bug fixes de la Release anterior (Forzar 4:3, recorte de video con TextureView, ScreenBug reiniciándose al cambiar de Activity o volver de segundo plano), ajustes de timing y reproducción del ScreenBug de 3 fases, y nuevo Screenbug de Mayo–Julio 2009.*
+
+### 🎨 Discovery Kids Launcher — rediseño a Material Design 3
+
+- **Reemplazo completo del MenuBar custom por la ActionBar original de Android.** El `LinearLayout` con degradado azul→cian, logo e ícono de ajustes hecho a mano en la 2009.5.0.0 se eliminó. `LauncherTheme` pasa de `Theme.AppCompat.NoActionBar` a `Theme.Material3.DayNight` (con ActionBar real, la que trae el sistema por defecto). El título y el ícono de la app se fijan por código (`DiscoveryKidsLauncherActivity.onCreate()`), y el botón de Configuración pasa a ser un ítem del menú de opciones (`menu_launcher.xml`, `onCreateOptionsMenu()`/`onOptionsItemSelected()`) en vez de un `ImageButton` propio.
+- **Esquema de color Material 3 completo, con versión clara y oscura automática (DayNight).** Semilla azul (misma familia que el degradado que tenía el MenuBar anterior, `#1565C0`/`#0061A4`), con todos los roles de color MD3 (`primary`, `primaryContainer`, `secondary`, `secondaryContainer`, `surface`, `surfaceVariant`, `outline`, etc.) — ver `values/colors.xml` (claro) y el nuevo `values-night/colors.xml` (oscuro, mismos nombres). El sistema elige automáticamente según el tema del dispositivo, sin código adicional. `android:windowLightStatusBar` también se resuelve por tema vía un `bool` calificado (`values/bools.xml` / `values-night/bools.xml`).
+- **Componentes Material 3 reales.** "Iniciar canal" ahora es un `MaterialButton` relleno; la fila "Cantidad de programas" vive dentro de un `MaterialCardView` con elevación estándar M3. `item_program_config.xml` (la fila de cada programa) migró sus colores fijos (`dk_text_primary`, `dk_text_secondary`, `dk_accent`, `dk_stroke`) a atributos de tema (`?attr/colorOnSurface`, `?attr/colorOnSurfaceVariant`, `?attr/colorPrimary`, `?attr/colorOutlineVariant`), así que también sigue el esquema claro/oscuro.
+
+### 🐛 Bug fixes de la 2009.5.0.0
+
+- **BUG FIX — "Forzar 4:3" no respetaba el switch (forzaba siempre, activado o desactivado).** Causa raíz: `AspectRatioFrameLayout.onMeasure()` forzaba el contenedor **padre** a proporción 4:3 incondicionalmente; `applySettings()` intentaba controlarlo cambiando el ancho del `videoView` **hijo**, lo cual no tenía ningún efecto real porque el padre ya venía recortado de antemano. Ahora `AspectRatioFrameLayout` expone `forceAspectRatio: Boolean`, sincronizado con `SettingsManager.isForceAspectRatioEnabled()` en `applySettings()` (con `requestLayout()`); desactivado, el contenedor ocupa el espacio completo sin recorte.
+- **BUG FIX — recorte de video a 4:3 con TextureView en resoluciones altas.** Mismo bug y mismo fix que el anterior: al desactivar "Forzar 4:3" el video ya no se recorta, sea cual sea el motor de video (`VideoView` o `TextureView`) — antes el recorte ocurría siempre, sin importar el motor.
+- **BUG FIX — "volvió" el problema del ScreenBug (logo) reiniciándose al cambiar de Activity o volver de segundo plano.** Causa raíz: `resumeSavedState()` (restauración de sesión tras recreación de proceso — común en boxes de Android TV con poca RAM) llamaba a `beginProgramSegment()` sin pasar `isNewSegment`, así que usaba el valor por defecto (`true`). Esto reseteaba `currentSegmentStartMs` al punto de reanudación y el `elapsed` se recalculaba en `0`, haciendo que el ciclo completo de 3 fases del ScreenBug arrancara de cero como si el segmento recién empezara ahí, en vez de continuar donde correspondía. Ahora `currentSegmentStartMs` se persiste (`PREF_SEGMENT_START_MS`) y se restaura antes de llamar a `beginProgramSegment(..., isNewSegment = false)`.
+
+### 🎬 ScreenBug de 3 fases — timing y reproducción de GIF
+
+- **BUG FIX (compilación)**: `scheduleMultipleScreenbugs()` referenciaba constantes del `companion object` (`SCREENBUG_START_DELAY_MS`, `TAG`, etc.) sin calificar con `LiveDiscoveryKids.`, al ser una función de extensión top-level fuera de la clase — el proyecto no compilaba (`Unresolved reference`). Corregido calificando todas las referencias.
+- **Timing ajustado**: `screenbug_start` ahora se oculta 15 s después de aparecer (antes 5 s); `screenbug` (PNG) aparece inmediatamente al ocultarse `screenbug_start` (antes esperaba 15 s más); `screenbug_end` ahora se oculta 5 s después de mostrarse (antes quedaba visible los 20 s completos de la ventana final del segmento — como es un GIF más corto que loopea, se veía repetirse en bucle todo ese tiempo).
+- **Se eliminaron las animaciones de fade in/out del ScreenBug.** Las 3 fases ahora aparecen y desaparecen de forma instantánea (`setBugAlpha()`), sin transición de opacidad.
+- **Reproducción de GIF migrada a `GifMovieDrawable.kt` (nuevo), basado en `android.graphics.Movie`** — API nativa del SDK, sin dependencias externas. Se probaron dos librerías de terceros antes de llegar a esta solución:
+  - Glide: los GIFs sí animaban, pero con latencia perceptible por el overhead de su pipeline de decode async genérico.
+  - `android-gif-drawable`: más liviano en tiempo de ejecución, pero su jar "runtime" (variante multi-release Java 9+) hacía crashear a D8/R8 con un `NullPointerException` interno, tanto en debug (`mergeExtDexDebug`) como en release — un bug del propio toolchain de dexing, irresoluble por configuración (se probaron `packagingOptions`, reglas de proguard y desactivar minificación, sin éxito).
+  - `GifMovieDrawable` decodifica el GIF una sola vez (`preloadScreenBugAssets()`, llamado en `onCreate()`) y lo cachea; cada aparición solo reinicia la reproducción (`seekToStart()` + `start()`) sin volver a decodificar. El PNG estático sigue usando `setImageResource()` directo, sin pasar por ningún decoder de GIF.
+
+### 🎨 Contenido
+
+- Nuevo Screenbug (Mayo–Julio 2009).
+
+### ⚠️ Alcance
+
+> Cambios de código en `AspectRatioFrameLayout.kt` (forzado de 4:3 condicional), `DiscoveryKidsLauncherActivity.kt` (ActionBar real, menú de opciones), `LiveDiscoveryKids.kt` (persistencia de `currentSegmentStartMs`, `resumeSavedState()` con `isNewSegment` correcto, timing y reproducción del ScreenBug, `videoContainer` como campo de la Activity), nuevo `GifMovieDrawable.kt`, `activity_launcher.xml` reescrito (sin MenuBar custom), `item_program_config.xml` (colores por atributo de tema), nuevo `menu_launcher.xml`, `themes.xml` (`LauncherTheme` → Material 3 DayNight), `colors.xml` + nuevo `values-night/colors.xml` (esquema MD3 claro/oscuro), nuevos `values/bools.xml` + `values-night/bools.xml`. `build.gradle`: `versionName` a `2009.5.1.0`.
+
+---
+
 ## [2009.5.0.0] — 🚀 Release · Era Doki 1.0 · Era 2009 · "Parque Imaginario" — 2026-07-13
 
 > *Release del 13 de julio de 2026. Primera versión de la rama 5.x — arranca la Fase 4 del proyecto ("Parque Imaginario"). Cambio más grande hasta la fecha: Discovery Kids Launcher pasa de ser una pantalla secundaria a ser la Activity de inicio real de la app, con selector de video por programa (SAF, sin renombrar/copiar nada), cantidad de programas configurable (hasta 24) y ya_regresa/continuamos personalizados por programa — todo detrás de un interruptor "Experimental" nuevo en Configuración, desactivado por defecto. Fuera de Experimental: AlertDialog de aviso para videos de 720p+, un motor de video alternativo basado en TextureView para resolver ese problema, y aviso automático de actualización al entrar a la app.*
@@ -1701,6 +1737,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2009.5.1.0           | 2026-07-15 | 🚀 Release | Launcher rediseñado a Material Design 3 (claro/oscuro, ActionBar original); BUG FIX: Forzar 4:3 no respetaba el switch, recorte de video con TextureView, ScreenBug reiniciándose al cambiar de Activity/segundo plano; ajustes de timing del ScreenBug de 3 fases + reproducción de GIF nativa (GifMovieDrawable); nuevo Screenbug Mayo–Julio 2009 |
 | 2009.5.0.0           | 2026-07-13 | 🚀 Release | "Parque Imaginario" (inicio Fase 4, rama 5.x): Discovery Kids Launcher pasa a ser la Activity de inicio (detrás de Experimental) con selector de video por programa, hasta 24 programas y ya_regresa/continuamos personalizados; AlertDialog 720p+, motor TextureView opcional, aviso de actualización al abrir la app |
 | 2009.4.6.1           | 2026-07-11 | 🚀 Release | Cambio de Era 2008→2009; 3 Screenbug secuenciales (start.gif/screenbug.png/end.gif); fix AppUpdater con BUILD segment; fix Prev/Next navegación en orden del playlist |
 | 2008.4.6.0           | 2026-07-10 | 🚀 Release | LiveDiscoveryKids.kt reunificado (reversión de la reorganización 4.1.0.21, sin cambios de comportamiento); nuevo Discovery Kids Launcher para elegir qué programas salen al aire |
