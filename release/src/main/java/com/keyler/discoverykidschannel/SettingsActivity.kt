@@ -98,6 +98,12 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var itemCheckUpdate: LinearLayout
     private lateinit var txtCheckUpdateValue: TextView
 
+    // Release 2009.5.2.0: "Recortar 4:3" (ex "Usar TextureView") se
+    // deshabilita cuando "Forzar 4:3" está activado — ver updateCropSwitchEnabledState().
+    private lateinit var itemTextureView: LinearLayout
+    private lateinit var txtTextureViewLabel: TextView
+    private lateinit var txtTextureViewDesc: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setTheme(R.style.SettingsTheme)
@@ -129,6 +135,9 @@ class SettingsActivity : AppCompatActivity() {
 
         switchExperimental = findViewById(R.id.switchExperimental)
         switchTextureView = findViewById(R.id.switchTextureView)
+        itemTextureView = findViewById(R.id.itemTextureView)
+        txtTextureViewLabel = findViewById(R.id.txtTextureViewLabel)
+        txtTextureViewDesc = findViewById(R.id.txtTextureViewDesc)
     }
 
     /** Carga los valores guardados en SettingsManager y los refleja en cada control. */
@@ -143,6 +152,7 @@ class SettingsActivity : AppCompatActivity() {
         refreshScreenbugDelayLabel()
         refreshCommercialIntervalLabel()
         refreshCheckUpdateLabel()
+        updateCropSwitchEnabledState()
     }
 
     private fun setupListeners() {
@@ -167,6 +177,10 @@ class SettingsActivity : AppCompatActivity() {
         }
         switchForceAspectRatio.setOnCheckedChangeListener { _, isChecked ->
             SettingsManager.setForceAspectRatioEnabled(this, isChecked)
+            // Release 2009.5.2.0: "Recortar 4:3" no tiene sentido con "Forzar
+            // 4:3" activado (ya se recorta a 4:3 de todas formas) — se
+            // deshabilita mientras tanto.
+            updateCropSwitchEnabledState()
         }
 
         findViewById<LinearLayout>(R.id.itemPreviewUpdates).setOnClickListener {
@@ -198,6 +212,25 @@ class SettingsActivity : AppCompatActivity() {
             SettingsManager.setTextureViewEnabled(this, isChecked)
             showRestartDialog()
         }
+    }
+
+    /**
+     * Release 2009.5.2.0 — "Recortar 4:3" (ex "Usar TextureView") queda
+     * deshabilitado (grisado, no clickeable) mientras "Forzar 4:3" esté
+     * activado: en ese caso el video ya se recorta a 4:3 de todas formas
+     * (ver AspectRatioFrameLayout/DkVideoView), así que esta opción no
+     * cambia nada. Se habilita de nuevo apenas se desactiva "Forzar 4:3".
+     */
+    private fun updateCropSwitchEnabledState() {
+        val enabled = !switchForceAspectRatio.isChecked
+        itemTextureView.isEnabled = enabled
+        itemTextureView.isClickable = enabled
+        itemTextureView.isFocusable = enabled
+        switchTextureView.isEnabled = enabled
+        val alpha = if (enabled) 1f else 0.4f
+        txtTextureViewLabel.alpha = alpha
+        txtTextureViewDesc.alpha = alpha
+        switchTextureView.alpha = alpha
     }
 
     /**

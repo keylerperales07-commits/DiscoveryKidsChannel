@@ -279,7 +279,12 @@
             android:paddingTop="16dp"
             android:paddingBottom="4dp" />
 
-        <!-- Item: Usar TextureView (switch) -->
+        <!-- Item: Recortar 4:3 (switch) — Release 2009.5.2.0: renombrado de
+             "Usar TextureView" (sigue siendo el mismo switch, motor de video
+             TextureView vs clásico — ver SettingsManager.isTextureViewEnabled()
+             / DkVideoView.kt). Se deshabilita cuando "Forzar 4:3" está
+             activado, porque en ese caso ya se recorta a 4:3 de todas formas
+             — ver SettingsActivity.kt. -->
         <LinearLayout
             android:id="@+id/itemTextureView"
             android:layout_width="match_parent"
@@ -302,17 +307,19 @@
                 android:layout_marginEnd="12dp">
 
                 <TextView
+                    android:id="@+id/txtTextureViewLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Usar TextureView"
+                    android:text="Recortar 4:3"
                     android:textColor="@color/dk_text_primary"
                     android:textSize="17sp"
                     android:fontFamily="@font/googlesans" />
 
                 <TextView
+                    android:id="@+id/txtTextureViewDesc"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Motor de video compatible con 720p o superior, para que el ScreenBug no quede oculto detrás del video (Predeterminado: Desactivado)"
+                    android:text="Recorta el video a 4:3 usando el motor TextureView, compatible con 720p o superior, sin ocultar el ScreenBug detrás del video. Deshabilitado mientras &quot;Forzar 4:3&quot; esté activado (Predeterminado: Desactivado)"
                     android:textColor="@color/dk_text_secondary"
                     android:textSize="13sp"
                     android:fontFamily="@font/googlesans"

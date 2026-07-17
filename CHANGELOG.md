@@ -6,6 +6,39 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2009.5.2.0] — 🚀 Release · Era Doki 1.0 · Era 2009 · "Parque Imaginario" — 2026-07-17
+
+> *Release de investigación a fondo: 2 bugs de arrastre finalmente resueltos con causa raíz identificada — el ScreenBug "reiniciándose" y el video estirado a 16:9 con "Forzar 4:3" desactivado. Además, el ítem de Configuración pasa al menú de overflow original de Android, y "Usar TextureView" se renombra a "Recortar 4:3" con deshabilitado condicional. Nuevo Screenbug Julio 2009 – 2011.*
+
+### 🐛 BUG FIX — El ScreenBug "se reinicia" (causa raíz encontrada)
+
+`beginProgramSegment()` llama `setBugAlpha(0f)` **siempre** al arrancar — incluso en un simple resume dentro del mismo proceso (abrir Configuración y volver, o un ratito en segundo plano, `isNewSegment=false`). `scheduleMultipleScreenbugs()` solo programaba eventos **futuros** de show/hide según `elapsed`, pero nunca restauraba de inmediato la fase que ya debería estar visible en ese punto del programa — así que el ScreenBug quedaba oculto hasta el próximo evento programado, varios segundos después, y reaparecía mostrando otra fase, fuera de lugar. Eso es lo que se percibía como "se reinicia". Ahora, si `elapsed` cae dentro de la ventana visible de alguna fase, esa fase se restaura de inmediato — sin reiniciar el GIF al frame 0 (`resetAnimation=false`), para que no se note un salto.
+
+### 🐛 BUG FIX — Video estirado a 16:9 con "Forzar 4:3" desactivado (causa raíz encontrada)
+
+El fix de la 2009.5.1.0 para "Forzar 4:3" dejó un efecto secundario: `applySettings()` forzaba el `layoutParams.width` de `videoView` a `MATCH_PARENT` **siempre**, pisando el `WRAP_CONTENT` + `gravity=CENTER` original (`onCreate()`) que era justo lo que le permitía calcular su propio tamaño según la proporción real del video. Además, `LegacyVideoView` (motor VideoView clásico) nunca tuvo lógica propia de ajuste de aspecto — dependía enteramente, y de forma poco confiable, del comportamiento interno heredado de `VideoView`. Resultado: con "Forzar 4:3" desactivado, el video se estiraba sin más a la forma del contenedor (16:9 en pantalla completa), distorsionado, sin importar su proporción real.
+
+Se reescribió `DkVideoView.kt`: el fit de aspecto ahora vive en la clase base, compartido por los dos motores (`LegacyVideoView` y `TextureVideoView`) — `forceAspectRatio` (sincronizado desde `applySettings()`, igual que en `AspectRatioFrameLayout`) y `videoAspect` (la proporción real del video, capturada de `MediaPlayer.videoWidth`/`videoHeight` apenas se conoce). Con el forzado desactivado, el video ahora se ajusta preservando su proporción real dentro del espacio disponible (pillarbox/letterbox), sin estirarse nunca.
+
+### 🎨 Discovery Kids Launcher — ActionBar
+
+- El ítem "Configuración" de la ActionBar pasa de ícono fijo (`showAsAction="always"`) al **menú de overflow original de Android** (los 3 puntos, `showAsAction="never"`) — el patrón estándar del sistema, en vez de un ícono agregado por la app.
+
+### ⚙️ Configuración — "Recortar 4:3" (antes "Usar TextureView")
+
+- El switch se renombra de "Usar TextureView" a **"Recortar 4:3"** (sigue siendo el mismo switch — motor de video TextureView vs. clásico, `SettingsManager.isTextureViewEnabled()` sin cambios).
+- Ahora se **deshabilita** (grisado, no clickeable) mientras "Forzar 4:3" esté activado — en ese caso el video ya se recorta a 4:3 de todas formas, así que esta opción no cambia nada. Se habilita de nuevo apenas se desactiva "Forzar 4:3".
+
+### 🎨 Contenido
+
+- Nuevo Screenbug (Julio 2009 – 2011).
+
+### ⚠️ Alcance
+
+> Cambios de código en `DkVideoView.kt` (reescrito — fit de aspecto real compartido entre motores), `LiveDiscoveryKids.kt` (`scheduleMultipleScreenbugs()` restaura fase visible de inmediato, `fadeInBugWithResource()`/`showScreenBugResource()` con `resetAnimation`, `applySettings()` sin pisar `layoutParams`), `SettingsActivity.kt` (`updateCropSwitchEnabledState()`), `activity_settings.xml` (rename + ids), `menu_launcher.xml` (`showAsAction="never"`). `build.gradle`: `versionName` a `2009.5.2.0`.
+
+---
+
 ## [2009.5.1.0] — 🚀 Release · Era Doki 1.0 · Era 2009 · "Parque Imaginario" — 2026-07-15
 
 > *Release enfocada en pulir la 2009.5.0.0: Discovery Kids Launcher rediseñado a Material Design 3 puro (esquema claro/oscuro automático, ActionBar original de Android en vez del MenuBar hecho a mano), 3 bug fixes de la Release anterior (Forzar 4:3, recorte de video con TextureView, ScreenBug reiniciándose al cambiar de Activity o volver de segundo plano), ajustes de timing y reproducción del ScreenBug de 3 fases, y nuevo Screenbug de Mayo–Julio 2009.*
@@ -1737,6 +1770,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2009.5.2.0           | 2026-07-17 | 🚀 Release | BUG FIX (causa raíz encontrada): ScreenBug "reiniciándose" al reanudar, y video estirado a 16:9 con "Forzar 4:3" desactivado (DkVideoView reescrito, fit de aspecto real compartido); ActionBar del Launcher: Configuración pasa al menú de overflow original; "Usar TextureView" renombrado a "Recortar 4:3", deshabilitado cuando "Forzar 4:3" está activo; nuevo Screenbug Julio 2009–2011 |
 | 2009.5.1.0           | 2026-07-15 | 🚀 Release | Launcher rediseñado a Material Design 3 (claro/oscuro, ActionBar original); BUG FIX: Forzar 4:3 no respetaba el switch, recorte de video con TextureView, ScreenBug reiniciándose al cambiar de Activity/segundo plano; ajustes de timing del ScreenBug de 3 fases + reproducción de GIF nativa (GifMovieDrawable); nuevo Screenbug Mayo–Julio 2009 |
 | 2009.5.0.0           | 2026-07-13 | 🚀 Release | "Parque Imaginario" (inicio Fase 4, rama 5.x): Discovery Kids Launcher pasa a ser la Activity de inicio (detrás de Experimental) con selector de video por programa, hasta 24 programas y ya_regresa/continuamos personalizados; AlertDialog 720p+, motor TextureView opcional, aviso de actualización al abrir la app |
 | 2009.4.6.1           | 2026-07-11 | 🚀 Release | Cambio de Era 2008→2009; 3 Screenbug secuenciales (start.gif/screenbug.png/end.gif); fix AppUpdater con BUILD segment; fix Prev/Next navegación en orden del playlist |

@@ -18,6 +18,6 @@
         android:id="@+id/menuLauncherSettings"
         android:title="Configuración"
         android:icon="@drawable/btn_settings"
-        app:showAsAction="always" />
+        app:showAsAction="never" />
 
 </menu>

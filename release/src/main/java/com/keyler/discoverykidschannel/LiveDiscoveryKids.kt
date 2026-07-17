@@ -347,7 +347,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
          * (Actualización La Era Doki / nuevo Discovery Kids).
          */
         internal val BUMPERS = listOf(
-            R.raw.bumper6,
             R.raw.bumper,
             R.raw.bumper2,
             R.raw.bumper3,
@@ -1095,7 +1094,32 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     // "Unresolved reference" (igual que TAG más abajo).
     val startShowAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS
     val startHideAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS
-    
+    val midShowAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS + LiveDiscoveryKids.SCREENBUG_MID_DELAY_AFTER_START_MS
+    val midHideAt = segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
+    val endShowAt = segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
+    val endHideAt = endShowAt + LiveDiscoveryKids.SCREENBUG_END_VISIBLE_DURATION_MS
+
+    // BUG FIX (investigación a fondo — "el ScreenBug se reinicia"): esta función
+    // solo programaba eventos FUTUROS de show/hide según "elapsed". Pero
+    // beginProgramSegment() llama setBugAlpha(0f) SIEMPRE al arrancar — incluso
+    // en un simple resume (isNewSegment=false, mismo proceso: abrir
+    // Configuración y volver, o un ratito en segundo plano) — así que si
+    // "elapsed" caía DENTRO de la ventana visible de alguna fase (el ScreenBug
+    // ya debería estar mostrándose en este punto del programa), quedaba oculto
+    // hasta el próximo evento programado, varios segundos después. Eso es lo
+    // que se percibía como "se reinicia": desaparece y reaparece más tarde
+    // mostrando otra fase, fuera de lugar. Ahora, si corresponde, se restaura
+    // la fase visible de inmediato — sin reiniciar el GIF al frame 0
+    // (resetAnimation=false), para que no se note un salto.
+    when {
+        elapsed >= startShowAt && elapsed < startHideAt && segmentDuration > startShowAt ->
+            fadeInBugWithResource(R.drawable.screenbug_start, resetAnimation = false)
+        elapsed >= midShowAt && elapsed < midHideAt && segmentDuration > midShowAt && midShowAt < midHideAt ->
+            fadeInBugWithResource(R.drawable.screenbug, resetAnimation = false)
+        elapsed >= endShowAt && elapsed < endHideAt && segmentDuration > endShowAt ->
+            fadeInBugWithResource(R.drawable.screenbug_end, resetAnimation = false)
+    }
+
     if (elapsed < startShowAt && segmentDuration > startShowAt) {
         val startDelay = (startShowAt - elapsed).coerceAtLeast(0L)
         post(startDelay) { 
@@ -1112,9 +1136,6 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     }
     
     // --- PHASE 2: screenbug (PNG) ---
-    val midShowAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS + LiveDiscoveryKids.SCREENBUG_MID_DELAY_AFTER_START_MS
-    val midHideAt = segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
-    
     if (elapsed < midShowAt && segmentDuration > midShowAt && midShowAt < midHideAt) {
         val midDelay = (midShowAt - elapsed).coerceAtLeast(0L)
         post(midDelay) { 
@@ -1129,12 +1150,9 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     }
     
     // --- PHASE 3: screenbug_end (GIF) ---
-    val endShowAt = segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
     // BUG FIX: antes endHideAt = segmentDuration, así que quedaba visible los
     // 20s completos de la ventana final y el GIF (más corto) se veía repetirse
     // en loop. Ahora se oculta 5s después de mostrarse, igual que screenbug_start.
-    val endHideAt = endShowAt + LiveDiscoveryKids.SCREENBUG_END_VISIBLE_DURATION_MS
-    
     if (elapsed < endShowAt && segmentDuration > endShowAt) {
         val endDelay = (endShowAt - elapsed).coerceAtLeast(0L)
         post(endDelay) { 
@@ -2177,25 +2195,28 @@ internal fun LiveDiscoveryKids.fadeInBug() {
     setBugAlpha(1f)
 }
 
-/** Release 2009.4.6.1 — variante de fadeInBug() que toma un resource específico (para screenbug de 3 fases). */
-internal fun LiveDiscoveryKids.fadeInBugWithResource(res: Int) {
-    Log.d(LiveDiscoveryKids.TAG, "ScreenBug SHOW [res=$res]")
+/** Release 2009.4.6.1 — variante de fadeInBug() que toma un resource específico (para screenbug de 3 fases).
+ *  [resetAnimation]: false cuando se está RESTAURANDO una fase que ya debería estar visible
+ *  (ver scheduleMultipleScreenbugs) — no reinicia el GIF al frame 0, solo lo hace visible
+ *  donde sea que esté (el GifMovieDrawable sigue su propio reloj interno de todos modos). */
+internal fun LiveDiscoveryKids.fadeInBugWithResource(res: Int, resetAnimation: Boolean = true) {
+    Log.d(LiveDiscoveryKids.TAG, "ScreenBug SHOW [res=$res, reset=$resetAnimation]")
     currentScreenBugRes = res
-    showScreenBugResource(res)
+    showScreenBugResource(res, resetAnimation)
     setBugAlpha(1f)
 }
 
-/** Aplica el resource correcto al ImageView: PNG estático directo, GIF cacheado reiniciado desde el frame 0. */
-private fun LiveDiscoveryKids.showScreenBugResource(res: Int) {
+/** Aplica el resource correcto al ImageView: PNG estático directo, GIF cacheado (reiniciado desde el frame 0 solo si [resetAnimation]). */
+private fun LiveDiscoveryKids.showScreenBugResource(res: Int, resetAnimation: Boolean = true) {
     when (res) {
         R.drawable.screenbug -> screenBug.setImageResource(res)  // PNG estático, sin animación
         R.drawable.screenbug_start -> screenBugStartGif?.let {
-            it.seekToStart()
+            if (resetAnimation) it.seekToStart()
             it.start()
             screenBug.setImageDrawable(it)
         } ?: screenBug.setImageResource(res)  // fallback si el preload aún no corrió
         R.drawable.screenbug_end -> screenBugEndGif?.let {
-            it.seekToStart()
+            if (resetAnimation) it.seekToStart()
             it.start()
             screenBug.setImageDrawable(it)
         } ?: screenBug.setImageResource(res)
@@ -2398,18 +2419,23 @@ internal fun LiveDiscoveryKids.applySettings() {
     breakIntervalMinMs = SettingsManager.getCommercialMinMinutes(this) * 60 * 1_000L
     breakIntervalMaxMs = SettingsManager.getCommercialMaxMinutes(this) * 60 * 1_000L
 
-    // BUG FIX (2009.5.1.0): el forzado de 4:3 se aplica acá, en el contenedor
-    // PADRE (videoContainer/AspectRatioFrameLayout), que es el que de verdad
-    // decide el recorte. Antes solo se tocaba el width del videoView hijo, que
-    // no tenía ningún efecto porque el padre ya venía forzado a 4:3 siempre
-    // (ver AspectRatioFrameLayout.kt).
-    videoContainer.forceAspectRatio = SettingsManager.isForceAspectRatioEnabled(this)
+    // BUG FIX (2009.5.1.0): el forzado de 4:3 se aplica en el contenedor
+    // PADRE (videoContainer/AspectRatioFrameLayout), que es el que decide si
+    // TODO (video + ScreenBug + CRT) queda recortado a 4:3 exacto o si el
+    // contenedor ocupa la pantalla completa.
+    //
+    // BUG FIX (2009.5.2.0 — investigación a fondo): con forzado desactivado,
+    // el video se estiraba a 16:9 (la forma de la pantalla completa),
+    // distorsionado. Causa: acá se pisaba el layoutParams.width de videoView
+    // a MATCH_PARENT SIEMPRE, rompiendo el WRAP_CONTENT + gravity=CENTER
+    // original (onCreate()) que le permitía calcular su propio tamaño según
+    // la proporción real del video. Eliminado — ahora videoView.forceAspectRatio
+    // se sincroniza igual que en el contenedor, y el fit real de proporción
+    // (sin estirar) vive en DkVideoView.onMeasure() — ver DkVideoView.kt.
+    val forceAspectRatio = SettingsManager.isForceAspectRatioEnabled(this)
+    videoContainer.forceAspectRatio = forceAspectRatio
     videoContainer.requestLayout()
-
-    val params = videoView.layoutParams as FrameLayout.LayoutParams
-    params.width = FrameLayout.LayoutParams.MATCH_PARENT
-    params.height = FrameLayout.LayoutParams.MATCH_PARENT
-    videoView.layoutParams = params
+    videoView.forceAspectRatio = forceAspectRatio
 }
 
 //Modo Debug solo en Preview
