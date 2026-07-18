@@ -5,16 +5,18 @@
  NO ELIMINAR NINGUN COMENTARIO AGREGADO
 -->
 <!--
-    activity_launcher.xml — Release 2009.5.1.0 ("Parque Imaginario")
+    activity_launcher.xml — Release 2009.5.1.0 ("Parque Imaginario"), 2009.5.2.1
 
     Rediseño a Material Design 3 puro:
       - Ya no hay un MenuBar custom (LinearLayout con degradado + logo +
         título hecho a mano) — la Activity ahora declara la ActionBar
         ORIGINAL de Android (Theme.Material3.DayNight, no NoActionBar — ver
-        themes.xml), con el título e ícono puestos por código
-        (DiscoveryKidsLauncherActivity.onCreate()) y el botón de
-        Configuración como ítem del menú de opciones (menu_launcher.xml) en
-        vez de un ImageButton propio.
+        themes.xml). Release 2009.5.2.1: la ActionBar solo tiene el título
+        (puesto por código en DiscoveryKidsLauncherActivity.onCreate()) — el
+        logo se sacó de ahí y ahora vive en el cuerpo de la pantalla, entre
+        la ActionBar y el botón "Iniciar canal" (ver @+id/imgLauncherLogo
+        acá abajo). El botón de Configuración vive en el menú de overflow
+        original de Android (menu_launcher.xml), no como ícono fijo.
       - "Iniciar canal" ahora es un MaterialButton relleno (estilo M3).
       - La fila de "Cantidad de programas" vive dentro de un
         MaterialCardView (elevación M3 estándar).
@@ -37,6 +39,19 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingBottom="32dp">
+
+        <!-- Logo — Release 2009.5.2.1: antes vivía en la ActionBar
+             (setIcon/setDisplayUseLogoEnabled); ahora va acá, en el cuerpo,
+             entre la ActionBar (que solo tiene el título) y el botón
+             "Iniciar canal". -->
+        <ImageView
+            android:id="@+id/imgLauncherLogo"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="24dp"
+            android:contentDescription="Discovery Kids"
+            android:src="@drawable/icon" />
 
         <!-- Botón principal: Iniciar canal -->
         <com.google.android.material.button.MaterialButton

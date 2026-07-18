@@ -56,13 +56,9 @@ import android.content.SharedPreferences
  *     continuamos de ESE programa (en vez del predeterminado que trae la
  *     app) y qué Uri eligió. Ver resolveYaRegresaUri()/resolveContinuamosUri()
  *     en LiveDiscoveryKids.kt.
- *   - KEY_TEXTURE_VIEW_ENABLED: NO es experimental (ver spec de la Release).
- *     Activa el motor de video basado en TextureView (DkVideoView →
- *     TextureVideoView) en vez del VideoView clásico, necesario para que
- *     videos de 720p o superior se vean bien (con VideoView, el ScreenBug
- *     queda oculto detrás del video en esas resoluciones por aceleración de
- *     hardware). Desactivado por defecto — el AlertDialog de "video no es
- *     480p" recomienda activarlo.
+ *
+ * Release 2009.5.2.1 — ELIMINADO: KEY_TEXTURE_VIEW_ENABLED y el motor de
+ *   video basado en TextureView que activaba (ver DkVideoView.kt).
  */
 object SettingsManager {
 
@@ -85,7 +81,6 @@ object SettingsManager {
     private const val KEY_YAREGRESA_URI_PREFIX = "yaregresa_uri_"
     private const val KEY_CONTINUAMOS_CUSTOM_PREFIX = "continuamos_custom_"
     private const val KEY_CONTINUAMOS_URI_PREFIX = "continuamos_uri_"
-    private const val KEY_TEXTURE_VIEW_ENABLED = "texture_view_enabled"
 
     // ── Valores por defecto ─────────────────────────────────────────────────
     const val DEFAULT_BG_MUSIC_ENABLED = true
@@ -102,7 +97,6 @@ object SettingsManager {
     const val MAX_PROGRAM_COUNT = 24
     const val DEFAULT_YAREGRESA_CUSTOM = false
     const val DEFAULT_CONTINUAMOS_CUSTOM = false
-    const val DEFAULT_TEXTURE_VIEW_ENABLED = false
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -246,18 +240,5 @@ object SettingsManager {
 
     fun setContinuamosUri(context: Context, index: Int, uri: String?) {
         prefs(context).edit().putString(KEY_CONTINUAMOS_URI_PREFIX + index, uri).apply()
-    }
-
-    // ── TextureView (Release 2009.5.0.0 — NO experimental) ──────────────────
-    // OFF (default) → DkVideoView instancia un VideoView clásico.
-    // ON             → DkVideoView instancia un TextureVideoView (compatible
-    //                   con 720p+ sin tapar el ScreenBug). Requiere reabrir
-    //                   el canal para tomar efecto (el tipo de superficie no
-    //                   se puede cambiar con la Activity ya creada).
-    fun isTextureViewEnabled(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_TEXTURE_VIEW_ENABLED, DEFAULT_TEXTURE_VIEW_ENABLED)
-
-    fun setTextureViewEnabled(context: Context, enabled: Boolean) {
-        prefs(context).edit().putBoolean(KEY_TEXTURE_VIEW_ENABLED, enabled).apply()
     }
 }

@@ -29,7 +29,7 @@
              MAIN/LAUNCHER se movió a DiscoveryKidsLauncherActivity, más abajo).
              Sigue exported=true porque se sigue lanzando con un Intent
              explícito desde esa Activity (y desde SettingsActivity, al
-             reiniciar tras cambiar Experimental/TextureView). -->
+             reiniciar tras cambiar Experimental). -->
         <activity 
             android:name="LiveDiscoveryKids" 
             android:exported="true"

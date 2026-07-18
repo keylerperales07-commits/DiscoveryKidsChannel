@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v5.2.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v5.2.1-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era-2009-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/Fase-4-orange?style=flat-square"/>
 </p>
@@ -53,7 +53,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 🔄 **Actualizador integrado** — Desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub; si hay una versión más nueva, descarga el `.apk` con OkHttp (mostrando progreso y tamaño en vivo) y abre el instalador del sistema. Un switch "Habilitar versiones Preview" (desactivado por defecto) permite que también instale releases Preview, no solo estables. La pantalla del Actualizador calca el diseño nativo de "Actualización del sistema" de Android
 - 🔔 **Aviso de actualización al abrir la app** — Además de "Buscar actualizaciones" en Configuración, la app consulta en silencio al entrar y muestra un AlertDialog propio si hay una versión nueva (Release 2009.5.0.0)
 - 🧪 **Discovery Kids Launcher (Experimental)** — Con "Habilitar funciones experimentales" activado en Configuración, la app abre en una pantalla nueva, rediseñada a **Material Design 3 puro** (esquema de color claro/oscuro automático, ActionBar original de Android — Release 2009.5.1.0) desde donde elegís el video de cada programa con el selector de archivos del sistema (sin renombrar ni copiar nada a Videos), cuántos programas querés (hasta 24) y, si querés, un ya_regresa/continuamos propio para cada uno. Desactivado, la app sigue abriendo directo al canal con los 4 programas clásicos (Release 2009.5.0.0)
-- 🖥️ **Compatibilidad con video 720p+** — Motor de video opcional (Configuración → "Compatibilidad de video" → "Recortar 4:3", antes llamado "Usar TextureView"), para que el ScreenBug no quede oculto detrás de videos de alta resolución. Si detecta un programa de 720p o más sin esta opción activada, la app avisa con un diálogo (Release 2009.5.0.0). Se deshabilita mientras "Forzar 4:3" esté activado, porque en ese caso ya se recorta a 4:3 de todas formas (Release 2009.5.2.0). "Forzar 4:3" ahora sí respeta el switch en ambos motores de video — antes recortaba siempre, sin importar el estado (Release 2009.5.1.0) — y con el switch desactivado, el video ya no se estira a 16:9: se ajusta preservando su proporción real (Release 2009.5.2.0)
+- 📺 **Contenedor de video en 4:3, siempre** — El contenedor donde vive el video (junto con el ScreenBug y el efecto CRT) está siempre en proporción 4:3, sin excepción (Release 2009.5.2.1). "Forzar 4:3" (Configuración) decide qué pasa con el video *dentro* de esa caja: activado, se estira para llenarla exacto; desactivado, se ajusta preservando su proporción real sin estirarse — un video 16:9, por ejemplo, encaja con franjas arriba/abajo en vez de deformarse.
 
 ---
 
@@ -119,7 +119,7 @@ DiscoveryKidsChannel/
 |------------|-----------|
 | **Kotlin** | Lenguaje principal |
 | **Android SDK** | Plataforma base |
-| **VideoView / TextureView** | Motor de reproducción de video (TextureView opcional, para 720p+) |
+| **VideoView** | Motor de reproducción de video |
 | **MediaPlayer** | Gestión de audio y medios |
 | **Storage Access Framework** | Selección de videos propios por programa (Discovery Kids Launcher) |
 | **SharedPreferences** | Persistencia de sesión y configuración |
@@ -169,25 +169,27 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v5.2.0` *(Release · Era Doki 1.0 · Era 2009 · "Parque Imaginario")*
-> *Release de investigación a fondo: 2 bugs de arrastre finalmente resueltos con causa raíz identificada — el ScreenBug "reiniciándose" al reanudar y el video estirado a 16:9 con "Forzar 4:3" desactivado. El ítem de Configuración del Launcher pasa al menú de overflow original de Android, y "Usar TextureView" se renombra a "Recortar 4:3" con deshabilitado condicional. Nuevo Screenbug de Julio 2009 – 2011.*
+### 🚀 Última versión estable — `v5.2.1` *(Bug Fix · Era Doki 1.0 · Era 2009 · "Parque Imaginario")*
+> *TextureView eliminado por completo (motor de video, switch "Recortar 4:3" y AlertDialog de 720p+), 2 bugs de arrastre con causa raíz encontrada — el contenedor de video ya no cambia de forma con "Forzar 4:3" (siempre 4:3), y el programa ahora sí hace fadeOut al terminar — y rediseño: la ActionBar de Configuración deja de ser un header hecho a mano, y el logo del Launcher pasa de la ActionBar al cuerpo de la pantalla.*
 
-- 🐛 **ScreenBug: causa raíz real encontrada.** Cada resume (abrir Configuración y volver, o un ratito en segundo plano) ocultaba el ScreenBug de golpe y no lo restauraba hasta el próximo evento programado — ahora se restaura de inmediato si corresponde, sin reiniciar la animación.
-- 🐛 **Video estirado a 16:9 con "Forzar 4:3" desactivado: causa raíz real encontrada.** `DkVideoView` se reescribió con fit de aspecto real compartido entre los dos motores de video — ya no se estira, se ajusta preservando la proporción real (pillarbox/letterbox).
-- 🎨 El ítem "Configuración" del Launcher pasa al menú de overflow original de Android (3 puntos) en vez de ícono fijo en la ActionBar.
-- ⚙️ "Usar TextureView" se renombra a **"Recortar 4:3"** y se deshabilita mientras "Forzar 4:3" esté activado.
+- 🗑️ **TextureView eliminado por completo** — motor de video, switch "Recortar 4:3" y el AlertDialog de 720p+ que lo recomendaba. `DkVideoView` vuelve a ser una sola clase, envoltorio de `VideoView` clásico.
+- 🐛 **"Forzar 4:3" — causa raíz real, esta vez sí.** El contenedor de video **siempre** está en 4:3, sin excepción; "Forzar 4:3" decide si el video se estira para llenarlo exacto o se ajusta preservando su proporción real dentro de esa misma caja.
+- 🐛 **El programa no hacía fadeOut al terminar** (y por eso el siguiente clip tampoco fadeIn) — ahora usa el mismo fadeOut preventivo que ya usan bumpers/comerciales/enseguidas.
+- 🎨 Configuración usa la ActionBar real de Android (sin header hecho a mano); el logo del Launcher pasa de la ActionBar al cuerpo de la pantalla.
 
 <details>
 <summary>📜 Versiones estables anteriores</summary>
 
+**`v5.2.0`** *(Era Doki 1.0 · Era 2009 · "Parque Imaginario")* — Release de investigación a fondo: 2 bugs de arrastre finalmente resueltos con causa raíz identificada — el ScreenBug "reiniciándose" al reanudar y el video estirado a 16:9 con "Forzar 4:3" desactivado. El ítem de Configuración del Launcher pasa al menú de overflow original de Android, y "Usar TextureView" se renombra a "Recortar 4:3" con deshabilitado condicional. Nuevo Screenbug de Julio 2009 – 2011.
+- 🐛 **ScreenBug: causa raíz real encontrada.** Cada resume (abrir Configuración y volver, o un ratito en segundo plano) ocultaba el ScreenBug de golpe y no lo restauraba hasta el próximo evento programado — ahora se restaura de inmediato si corresponde, sin reiniciar la animación.
+- 🎨 El ítem "Configuración" del Launcher pasa al menú de overflow original de Android (3 puntos) en vez de ícono fijo en la ActionBar.
+
 **`v5.1.0`** *(Era Doki 1.0 · Era 2009 · "Parque Imaginario")* — Discovery Kids Launcher rediseñado a Material Design 3 puro (esquema claro/oscuro automático, ActionBar original de Android en vez del MenuBar hecho a mano). 3 bug fixes de la 2009.5.0.0: "Forzar 4:3" no respetaba el switch, recorte de video con TextureView, y el ScreenBug reiniciándose al cambiar de Activity o volver de segundo plano. Ajustes de timing del ScreenBug de 3 fases y reproducción de GIF migrada a una solución 100% nativa (sin librerías externas). Nuevo Screenbug de Mayo–Julio 2009.
 - 🎨 **Discovery Kids Launcher a Material Design 3** — ActionBar original de Android (no más MenuBar custom), esquema de color azul con versión clara y oscura automática (DayNight), componentes Material 3 (`MaterialButton`, `MaterialCardView`).
-- 🐛 **"Forzar 4:3" corregido** — antes recortaba el video a 4:3 sin importar si el switch estaba activado o desactivado; ahora sí lo respeta, en ambos motores de video (VideoView/TextureView).
 - 🎬 **ScreenBug**: timing ajustado (start se oculta a los 15 s sin fade, PNG aparece inmediato, end se oculta 5 s después de mostrarse en vez de loopear 20 s), y los GIF ahora se reproducen con una solución nativa propia (`GifMovieDrawable`, sin librerías externas).
 
-**`v5.0.0`** *(Era Doki 1.0 · Era 2009 · "Parque Imaginario")* — Primera versión de la rama 5.x — arranca la Fase 4. Discovery Kids Launcher pasa a ser la pantalla de inicio (Experimental), con selector de video por programa, hasta 24 programas y ya_regresa/continuamos personalizados. AlertDialog para video 720p+, motor de video TextureView opcional, y aviso de actualización al abrir la app.
+**`v5.0.0`** *(Era Doki 1.0 · Era 2009 · "Parque Imaginario")* — Primera versión de la rama 5.x — arranca la Fase 4. Discovery Kids Launcher pasa a ser la pantalla de inicio (Experimental), con selector de video por programa, hasta 24 programas y ya_regresa/continuamos personalizados.
 - 🧪 **Discovery Kids Launcher (Experimental)** — nueva pantalla de inicio real de la app, detrás de "Habilitar funciones experimentales" en Configuración (desactivado por defecto). Elegí el video de cada programa sin renombrar ni copiar nada, cuántos programas querés (1–24) y personalizá el ya_regresa/continuamos de cada uno.
-- 🖥️ **Compatibilidad de video 720p+** — nuevo motor de video opcional (TextureView) para que el ScreenBug no quede detrás del video en resoluciones altas; aviso automático si detecta un programa así sin la opción activada.
 - 🔔 **Aviso de actualización al abrir la app** — además de "Buscar actualizaciones" en Configuración, ahora también se consulta solo al entrar.
 - ⚙️ Se eliminó de Configuración el ítem "Elegir programas" (ahora vive en Discovery Kids Launcher).
 
@@ -204,7 +206,7 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 ## ⚠️ Notas Importantes
 
-- **Los videos de programas (`pro1–4.mp4`) deben estar en resolución 480p o inferior si usás el motor de video clásico (VideoView).** Resoluciones de 720p en adelante causan que `VideoView` active aceleración de hardware, lo que hace que el ScreenBug quede oculto detrás del video. Desde la Release 2009.5.0.0 podés activar "Recortar 4:3" (antes "Usar TextureView") en Configuración → "Compatibilidad de video" para reproducir 720p+ sin ese problema (requiere reabrir el canal); si no la activás, la app te avisa con un diálogo apenas detecta un video así. Esa opción se deshabilita mientras "Forzar 4:3" esté activado (Release 2009.5.2.0). El switch "Forzar 4:3" (Configuración) funciona correctamente en ambos motores desde la Release 2009.5.1.0 — antes recortaba el video a 4:3 sin importar su estado — y desde la 2009.5.2.0, con "Forzar 4:3" desactivado el video ya no se estira a 16:9: se ajusta preservando su proporción real.
+- **Los videos de programas (`pro1–4.mp4`) en resolución 720p o superior pueden hacer que el ScreenBug quede oculto detrás del video.** Esto es una limitación conocida de `VideoView` (aceleración de hardware en resoluciones altas). Se probó un motor de video alternativo (TextureView) como workaround entre las Releases 2009.5.0.0 y 2009.5.2.0, pero se eliminó por completo en la 2009.5.2.1 por los problemas que traía — se recomienda usar programas en 480p o inferior. El contenedor de video siempre está en proporción 4:3; el switch "Forzar 4:3" (Configuración) decide si el video se estira para llenarlo exacto o se ajusta preservando su proporción real sin estirarse (Release 2009.5.2.1 — causa raíz real, corrige un diseño invertido de las dos Releases anteriores).
 - La primera sincronización de Gradle puede tardar varios minutos según la velocidad de conexión.
 - Gradle descargará todas las dependencias necesarias automáticamente.
 - Otorgá los permisos de almacenamiento si el sistema lo solicita.

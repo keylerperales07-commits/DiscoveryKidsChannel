@@ -27,37 +27,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:paddingTop="8dp"
         android:paddingBottom="32dp">
-
-        <!-- ══ Header ══ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="8dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="20dp">
-
-            <ImageButton
-                android:id="@+id/btnBack"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@android:color/transparent"
-                android:src="@drawable/ic_back"
-                android:contentDescription="Volver" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="Configuración"
-                android:textColor="@color/dk_text_primary"
-                android:textSize="24sp"
-                android:fontFamily="@font/googlesans" />
-        </LinearLayout>
 
         <!-- ══ Sección: General ══ -->
         <TextView
@@ -262,76 +233,6 @@
                 android:textSize="13sp"
                 android:fontFamily="@font/googlesans"
                 android:layout_marginTop="2dp" />
-        </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
-
-        <!-- ══ Sección: Compatibilidad de video (Release 2009.5.0.0) ══ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Compatibilidad de video"
-            android:textColor="@color/dk_text_secondary"
-            android:textSize="14sp"
-            android:fontFamily="@font/googlesans"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="4dp" />
-
-        <!-- Item: Recortar 4:3 (switch) — Release 2009.5.2.0: renombrado de
-             "Usar TextureView" (sigue siendo el mismo switch, motor de video
-             TextureView vs clásico — ver SettingsManager.isTextureViewEnabled()
-             / DkVideoView.kt). Se deshabilita cuando "Forzar 4:3" está
-             activado, porque en ese caso ya se recorta a 4:3 de todas formas
-             — ver SettingsActivity.kt. -->
-        <LinearLayout
-            android:id="@+id/itemTextureView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginEnd="12dp">
-
-                <TextView
-                    android:id="@+id/txtTextureViewLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Recortar 4:3"
-                    android:textColor="@color/dk_text_primary"
-                    android:textSize="17sp"
-                    android:fontFamily="@font/googlesans" />
-
-                <TextView
-                    android:id="@+id/txtTextureViewDesc"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Recorta el video a 4:3 usando el motor TextureView, compatible con 720p o superior, sin ocultar el ScreenBug detrás del video. Deshabilitado mientras &quot;Forzar 4:3&quot; esté activado (Predeterminado: Desactivado)"
-                    android:textColor="@color/dk_text_secondary"
-                    android:textSize="13sp"
-                    android:fontFamily="@font/googlesans"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchTextureView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
         </LinearLayout>
 
         <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />

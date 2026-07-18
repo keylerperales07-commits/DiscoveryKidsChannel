@@ -6,6 +6,33 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2009.5.2.1] — 🐛 Bug Fix · Era Doki 1.0 · Era 2009 · "Parque Imaginario" — 2026-07-18
+
+> *TextureView eliminado por completo (motor de video, switch "Recortar 4:3" y AlertDialog de 720p+), 2 bugs de arrastre con causa raíz encontrada — el contenedor de video ya no cambia de forma con "Forzar 4:3" (siempre 4:3), y el programa ahora sí hace fadeOut al terminar — y rediseño: la ActionBar de Configuración deja de ser un header hecho a mano, y el logo del Launcher pasa de la ActionBar al cuerpo de la pantalla.*
+
+### 🗑️ Eliminado — TextureView por completo
+
+Se sacó del proyecto el motor de video alternativo basado en TextureView (introducido en la 2009.5.0.0) junto con todo lo que dependía de él: la clase `TextureVideoView`, el switch "Recortar 4:3" (ex "Usar TextureView") de Configuración, `SettingsManager.isTextureViewEnabled()`/`setTextureViewEnabled()`, y el `AlertDialog` que avisaba sobre programas de 720p o superior. `DkVideoView` vuelve a ser una sola clase concreta (ya no hace falta la separación abstracta con dos motores) — un envoltorio de `VideoView` clásico.
+
+### 🐛 BUG FIX — "Forzar 4:3" seguía roto (causa raíz real, esta vez sí)
+
+Las dos releases anteriores tenían el diseño invertido: el contenedor (`AspectRatioFrameLayout`) dejaba de estar en 4:3 (pasaba a ocupar toda la pantalla, forma 16:9) cuando "Forzar 4:3" estaba desactivado. Eso está mal — el contenedor **tiene que estar siempre en 4:3**, sin excepción; lo que decide "Forzar 4:3" es qué pasa **dentro** de esa caja: si el video se estira para llenarla exacto (activado) o si se ajusta preservando su proporción real sin estirarse (desactivado) — un video 16:9, por ejemplo, encaja con franjas arriba/abajo en vez de deformarse. `AspectRatioFrameLayout` ya no tiene ningún toggle — vuelve a forzar 4:3 siempre, sin condición — y `DkVideoView` es el único que responde al switch, con la lógica de fit real que ya existía.
+
+### 🐛 BUG FIX — El programa no hacía fadeOut al terminar (y por eso el siguiente tampoco fadeIn)
+
+A diferencia de TODOS los demás tipos de clip (bumper, enseguida, comercial — que ya usaban un fadeOut programado antes de su final real), el fin de un programa no tenía ningún fadeOut: el video cortaba en seco y `advance()` arrancaba el siguiente clip directamente desde ese corte abrupto, en vez de disparar la transición desde el cierre de una animación ya asentada — rompiendo también el fadeIn del clip siguiente. Ahora `beginProgramSegment()` programa el mismo fadeOut preventivo que ya usan todos los demás clips, y la transición al siguiente arranca desde su `withEndAction` — mismo patrón que ya funcionaba en el resto de la app.
+
+### 🎨 Diseño — ActionBar de Configuración y logo del Launcher
+
+- **Configuración**: se eliminó el header hecho a mano (ImageButton "Atrás" + TextView "Configuración" simulando una barra) y pasa a usar la ActionBar real de Android (`Theme.AppCompat` en vez de `.NoActionBar`), con navegación "Up" nativa.
+- **Launcher**: la ActionBar ahora solo tiene el título — el logo se sacó de ahí (antes vivía como ícono de la ActionBar) y pasa al cuerpo de la pantalla, entre la ActionBar y el botón "Iniciar canal".
+
+### ⚠️ Alcance
+
+> Cambios de código en `DkVideoView.kt` (reescrito — una sola clase, sin TextureView), `AspectRatioFrameLayout.kt` (sin toggle, siempre 4:3), `LiveDiscoveryKids.kt` (`beginProgramSegment()` con fadeOut real, `applySettings()` corregido, `checkVideoResolutionAndWarn()` eliminada), `SettingsActivity.kt`/`SettingsManager.kt` (switch "Recortar 4:3" eliminado, ActionBar real), `DiscoveryKidsLauncherActivity.kt` (logo fuera de la ActionBar), `activity_settings.xml`/`activity_launcher.xml`/`themes.xml`. `build.gradle`: `versionName` a `2009.5.2.1`.
+
+---
+
 ## [2009.5.2.0] — 🚀 Release · Era Doki 1.0 · Era 2009 · "Parque Imaginario" — 2026-07-17
 
 > *Release de investigación a fondo: 2 bugs de arrastre finalmente resueltos con causa raíz identificada — el ScreenBug "reiniciándose" y el video estirado a 16:9 con "Forzar 4:3" desactivado. Además, el ítem de Configuración pasa al menú de overflow original de Android, y "Usar TextureView" se renombra a "Recortar 4:3" con deshabilitado condicional. Nuevo Screenbug Julio 2009 – 2011.*
@@ -1770,6 +1797,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2009.5.2.1           | 2026-07-18 | 🐛 Bug Fix | TextureView eliminado por completo (motor, switch "Recortar 4:3", AlertDialog 720p+); BUG FIX (causa raíz real): contenedor de video vuelve a estar siempre en 4:3 (antes cambiaba a 16:9 con el switch desactivado), programa ahora hace fadeOut real al terminar (antes cortaba en seco y rompía el fadeIn del siguiente clip); Configuración usa ActionBar real (sin header hecho a mano); logo del Launcher fuera de la ActionBar, en el cuerpo |
 | 2009.5.2.0           | 2026-07-17 | 🚀 Release | BUG FIX (causa raíz encontrada): ScreenBug "reiniciándose" al reanudar, y video estirado a 16:9 con "Forzar 4:3" desactivado (DkVideoView reescrito, fit de aspecto real compartido); ActionBar del Launcher: Configuración pasa al menú de overflow original; "Usar TextureView" renombrado a "Recortar 4:3", deshabilitado cuando "Forzar 4:3" está activo; nuevo Screenbug Julio 2009–2011 |
 | 2009.5.1.0           | 2026-07-15 | 🚀 Release | Launcher rediseñado a Material Design 3 (claro/oscuro, ActionBar original); BUG FIX: Forzar 4:3 no respetaba el switch, recorte de video con TextureView, ScreenBug reiniciándose al cambiar de Activity/segundo plano; ajustes de timing del ScreenBug de 3 fases + reproducción de GIF nativa (GifMovieDrawable); nuevo Screenbug Mayo–Julio 2009 |
 | 2009.5.0.0           | 2026-07-13 | 🚀 Release | "Parque Imaginario" (inicio Fase 4, rama 5.x): Discovery Kids Launcher pasa a ser la Activity de inicio (detrás de Experimental) con selector de video por programa, hasta 24 programas y ya_regresa/continuamos personalizados; AlertDialog 720p+, motor TextureView opcional, aviso de actualización al abrir la app |

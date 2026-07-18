@@ -19,11 +19,19 @@
          Rediseño a lista simple neutra. Ya no usa el acento verde fósforo
          de la versión anterior (menú OSD); los switches usan el color de
          control por defecto del sistema, igual que la referencia de diseño. -->
-    <style name="SettingsTheme" parent="Theme.AppCompat.NoActionBar">
+    <!-- Release 2009.5.2.1 — BUG FIX: "elimina el menú falso, usá el
+         ActionBar del SDK de Android". Antes: Theme.AppCompat.NoActionBar +
+         un header hecho a mano en el propio layout (ImageButton "Atrás" +
+         TextView "Configuración" simulando una barra). Ahora: ActionBar
+         real (Theme.AppCompat, sin ".NoActionBar"), con navegación "Up"
+         nativa — ver SettingsActivity.onCreate()/onSupportNavigateUp(). -->
+    <style name="SettingsTheme" parent="Theme.AppCompat">
         <item name="android:windowBackground">@color/dk_bg</item>
         <item name="android:statusBarColor">@color/dk_bg</item>
         <item name="android:navigationBarColor">@color/dk_bg</item>
         <item name="android:fontFamily">@font/googlesans</item>
+        <item name="colorPrimary">@color/dk_bg</item>
+        <item name="colorPrimaryDark">@color/dk_bg</item>
     </style>
 
     <!-- ══ Discovery Kids Launcher (Release 2009.5.1.0) ══

@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -74,11 +73,11 @@ import androidx.appcompat.widget.SwitchCompat
  *     showExperimentalRestartDialog(). Activarlo habilita el Discovery Kids
  *     Launcher como pantalla de inicio real (en vez de pasar directo al
  *     canal) y toda su configuración avanzada de programas.
- *   - NUEVO: sección "Compatibilidad de video" con el switch "Usar
- *     TextureView" (desactivado por defecto, NO es experimental). Activa el
- *     motor de video basado en TextureView (ver DkVideoView.kt) para que
- *     videos de 720p o superior no tapen el ScreenBug. Requiere reabrir el
- *     canal para tomar efecto.
+ *
+ * Release 2009.5.2.1 — ELIMINADO por completo: el motor de video basado en
+ *   TextureView (y el switch "Recortar 4:3", ex "Usar TextureView", que lo
+ *   activaba) y el AlertDialog que avisaba sobre programas de 720p+. Ver
+ *   DkVideoView.kt y LiveDiscoveryKids.kt.
  */
 class SettingsActivity : AppCompatActivity() {
 
@@ -87,7 +86,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var switchForceAspectRatio: SwitchCompat
     private lateinit var switchPreviewUpdates: SwitchCompat
     private lateinit var switchExperimental: SwitchCompat       // Release 2009.5.0.0
-    private lateinit var switchTextureView: SwitchCompat        // Release 2009.5.0.0
 
     private lateinit var itemScreenbugDelay: LinearLayout
     private lateinit var txtScreenbugDelayValue: TextView
@@ -98,16 +96,20 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var itemCheckUpdate: LinearLayout
     private lateinit var txtCheckUpdateValue: TextView
 
-    // Release 2009.5.2.0: "Recortar 4:3" (ex "Usar TextureView") se
-    // deshabilita cuando "Forzar 4:3" está activado — ver updateCropSwitchEnabledState().
-    private lateinit var itemTextureView: LinearLayout
-    private lateinit var txtTextureViewLabel: TextView
-    private lateinit var txtTextureViewDesc: TextView
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setTheme(R.style.SettingsTheme)
         setContentView(R.layout.activity_settings)
+
+        // Release 2009.5.2.1 — BUG FIX: "elimina el menú falso, usá el
+        // ActionBar del SDK de Android". Antes había un header hecho a mano
+        // en el propio layout (ImageButton "Atrás" + TextView "Configuración"
+        // simulando una barra). Ahora es la ActionBar real, con navegación
+        // "Up" nativa — ver onSupportNavigateUp() más abajo.
+        supportActionBar?.apply {
+            title = "Configuración"
+            setDisplayHomeAsUpEnabled(true)
+        }
 
         bindViews()
         loadCurrentValues()
@@ -116,9 +118,12 @@ class SettingsActivity : AppCompatActivity() {
         settingsVersionInfo()
     }
 
-    private fun bindViews() {
-        findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
+    override fun onSupportNavigateUp(): Boolean {
+        finish()
+        return true
+    }
 
+    private fun bindViews() {
         switchBgMusic = findViewById(R.id.switchBgMusic)
         switchCrtEffect = findViewById(R.id.switchCrtEffect)
         switchForceAspectRatio = findViewById(R.id.switchForceAspectRatio)
@@ -134,10 +139,6 @@ class SettingsActivity : AppCompatActivity() {
         txtCheckUpdateValue = findViewById(R.id.txtCheckUpdateValue)
 
         switchExperimental = findViewById(R.id.switchExperimental)
-        switchTextureView = findViewById(R.id.switchTextureView)
-        itemTextureView = findViewById(R.id.itemTextureView)
-        txtTextureViewLabel = findViewById(R.id.txtTextureViewLabel)
-        txtTextureViewDesc = findViewById(R.id.txtTextureViewDesc)
     }
 
     /** Carga los valores guardados en SettingsManager y los refleja en cada control. */
@@ -147,12 +148,10 @@ class SettingsActivity : AppCompatActivity() {
         switchForceAspectRatio.isChecked = SettingsManager.isForceAspectRatioEnabled(this)
         switchPreviewUpdates.isChecked = SettingsManager.isPreviewUpdatesEnabled(this)
         switchExperimental.isChecked = SettingsManager.isExperimentalEnabled(this)
-        switchTextureView.isChecked = SettingsManager.isTextureViewEnabled(this)
 
         refreshScreenbugDelayLabel()
         refreshCommercialIntervalLabel()
         refreshCheckUpdateLabel()
-        updateCropSwitchEnabledState()
     }
 
     private fun setupListeners() {
@@ -177,10 +176,6 @@ class SettingsActivity : AppCompatActivity() {
         }
         switchForceAspectRatio.setOnCheckedChangeListener { _, isChecked ->
             SettingsManager.setForceAspectRatioEnabled(this, isChecked)
-            // Release 2009.5.2.0: "Recortar 4:3" no tiene sentido con "Forzar
-            // 4:3" activado (ya se recorta a 4:3 de todas formas) — se
-            // deshabilita mientras tanto.
-            updateCropSwitchEnabledState()
         }
 
         findViewById<LinearLayout>(R.id.itemPreviewUpdates).setOnClickListener {
@@ -203,43 +198,13 @@ class SettingsActivity : AppCompatActivity() {
             SettingsManager.setExperimentalEnabled(this, isChecked)
             showRestartDialog()
         }
-
-        // ── Compatibilidad de video / TextureView (Release 2009.5.0.0) ──────
-        findViewById<LinearLayout>(R.id.itemTextureView).setOnClickListener {
-            switchTextureView.isChecked = !switchTextureView.isChecked
-        }
-        switchTextureView.setOnCheckedChangeListener { _, isChecked ->
-            SettingsManager.setTextureViewEnabled(this, isChecked)
-            showRestartDialog()
-        }
-    }
-
-    /**
-     * Release 2009.5.2.0 — "Recortar 4:3" (ex "Usar TextureView") queda
-     * deshabilitado (grisado, no clickeable) mientras "Forzar 4:3" esté
-     * activado: en ese caso el video ya se recorta a 4:3 de todas formas
-     * (ver AspectRatioFrameLayout/DkVideoView), así que esta opción no
-     * cambia nada. Se habilita de nuevo apenas se desactiva "Forzar 4:3".
-     */
-    private fun updateCropSwitchEnabledState() {
-        val enabled = !switchForceAspectRatio.isChecked
-        itemTextureView.isEnabled = enabled
-        itemTextureView.isClickable = enabled
-        itemTextureView.isFocusable = enabled
-        switchTextureView.isEnabled = enabled
-        val alpha = if (enabled) 1f else 0.4f
-        txtTextureViewLabel.alpha = alpha
-        txtTextureViewDesc.alpha = alpha
-        switchTextureView.alpha = alpha
     }
 
     /**
      * Release 2009.5.0.0 — diálogo genérico de "reiniciar ahora o más
-     * tarde", usado tanto por el switch de Experimental como por el de
-     * TextureView (ninguno de los dos puede tomar efecto con las Activities
-     * ya creadas: el Launcher decide si redirige al canal en su propio
-     * onCreate(), y el tipo de superficie de video se fija una sola vez al
-     * crear el DkVideoView). "Reiniciar ahora" relanza la app desde
+     * tarde", usado por el switch de Experimental (no puede tomar efecto
+     * con las Activities ya creadas: el Launcher decide si redirige al
+     * canal en su propio onCreate()). "Reiniciar ahora" relanza la app desde
      * DiscoveryKidsLauncherActivity y mata el proceso actual con
      * Runtime.exit(); "Más tarde" simplemente cierra el diálogo — el cambio
      * ya quedó guardado y se aplicará la próxima vez que se abra la app.

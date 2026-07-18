@@ -95,11 +95,13 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         // DayNight, ver themes.xml) en vez del MenuBar custom hecho a mano.
         // El botón Configuración pasó a ser un ítem del menú de opciones —
         // ver onCreateOptionsMenu()/onOptionsItemSelected() más abajo.
+        //
+        // Release 2009.5.2.1 — BUG FIX (diseño): la ActionBar ahora solo
+        // tiene el título — el logo se sacó de acá y pasó al cuerpo de la
+        // pantalla, entre la ActionBar y el botón "Iniciar canal" (ver
+        // activity_launcher.xml, @+id/imgLauncherLogo).
         supportActionBar?.apply {
             title = "Discovery Kids Launcher"
-            setIcon(R.drawable.icon)
-            setDisplayShowHomeEnabled(true)
-            setDisplayUseLogoEnabled(true)
         }
 
         findViewById<MaterialButton>(R.id.btnStartChannel).setOnClickListener {

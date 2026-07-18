@@ -92,11 +92,12 @@ import java.io.File
 class LiveDiscoveryKids : AppCompatActivity() {
 
     // ── Views ──────────────────────────────────────────────────────────────────
-    // Release 2009.5.0.0: VideoView → DkVideoView (VideoView clásico o
-    // TextureView según Configuración → "Compatibilidad de video"). Toda la
-    // API usada acá abajo (setVideoURI, seekTo, start, pause, stopPlayback,
-    // isPlaying, currentPosition, setOnPreparedListener, setOnCompletionListener)
-    // se mantiene idéntica — ver DkVideoView.kt.
+    // Release 2009.5.0.0: VideoView → DkVideoView (envoltorio propio, ver
+    // DkVideoView.kt). Release 2009.5.2.1: el motor alternativo basado en
+    // TextureView que tenía DkVideoView se eliminó por completo — vuelve a
+    // ser un simple envoltorio de VideoView clásico (se mantiene la misma
+    // API usada acá abajo: setVideoURI, seekTo, start, pause, stopPlayback,
+    // isPlaying, currentPosition, setOnPreparedListener, setOnCompletionListener).
     internal lateinit var videoView: DkVideoView
     internal lateinit var videoContainer: AspectRatioFrameLayout
     internal lateinit var screenBug: ImageView
@@ -182,10 +183,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
     internal var isInProgramSegment    = false
     internal var isInCommercialBlock   = false
     internal var commercialResumeMs    = 0
-
-    // Release 2009.5.0.0 — evita repetir el AlertDialog de "video no es
-    // 480p" en cada programa de la sesión; se muestra una sola vez.
-    internal var hasWarnedAboutResolution = false
 
     // ── Tipo de ítem actual ────────────────────────────────────────────────────
     // Valores: "program", "bumper", "enseguida", "talla", "commercial"
@@ -406,12 +403,13 @@ class LiveDiscoveryKids : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        // Release 2009.5.0.0: el DkVideoView (VideoView clásico o TextureView,
-        // según Configuración) se crea en código y se agrega al placeholder
-        // que dejó activity_main.xml — ver DkVideoView.kt.
+        // Release 2009.5.0.0: el DkVideoView se crea en código y se agrega al
+        // placeholder que dejó activity_main.xml — ver DkVideoView.kt.
+        // Release 2009.5.2.1: ya no hay motor alternativo que elegir (se
+        // eliminó TextureView por completo), así que se instancia directo.
         videoContainer = findViewById(R.id.videoContainer)
         val videoViewContainer = findViewById<FrameLayout>(R.id.videoViewContainer)
-        videoView = DkVideoView.create(this)
+        videoView = DkVideoView(this)
         videoViewContainer.addView(
             videoView,
             FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.MATCH_PARENT).apply {
@@ -1032,7 +1030,6 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
         mp.isLooping = false
 
         programDuration = mp.duration
-        checkVideoResolutionAndWarn(mp)
 
         if (isFirstPlay) {
             breakQueue = calcBreaks(programDuration).toMutableList()
@@ -1051,17 +1048,62 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
         currentItemType = "program"
         startPositionTracker()
         startBgMusic()
-    }
-    videoView.setOnCompletionListener {
-        Log.d(LiveDiscoveryKids.TAG, "Program ended")
-        cancelAllTasks()
-        setBugAlpha(0f)
-        isInProgramSegment = false
-        stopPositionTracker()
-        pausedPositionMs = 0
-        stopBgMusic()
-        playlistIndex++
-        advance()
+
+        // BUG FIX (2009.5.2.1 — investigación a fondo): "al finalizar el
+        // video no se produce fadeOut, entonces en el siguiente video
+        // tampoco se produce fadeIn". Causa raíz: a diferencia de TODOS los
+        // demás tipos de clip (bumper, enseguida, comercial — ver
+        // playUriWithTransition()), el fin de un programa no tenía NINGÚN
+        // fadeOut programado acá — el onCompletionListener llamaba a
+        // advance() en seco (corte abrupto, sin animar nada), y como la
+        // transición al siguiente clip arrancaba desde ese callback en seco
+        // en vez de desde el withEndAction() de un fadeOut ya asentado, el
+        // fadeIn del siguiente clip también quedaba roto. Ahora se programa
+        // el mismo fadeOut preventivo (disparado [TRANSITION_FADE_OUT_MS]
+        // antes del final real) que ya usan todos los demás tipos de clip,
+        // y advance() se dispara desde SU withEndAction — mismo patrón que
+        // ya funciona en el resto de la app (ver playUriWithTransition()).
+        var transitionCompleted = false
+        val fadeOutMs = LiveDiscoveryKids.TRANSITION_FADE_OUT_MS
+        val fadeOutDelay = (programDuration - fadeOutMs).coerceAtLeast(0L)
+        post(fadeOutDelay) {
+            if (!transitionCompleted) {
+                transitionCompleted = true
+                videoView.setOnCompletionListener(null)
+                videoView.animate()
+                    .alpha(0f)
+                    .setDuration(fadeOutMs)
+                    .withEndAction {
+                        Log.d(LiveDiscoveryKids.TAG, "Program ended (fadeOut)")
+                        isInProgramSegment = false
+                        stopPositionTracker()
+                        pausedPositionMs = 0
+                        stopBgMusic()
+                        playlistIndex++
+                        advance()
+                    }
+                    .start()
+            }
+        }
+
+        videoView.setOnCompletionListener {
+            // Fallback: solo por si el programa termina ANTES de que corra
+            // el post(fadeOutDelay) de arriba (ej. clip más corto que
+            // fadeOutMs). En el caso normal, este listener nunca llega a
+            // disparar porque el de arriba ya lo desactiva primero.
+            if (!transitionCompleted) {
+                transitionCompleted = true
+                Log.d(LiveDiscoveryKids.TAG, "Program ended (fallback onCompletion)")
+                cancelAllTasks()
+                setBugAlpha(0f)
+                isInProgramSegment = false
+                stopPositionTracker()
+                pausedPositionMs = 0
+                stopBgMusic()
+                playlistIndex++
+                advance()
+            }
+        }
     }
 }
 
@@ -2368,74 +2410,21 @@ internal fun LiveDiscoveryKids.goFullscreen() {
  * (antes de mostrar nada) y en onResume() (por si el usuario las cambió
  * en SettingsActivity y volvió). Música se resuelve sola en su próximo
  * ciclo (startBgMusic ya consulta SettingsManager directamente).
- *
- * Cambios Preview 4.1.0.12:
- *   - El modo debug ya NO es configurable: setupDebugInfo() es incondicional
- *     de nuevo (se muestra automático en builds Preview).
- *   - crtOverlay.effectEnabled reemplaza a brightnessMultiplier (antes slider
- *     0–100%, ahora on/off).
- *   - bugShowDelayMs y breakIntervalMin/MaxMs se leen de SettingsManager en
- *     lugar de ser const val fijas.
- *   - Forzar 4:3: controla los layoutParams del VideoView (no del contenedor).
- *     OFF (default) → match_parent (alto) / match_parent (ancho): el VideoView
- *     respeta su proporción real dentro del marco 4:3.
- *     ON → match_parent (alto) / wrap_content (ancho): el video se estira
- *     para llenar el ancho del marco 4:3 (comportamiento histórico).
  */
-/**
- * Release 2009.5.0.0 — si el programa recién preparado es de 720p o
- * superior (alto ≥ 720px) y todavía se está usando el VideoView clásico
- * (SettingsManager.isTextureViewEnabled() == false), muestra un AlertDialog
- * avisando que la transmisión podría no verse bien (el ScreenBug queda
- * detrás del video con VideoView en esas resoluciones — ver DkVideoView.kt)
- * y recomienda activar "Usar TextureView" en Configuración. Se muestra una
- * sola vez por sesión (hasWarnedAboutResolution) para no interrumpir cada
- * programa con el mismo aviso.
- */
-internal fun LiveDiscoveryKids.checkVideoResolutionAndWarn(mp: MediaPlayer) {
-    if (hasWarnedAboutResolution) return
-    if (SettingsManager.isTextureViewEnabled(this)) return   // ya está en el modo compatible
-
-    val height = mp.videoHeight
-    if (height < 720) return   // 480p o inferior: sin problema conocido
-
-    hasWarnedAboutResolution = true
-    if (isFinishing || isDestroyed) return
-
-    AlertDialog.Builder(this)
-        .setTitle("Resolución de video alta")
-        .setMessage("Este programa es de $height p (720p o superior). La transmisión podría no funcionar correctamente — el ScreenBug puede quedar oculto detrás del video.\n\nSe recomienda activar \"Usar TextureView\" en Configuración → Compatibilidad de video.")
-        .setPositiveButton("Ir a Configuración") { _, _ ->
-            startActivity(Intent(this, SettingsActivity::class.java))
-        }
-        .setNegativeButton("Ahora no", null)
-        .setCancelable(true)
-        .show()
-}
-
 internal fun LiveDiscoveryKids.applySettings() {
     crtOverlay.effectEnabled = SettingsManager.isCrtEffectEnabled(this)
     bugShowDelayMs = SettingsManager.getScreenbugDelaySec(this) * 1_000L
     breakIntervalMinMs = SettingsManager.getCommercialMinMinutes(this) * 60 * 1_000L
     breakIntervalMaxMs = SettingsManager.getCommercialMaxMinutes(this) * 60 * 1_000L
 
-    // BUG FIX (2009.5.1.0): el forzado de 4:3 se aplica en el contenedor
-    // PADRE (videoContainer/AspectRatioFrameLayout), que es el que decide si
-    // TODO (video + ScreenBug + CRT) queda recortado a 4:3 exacto o si el
-    // contenedor ocupa la pantalla completa.
-    //
-    // BUG FIX (2009.5.2.0 — investigación a fondo): con forzado desactivado,
-    // el video se estiraba a 16:9 (la forma de la pantalla completa),
-    // distorsionado. Causa: acá se pisaba el layoutParams.width de videoView
-    // a MATCH_PARENT SIEMPRE, rompiendo el WRAP_CONTENT + gravity=CENTER
-    // original (onCreate()) que le permitía calcular su propio tamaño según
-    // la proporción real del video. Eliminado — ahora videoView.forceAspectRatio
-    // se sincroniza igual que en el contenedor, y el fit real de proporción
-    // (sin estirar) vive en DkVideoView.onMeasure() — ver DkVideoView.kt.
-    val forceAspectRatio = SettingsManager.isForceAspectRatioEnabled(this)
-    videoContainer.forceAspectRatio = forceAspectRatio
-    videoContainer.requestLayout()
-    videoView.forceAspectRatio = forceAspectRatio
+    // BUG FIX (2009.5.2.1 — investigación a fondo, corrige un error de diseño
+    // de la 2009.5.1.0/2009.5.2.0): videoContainer (AspectRatioFrameLayout)
+    // SIEMPRE está en 4:3 — ya no tiene ningún toggle, no hace falta tocarlo
+    // acá. Lo único que controla "Forzar 4:3" es si el VIDEO (adentro de esa
+    // caja de 4:3 que ya está siempre ahí) se estira para llenarla exacto, o
+    // si se ajusta preservando su proporción real sin estirarse — ver
+    // DkVideoView.kt.
+    videoView.forceAspectRatio = SettingsManager.isForceAspectRatioEnabled(this)
 }
 
 //Modo Debug solo en Preview
