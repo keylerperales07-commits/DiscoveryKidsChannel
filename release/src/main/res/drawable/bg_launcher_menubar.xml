@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ ESTO TIENE LICENCIA GNU LICENSE APACHE
+
+ NO ELIMINAR NINGUN COMENTARIO AGREGADO
+-->
+<!--
+    bg_launcher_menubar.xml — Release 2009.5.0.0
+
+    Degradado del MenuBar superior de Discovery Kids Launcher: azul arriba,
+    cian abajo (ver spec de la Release: "degradado con azul parte superior y
+    Cian parte inferior").
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:type="linear"
+        android:angle="270"
+        android:startColor="@color/dk_launcher_gradient_top"
+        android:endColor="@color/dk_launcher_gradient_bottom" />
+</shape>
