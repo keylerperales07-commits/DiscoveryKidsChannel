@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -56,6 +55,29 @@ import androidx.appcompat.widget.SwitchCompat
  * la que hace la consulta, pide confirmación, descarga con barra de progreso
  * en vivo, e instala. Se eliminaron checkForUpdate(), isCheckingUpdate y el
  * CheckCallback que vivían acá.
+ *
+ * Release 4.6.0 — NUEVO: sección "Programación" con el item "Elegir
+ * programas", que abre el nuevo DiscoveryKidsLauncherActivity (mismo
+ * patrón que "Buscar actualizaciones" → UpdateActivity: startActivity
+ * simple, toda la lógica vive en la otra Activity).
+ *
+ * Release 2009.5.0.0 — "Parque Imaginario":
+ *   - ELIMINADO: sección "Programación" / item "Elegir programas". Discovery
+ *     Kids Launcher pasó a ser la Activity de inicio real de la app (ver
+ *     AndroidManifest.xml y DiscoveryKidsLauncherActivity.onCreate()), así
+ *     que ya no hace falta un atajo desde acá — se accede abriendo la app.
+ *   - NUEVO: sección "Experimental" con el switch maestro "Habilitar
+ *     funciones experimentales" (desactivado por defecto). Al cambiarlo se
+ *     guarda inmediatamente en SettingsManager y se muestra un AlertDialog
+ *     ofreciendo reiniciar la app ahora o más tarde — ver
+ *     showExperimentalRestartDialog(). Activarlo habilita el Discovery Kids
+ *     Launcher como pantalla de inicio real (en vez de pasar directo al
+ *     canal) y toda su configuración avanzada de programas.
+ *
+ * Release 2009.5.2.1 — ELIMINADO por completo: el motor de video basado en
+ *   TextureView (y el switch "Recortar 4:3", ex "Usar TextureView", que lo
+ *   activaba) y el AlertDialog que avisaba sobre programas de 720p+. Ver
+ *   DkVideoView.kt y LiveDiscoveryKids.kt.
  */
 class SettingsActivity : AppCompatActivity() {
 
@@ -63,6 +85,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var switchCrtEffect: SwitchCompat
     private lateinit var switchForceAspectRatio: SwitchCompat
     private lateinit var switchPreviewUpdates: SwitchCompat
+    private lateinit var switchExperimental: SwitchCompat       // Release 2009.5.0.0
 
     private lateinit var itemScreenbugDelay: LinearLayout
     private lateinit var txtScreenbugDelayValue: TextView
@@ -78,6 +101,16 @@ class SettingsActivity : AppCompatActivity() {
         setTheme(R.style.SettingsTheme)
         setContentView(R.layout.activity_settings)
 
+        // Release 2009.5.2.1 — BUG FIX: "elimina el menú falso, usá el
+        // ActionBar del SDK de Android". Antes había un header hecho a mano
+        // en el propio layout (ImageButton "Atrás" + TextView "Configuración"
+        // simulando una barra). Ahora es la ActionBar real, con navegación
+        // "Up" nativa — ver onSupportNavigateUp() más abajo.
+        supportActionBar?.apply {
+            title = "Configuración"
+            setDisplayHomeAsUpEnabled(true)
+        }
+
         bindViews()
         loadCurrentValues()
         setupListeners()
@@ -85,9 +118,12 @@ class SettingsActivity : AppCompatActivity() {
         settingsVersionInfo()
     }
 
-    private fun bindViews() {
-        findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
+    override fun onSupportNavigateUp(): Boolean {
+        finish()
+        return true
+    }
 
+    private fun bindViews() {
         switchBgMusic = findViewById(R.id.switchBgMusic)
         switchCrtEffect = findViewById(R.id.switchCrtEffect)
         switchForceAspectRatio = findViewById(R.id.switchForceAspectRatio)
@@ -101,6 +137,8 @@ class SettingsActivity : AppCompatActivity() {
 
         itemCheckUpdate = findViewById(R.id.itemCheckUpdate)
         txtCheckUpdateValue = findViewById(R.id.txtCheckUpdateValue)
+
+        switchExperimental = findViewById(R.id.switchExperimental)
     }
 
     /** Carga los valores guardados en SettingsManager y los refleja en cada control. */
@@ -109,6 +147,7 @@ class SettingsActivity : AppCompatActivity() {
         switchCrtEffect.isChecked = SettingsManager.isCrtEffectEnabled(this)
         switchForceAspectRatio.isChecked = SettingsManager.isForceAspectRatioEnabled(this)
         switchPreviewUpdates.isChecked = SettingsManager.isPreviewUpdatesEnabled(this)
+        switchExperimental.isChecked = SettingsManager.isExperimentalEnabled(this)
 
         refreshScreenbugDelayLabel()
         refreshCommercialIntervalLabel()
@@ -150,6 +189,39 @@ class SettingsActivity : AppCompatActivity() {
         itemCommercialInterval.setOnClickListener { showCommercialIntervalDialog() }
 
         itemCheckUpdate.setOnClickListener { checkForUpdate() }
+
+        // ── Experimental (Release 2009.5.0.0) ───────────────────────────────
+        findViewById<LinearLayout>(R.id.itemExperimental).setOnClickListener {
+            switchExperimental.isChecked = !switchExperimental.isChecked
+        }
+        switchExperimental.setOnCheckedChangeListener { _, isChecked ->
+            SettingsManager.setExperimentalEnabled(this, isChecked)
+            showRestartDialog()
+        }
+    }
+
+    /**
+     * Release 2009.5.0.0 — diálogo genérico de "reiniciar ahora o más
+     * tarde", usado por el switch de Experimental (no puede tomar efecto
+     * con las Activities ya creadas: el Launcher decide si redirige al
+     * canal en su propio onCreate()). "Reiniciar ahora" relanza la app desde
+     * DiscoveryKidsLauncherActivity y mata el proceso actual con
+     * Runtime.exit(); "Más tarde" simplemente cierra el diálogo — el cambio
+     * ya quedó guardado y se aplicará la próxima vez que se abra la app.
+     */
+    private fun showRestartDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Reiniciar la app")
+            .setMessage("Este cambio necesita que reinicies la app para aplicarse. ¿Reiniciar ahora?")
+            .setPositiveButton("Reiniciar ahora") { _, _ ->
+                val intent = android.content.Intent(this, DiscoveryKidsLauncherActivity::class.java)
+                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                Runtime.getRuntime().exit(0)
+            }
+            .setNegativeButton("Más tarde", null)
+            .setCancelable(true)
+            .show()
     }
 
     // ── Diálogo: Duración del Screenbug ─────────────────────────────────────

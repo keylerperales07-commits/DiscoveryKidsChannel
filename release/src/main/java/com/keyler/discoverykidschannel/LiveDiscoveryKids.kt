@@ -41,7 +41,13 @@ import java.io.File
  * Discovery Kids - TV Simulator • Era Doki 1.0 (2005–2009) • Preview Era 2006
  *
  * Playlist sequence (all transitions: FadeOut 500 ms / FadeIn 1 s):
- *   Enseguida(1–4) → StandaloneCommercial → Bumper → Programa → Enseguida(1–4) → StandaloneCommercial → Bumper → Programa → ...
+ *   StandaloneCommercial → Bumper → Programa → StandaloneCommercial → Bumper → Programa → ...
+ *
+ * Preview 2010.5.4.0.40 — REEMPLAZO DE ENSEGUIDA: el clip "enseguida" post-
+ * programa (que antes ocupaba un ítem propio del playlist, entre el fin del
+ * programa y el StandaloneCommercial) se elimina. En su lugar, "nextprogram"
+ * es un GIF que se superpone AL PROGRAMA MISMO cerca de su final — ver
+ * NEXTPROGRAM_SHOW_BEFORE_MS / scheduleNextProgramBug().
  *
  * ya_regresa assignment: determinístico por índice de programa (0-based).
  *   programa 0 (pro1) → ya_regresa1/continuamos1
@@ -233,7 +239,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // ── Playlist definition ────────────────────────────────────────────────────
     internal sealed class PlayItem {
         object Bumper : PlayItem()
-        object Enseguida : PlayItem()
         object StandaloneCommercial : PlayItem()
         data class Program(val index: Int) : PlayItem()   // 0-based → pro(n+1).mp4
     }
@@ -241,9 +246,10 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // Release 2009.5.0.0 — antes era un `val` fijo de 4 programas. Ahora se
     // arma en onCreate() vía buildPlaylist(): con Experimental desactivado
     // sigue siendo el ciclo clásico de 4 programas (pro1–pro4.mp4); con
-    // Experimental activado, se repite el ciclo Enseguida→Bumper→Comercial→
+    // Experimental activado, se repite el ciclo StandaloneCommercial→Bumper→
     // Programa una vez por cada uno de los N programas que eligió el usuario
     // (SettingsManager.getProgramCount(), 1–24).
+    // Preview 2010.5.4.0.40: se quitó "Enseguida" del ciclo — ver nextprogram.
     internal var playlist: List<PlayItem> = emptyList()
 
     internal var playlistIndex = 0
@@ -265,7 +271,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
     internal var breakQueue       = mutableListOf<Int>()   // upcoming break positions in ms
     internal var lastCommercialRes: Int = -1
     internal var lastBumperRes: Int = -1
-    internal var lastEnseguidaPostProgramaRes: Int = -1
     // ya_regresa determinístico: cada programa tiene asignado su propio ya_regresa fijo.
     // programa 0 (pro1) → ya_regresa1 | programa 1 (pro2) → ya_regresa2 | etc.
     // Se indexa por currentProgramIndex en playCommercial().
@@ -279,6 +284,15 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // 3 drawables y mismo comportamiento que el normal, solo distinto arte.
     internal var screenBugStartNavidadGif: GifMovieDrawable? = null
     internal var screenBugEndNavidadGif: GifMovieDrawable? = null
+
+    // ── NextProgram (Preview 2010.5.4.0.40) ─────────────────────────────────────
+    // Overlay GIF que reemplaza a los "enseguida" post-programa: aparece
+    // superpuesto sobre el programa mismo, NEXTPROGRAM_SHOW_BEFORE_MS antes
+    // de su final real, anticipando qué sigue. Uno de los 4 GIFs
+    // (LiveDiscoveryKids.NEXTPROGRAMS) se cachea por adelantado, igual que
+    // screenBugStartGif/screenBugEndGif, para que no haya lag al mostrarlo.
+    internal lateinit var nextProgramBug: ImageView
+    internal var nextProgramGifs: Array<GifMovieDrawable?> = arrayOfNulls(LiveDiscoveryKids.NEXTPROGRAMS.size)
 
     // ── Constants ──────────────────────────────────────────────────────────────
     companion object {
@@ -298,8 +312,17 @@ class LiveDiscoveryKids : AppCompatActivity() {
         internal const val SCREENBUG_START_DELAY_MS = 20_000L
         internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 5_000L  // Se oculta 15s después de mostrarse (antes: 5s)
         internal const val SCREENBUG_MID_DELAY_AFTER_START_MS = 0L           // El PNG aparece inmediatamente al ocultarse screenbug_start (antes: 15s de espera)
-        internal const val SCREENBUG_END_SHOW_BEFORE_MS = 20_000L          // Mostrar screenbug_end 20s antes del final
+        // Preview 2010.5.4.0.40: 20s → 46s antes del final, para dejar lugar
+        // al nextprogram (aparece 15s después, a los 31s antes del final).
+        internal const val SCREENBUG_END_SHOW_BEFORE_MS = 46_000L          // Mostrar screenbug_end 46s antes del final
         internal const val SCREENBUG_END_VISIBLE_DURATION_MS = 5_000L      // Se oculta 5s después de mostrarse (antes se quedaba visible hasta el final del segmento, por lo que el GIF se veía repetirse en loop)
+
+        // Preview 2010.5.4.0.40 — NUEVO: overlay "nextprogram" (GIF), reemplaza
+        // a los enseguida post-programa. Se superpone sobre el programa mismo
+        // (no es un clip aparte) y SOLO se programa en el último segmento del
+        // programa (sin cortes comerciales pendientes) — ver scheduleNextProgramBug().
+        internal const val NEXTPROGRAM_SHOW_BEFORE_MS = 31_000L   // Aparece 31s antes del final real del programa
+        internal const val NEXTPROGRAM_ANIM_MS = 500L              // Duración del fade-in (imagen de referencia enviada por Keyler)
 
         /** No commercial break is scheduled within this many ms of the program end. */
         internal const val BREAK_CUTOFF_MS = 3 * 60 * 1_000L         // 3 min
@@ -357,17 +380,23 @@ class LiveDiscoveryKids : AppCompatActivity() {
         )
 
         /**
-         * Enseguidas post-programa (van entre el fin del programa y el comercial standalone).
-         * Beta 3.0.0.3: selección aleatoria con anti-repetición.
-         * Se eliminó enseguida5 y la selección por horario.
+         * Preview 2010.5.4.0.40 — GIFs "nextprogram", uno por programa.
+         * Reemplazan a los ENSEGUIDAS_POST_PROGRAMA (clip aparte, eliminados):
+         * en vez de un ítem propio del playlist, ahora es un overlay que se
+         * superpone al programa mismo cerca de su final.
          *
-         * Release 2009.5.0.0 — "Parque Imaginario": enseguida1 y enseguida2
-         * actualizados de assets, y enseguida2 vuelve a la lista (elección
-         * aleatoria entre los dos, igual que ya_regresa1/ya_regresa2 y
-         * continuamos1/continuamos2). enseguida3/enseguida4 quedan eliminados.
+         * Asignación determinística por índice de programa (0-based), mismo
+         * criterio que ENSEGUIDAS_PRE_COMERCIAL/ya_regresaN — se indexa
+         * directamente por currentProgramIndex (con módulo, ver
+         * scheduleNextProgramBug()):
+         *   programa 0 (pro1) → nextprogram1 | programa 1 (pro2) → nextprogram2
+         *   programa 2 (pro3) → nextprogram3 | programa 3 (pro4) → nextprogram4
          */
-        internal val ENSEGUIDAS_POST_PROGRAMA = listOf(
-            R.raw.enseguida1
+        internal val NEXTPROGRAMS = listOf(
+            R.drawable.nextprogram1,
+            R.drawable.nextprogram2,
+            R.drawable.nextprogram3,
+            R.drawable.nextprogram4
         )
 
         /**
@@ -430,6 +459,9 @@ class LiveDiscoveryKids : AppCompatActivity() {
         screenBug = findViewById(R.id.screenBug)
         screenBug.alpha = 0f
         preloadScreenBugAssets()  // PERF FIX: precarga los GIFs para que se muestren sin lag
+        nextProgramBug = findViewById(R.id.nextProgramBug)
+        nextProgramBug.alpha = 0f
+        preloadNextProgramGifs()  // Preview 2010.5.4.0.40: mismo motivo que preloadScreenBugAssets()
         prevButton = findViewById(R.id.btnPrevious)
         nextButton = findViewById(R.id.btnNext)
         settingsButton = findViewById(R.id.btnSettings)  // Preview 2006.4.1.0.11
@@ -652,7 +684,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // archivos de extensión separados por responsabilidad, todos operando
     // sobre esta misma clase y su mismo estado de instancia:
     //
-    //   ChannelPlaylist.kt          → advance, playBumper, playEnseguida,
+    //   ChannelPlaylist.kt          → advance, playBumper,
     //                                  playStandaloneCommercial,
     //                                  goToAdjacentProgram, findAvailableProgramIndex
     //   ChannelProgramPlayback.kt   → playProgram, beginProgramSegment,
@@ -676,6 +708,13 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // ChannelUiHelpers.kt y ChannelDebugOverlay.kt, ver más abajo) están ahora
     // en este mismo archivo, debajo del cierre de esta clase, cada una bajo el
     // comentario de encabezado original de su archivo de origen.
+    //
+    // Preview 2010.5.4.0.40 — BUG FIX (investigación a fondo): los 11
+    // archivos de arriba en realidad NUNCA se habían borrado del disco en la
+    // 4.6.0 pese a lo que dice este comentario — seguían presentes en el
+    // proyecto con las mismas funciones duplicadas letra por letra que las
+    // reunificadas acá, lo que impedía compilar (redeclaración). Se borraron
+    // recién ahora.
     // ══════════════════════════════════════════════════════════════════════════
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -708,9 +747,12 @@ class LiveDiscoveryKids : AppCompatActivity() {
  * ChannelPlaylist.kt — Preview 2006.4.1.0.21
  *
  * Funciones de extensión de LiveDiscoveryKids: el driver principal de la
- * playlist (advance()), los tres tipos de clip "de relleno" entre programas
- * (Bumper, Enseguida post-programa, StandaloneCommercial), y la navegación
- * Prev/Next que salta directo entre programas.
+ * playlist (advance()), los tipos de clip "de relleno" entre programas
+ * (Bumper, StandaloneCommercial), y la navegación Prev/Next que salta
+ * directo entre programas.
+ *
+ * Preview 2010.5.4.0.40: se quitó Enseguida post-programa de este grupo —
+ * ver nextprogram (overlay sobre el programa, no un clip aparte).
  *
  * La reproducción del programa en sí (playProgram, beginProgramSegment,
  * scheduleSegmentLogic, calcBreaks) vive en ChannelProgramPlayback.kt; el
@@ -731,7 +773,6 @@ internal fun LiveDiscoveryKids.advance() {
     if (playlistIndex >= playlist.size) playlistIndex = 0
     when (val item = playlist[playlistIndex]) {
         is LiveDiscoveryKids.PlayItem.Bumper               -> playBumper()
-        is LiveDiscoveryKids.PlayItem.Enseguida            -> playEnseguida()
         is LiveDiscoveryKids.PlayItem.StandaloneCommercial -> playStandaloneCommercial()
         is LiveDiscoveryKids.PlayItem.Program              -> playProgram(item.index)
     }
@@ -744,6 +785,7 @@ internal fun LiveDiscoveryKids.advance() {
 internal fun LiveDiscoveryKids.playBumper() {
     cancelAllTasks()
     setBugAlpha(0f)
+    setNextProgramBugAlpha(0f)
     stopBgMusic()
     isInProgramSegment = false
     currentItemType = "bumper"
@@ -762,7 +804,6 @@ internal fun LiveDiscoveryKids.playBumper() {
 
 // ══════════════════════════════════════════════════════════════════════════
 // Standalone Commercial – comercial en la programación lineal
-// Aparece entre Enseguida y Talla como parte del flujo de canal.
 // Es independiente del bloque publicitario (playCommercial) que interrumpe
 // programas: no tiene ya_volvemos ni lógica de breakQueue.
 // Beta 3.0.0.2
@@ -771,6 +812,7 @@ internal fun LiveDiscoveryKids.playBumper() {
 internal fun LiveDiscoveryKids.playStandaloneCommercial() {
     cancelAllTasks()
     setBugAlpha(0f)
+    setNextProgramBugAlpha(0f)
     stopBgMusic()
     isInProgramSegment  = false
     isInCommercialBlock = false
@@ -789,41 +831,13 @@ internal fun LiveDiscoveryKids.playStandaloneCommercial() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// Enseguida playback – post-programa: aparece entre el fin del programa
-// y el comercial standalone.
-// Beta 3.0.0.3: selección aleatoria con anti-repetición entre
-// [enseguida1, enseguida2]. Se eliminó la selección por horario y enseguida5.
-// ══════════════════════════════════════════════════════════════════════════
-
-internal fun LiveDiscoveryKids.playEnseguida() {
-    cancelAllTasks()
-    setBugAlpha(0f)
-    stopBgMusic()
-    isInProgramSegment = false
-    currentItemType = "enseguida"
-
-    val candidates = LiveDiscoveryKids.ENSEGUIDAS_POST_PROGRAMA
-        .filter { it != lastEnseguidaPostProgramaRes }
-        .ifEmpty { LiveDiscoveryKids.ENSEGUIDAS_POST_PROGRAMA }
-    val chosenEnseguida = candidates.random()
-    lastEnseguidaPostProgramaRes = chosenEnseguida
-
-    Log.d(LiveDiscoveryKids.TAG, "▶ ENSEGUIDA post-programa [res=$chosenEnseguida]")
-
-    playUriWithTransition(rawUri(chosenEnseguida)) {
-        playlistIndex++
-        advance()
-    }
-}
-
-// ══════════════════════════════════════════════════════════════════════════
 // Navegación Prev / Next
 //
 // Release 3.4.1 — Prev / Next saltan directo al programa destino.
 //
-// Problema del enfoque anterior (iniciar desde Enseguida):
-//   playEnseguida() → playUriWithTransition() registra el timer del FadeOut en pendingTasks.
-//   Cuando la enseguida termina, su onComplete llama playBumper() → cancelAllTasks(),
+// Problema del enfoque anterior (iniciar desde el clip de relleno inicial):
+//   playUriWithTransition() registra el timer del FadeOut en pendingTasks.
+//   Cuando ese clip termina, su onComplete llama playBumper() → cancelAllTasks(),
 //   que borra el timer del FadeOut del bumper antes de que corra. Además,
 //   encadenar playUriWithTransition() dentro del onComplete de otro cancela la
 //   animación del segundo via ViewPropertyAnimator (instancia única del videoView),
@@ -831,10 +845,14 @@ internal fun LiveDiscoveryKids.playEnseguida() {
 //   nunca arranca.
 //
 // Solución: Prev / Next se comportan como un cambio de canal — van directo al
-// programa sin pasar por Enseguida → StandaloneCommercial → Bumper. Ese bloque
-// ya ocurre naturalmente cuando el programa termine por su propio onCompletionListener.
+// programa sin pasar por StandaloneCommercial → Bumper. Ese bloque ya ocurre
+// naturalmente cuando el programa termine por su propio onCompletionListener.
 // playlistIndex se fija en el PlayItem.Program para que advance() continúe
-// correctamente desde la Enseguida del siguiente ciclo al terminar el programa.
+// correctamente desde el siguiente ciclo al terminar el programa.
+//
+// Preview 2010.5.4.0.40: el "Enseguida" post-programa que mencionaban las
+// notas históricas de arriba ya no existe como ítem del playlist — ver
+// nextprogram (overlay sobre el programa, en vez de un clip aparte).
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
@@ -847,15 +865,17 @@ internal fun LiveDiscoveryKids.totalProgramCount(): Int =
     if (SettingsManager.isExperimentalEnabled(this)) SettingsManager.getProgramCount(this) else 4
 
 /**
- * Release 2009.5.0.0 — arma el playlist: Enseguida → Bumper →
- * StandaloneCommercial → Programa(i), repetido una vez por cada programa
- * (ver totalProgramCount()). Reemplaza al `val playlist` fijo de 4 ciclos
- * que existía antes de esta Release.
+ * Release 2009.5.0.0 — arma el playlist: Bumper → StandaloneCommercial →
+ * Programa(i), repetido una vez por cada programa (ver totalProgramCount()).
+ * Reemplaza al `val playlist` fijo de 4 ciclos que existía antes de esta Release.
+ *
+ * Preview 2010.5.4.0.40 — se quitó PlayItem.Enseguida del ciclo (el
+ * "enseguida" post-programa ya no es un ítem del playlist; ver nextprogram,
+ * el overlay que lo reemplaza dentro de playProgram/scheduleSegmentLogic).
  */
 internal fun LiveDiscoveryKids.buildPlaylist(): List<LiveDiscoveryKids.PlayItem> {
     val items = mutableListOf<LiveDiscoveryKids.PlayItem>()
     repeat(totalProgramCount()) { i ->
-        items.add(LiveDiscoveryKids.PlayItem.Enseguida)
         items.add(LiveDiscoveryKids.PlayItem.Bumper)
         items.add(LiveDiscoveryKids.PlayItem.StandaloneCommercial)
         items.add(LiveDiscoveryKids.PlayItem.Program(i))
@@ -889,6 +909,7 @@ internal fun LiveDiscoveryKids.goToAdjacentProgram(direction: Int) {
     Log.d(LiveDiscoveryKids.TAG, "▶ Navegando directo al programa ${target + 1} (direction=$direction)")
     cancelAllTasks()
     setBugAlpha(0f)
+    setNextProgramBugAlpha(0f)
     stopPositionTracker()
     stopBgMusic()
     isInProgramSegment = false
@@ -1020,6 +1041,7 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
 ) {
     cancelAllTasks()
     setBugAlpha(0f)
+    setNextProgramBugAlpha(0f)
     isInCommercialBlock = false   // garantiza reset si se llega aquí desde cualquier ruta
 
     // Beta 3.4.0.42 — BUG FIX: cancelar cualquier animación pendiente del videoView
@@ -1084,6 +1106,7 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
                     .setDuration(fadeOutMs)
                     .withEndAction {
                         Log.d(LiveDiscoveryKids.TAG, "Program ended (fadeOut)")
+                        setNextProgramBugAlpha(0f)
                         isInProgramSegment = false
                         stopPositionTracker()
                         pausedPositionMs = 0
@@ -1105,6 +1128,7 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
                 Log.d(LiveDiscoveryKids.TAG, "Program ended (fallback onCompletion)")
                 cancelAllTasks()
                 setBugAlpha(0f)
+                setNextProgramBugAlpha(0f)
                 isInProgramSegment = false
                 stopPositionTracker()
                 pausedPositionMs = 0
@@ -1275,6 +1299,12 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
     // scheduleMultipleScreenbugs() que maneja los timings de los 3 drawables.
     scheduleMultipleScreenbugs(segmentStartMs, segmentEndMs, elapsed)
 
+    // Preview 2010.5.4.0.40 — NUEVO: overlay "nextprogram". Solo tiene
+    // sentido en el ÚLTIMO segmento del programa (sin cortes comerciales
+    // pendientes en este punto, breakQueue vacío ⇒ segmentEndMs == programDuration);
+    // no debe aparecer antes de un corte comercial a mitad del programa.
+    scheduleNextProgramBug(segmentStartMs, segmentEndMs, elapsed, isFinalSegment = breakQueue.isEmpty())
+
     if (breakQueue.isNotEmpty()) {
         val breakProgramPos = breakQueue[0]
         post(segmentDuration) {
@@ -1288,6 +1318,46 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
 // ══════════════════════════════════════════════════════════════════════════
 // Commercial break calculation
 // ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Preview 2010.5.4.0.40 — programa el overlay "nextprogram" para el ÚLTIMO
+ * segmento del programa: aparece NEXTPROGRAM_SHOW_BEFORE_MS (31s) antes del
+ * final real, con un fade-in de NEXTPROGRAM_ANIM_MS (500 ms). Reemplaza al
+ * "enseguida" post-programa, que antes era un clip aparte entre el fin del
+ * programa y el StandaloneCommercial.
+ *
+ * Mismo patrón de "restaurar si ya debería estar visible" que
+ * scheduleMultipleScreenbugs(): si [elapsed] ya superó el punto de aparición
+ * (ej. se restaura sesión a mitad del segmento final), aparece de inmediato
+ * sin animación en vez de esperar a un timer que ya pasó.
+ *
+ * @param isFinalSegment true si este segmento termina en el final real del
+ *   programa (breakQueue vacío al momento de llamar). Si es false (el
+ *   segmento termina en un corte comercial), no se programa nada — el
+ *   nextprogram nunca debe aparecer antes de un corte a mitad de programa.
+ */
+internal fun LiveDiscoveryKids.scheduleNextProgramBug(
+    segmentStartMs: Int,
+    segmentEndMs: Int,
+    elapsed: Long,
+    isFinalSegment: Boolean
+) {
+    if (!isFinalSegment) return
+
+    val segmentDuration = (segmentEndMs - segmentStartMs).toLong().coerceAtLeast(0)
+    val showAt = segmentDuration - LiveDiscoveryKids.NEXTPROGRAM_SHOW_BEFORE_MS
+    // Programa más corto que 31s desde el arranque de este tramo final: no alcanza a mostrarse.
+    if (showAt < 0) return
+
+    if (elapsed >= showAt) {
+        Log.d(LiveDiscoveryKids.TAG, "NextProgramBug: elapsed=${elapsed}ms >= showAt(${showAt}ms) → aparece inmediatamente")
+        showNextProgramResource()
+        setNextProgramBugAlpha(1f)
+    } else {
+        val delay = (showAt - elapsed).coerceAtLeast(0L)
+        post(delay) { fadeInNextProgramBug() }
+    }
+}
 
 /**
  * Returns a list of program positions (in ms) where commercial breaks occur.
@@ -1353,6 +1423,7 @@ internal fun LiveDiscoveryKids.calcBreaks(durationMs: Int): List<Int> {
 internal fun LiveDiscoveryKids.playCommercial(resumeProgramAtMs: Int) {
     cancelAllTasks()
     setBugAlpha(0f)
+    setNextProgramBugAlpha(0f)
     stopBgMusic()
     isInProgramSegment = false
     isInCommercialBlock = true
@@ -2343,6 +2414,73 @@ internal fun LiveDiscoveryKids.fadeOutBug() {
 internal fun LiveDiscoveryKids.setBugAlpha(alpha: Float) {
     screenBug.animate().cancel()
     screenBug.alpha = alpha
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// NextProgram overlay (Preview 2010.5.4.0.40)
+// ══════════════════════════════════════════════════════════════════════════
+// Reemplaza a los "enseguida" post-programa: en vez de un clip aparte entre
+// el fin del programa y el StandaloneCommercial, es un GIF superpuesto AL
+// PROGRAMA MISMO, cerca de su final (ver scheduleNextProgramBug()). Mismo
+// patrón de caché que screenBugStartGif/screenBugEndGif (GifMovieDrawable
+// decodificado una sola vez por GIF, seekToStart()+start() en cada aparición)
+// para que no haya lag al mostrarlo.
+
+/** Aparición animada (fade-in, NEXTPROGRAM_ANIM_MS) del nextprogram del programa actual. */
+internal fun LiveDiscoveryKids.fadeInNextProgramBug() {
+    Log.d(LiveDiscoveryKids.TAG, "NextProgramBug FADE IN [program=$currentProgramIndex]")
+    showNextProgramResource()
+    nextProgramBug.animate().cancel()
+    nextProgramBug.alpha = 0f
+    nextProgramBug.animate()
+        .alpha(1f)
+        .setDuration(LiveDiscoveryKids.NEXTPROGRAM_ANIM_MS)
+        .start()
+}
+
+/**
+ * Aplica el GIF correcto (indexado por currentProgramIndex, con módulo —
+ * ver NEXTPROGRAMS) al ImageView, reiniciándolo desde el primer frame.
+ * Usa el GifMovieDrawable cacheado por preloadNextProgramGifs(); si por
+ * algún motivo el preload todavía no corrió, cae a setImageResource()
+ * (se ve el primer frame congelado, pero no crashea).
+ */
+private fun LiveDiscoveryKids.showNextProgramResource() {
+    val index = currentProgramIndex % LiveDiscoveryKids.NEXTPROGRAMS.size
+    val res = LiveDiscoveryKids.NEXTPROGRAMS[index]
+    val cached = nextProgramGifs.getOrNull(index)
+    if (cached != null) {
+        cached.seekToStart()
+        cached.start()
+        nextProgramBug.setImageDrawable(cached)
+    } else {
+        nextProgramBug.setImageResource(res)
+    }
+}
+
+/**
+ * Precarga y cachea los GifMovieDrawable de los 4 nextprogram en memoria una
+ * sola vez, igual que preloadScreenBugAssets(). Llamar una sola vez en
+ * onCreate(), antes de que arranque cualquier programa.
+ */
+@Suppress("DEPRECATION")
+internal fun LiveDiscoveryKids.preloadNextProgramGifs() {
+    LiveDiscoveryKids.NEXTPROGRAMS.forEachIndexed { index, res ->
+        try {
+            resources.openRawResource(res).use { stream ->
+                android.graphics.Movie.decodeStream(stream)?.let { nextProgramGifs[index] = GifMovieDrawable(it) }
+            }
+        } catch (e: Exception) {
+            Log.e(LiveDiscoveryKids.TAG, "Error precargando nextprogram GIF #$index", e)
+        }
+    }
+}
+
+/** Instantly sets alpha without animation (usado en transiciones y al cortar junto con el fin del programa). */
+internal fun LiveDiscoveryKids.setNextProgramBugAlpha(alpha: Float) {
+    nextProgramBug.animate().cancel()
+    nextProgramBug.alpha = alpha
 }
 
 

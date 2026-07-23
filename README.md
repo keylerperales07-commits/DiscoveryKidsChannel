@@ -23,7 +23,7 @@
 
 ## 📖 Descripción General
 
-**Discovery Kids** es una aplicación Android que recrea fielmente la experiencia de ver un canal infantil de televisión clásico. Cuenta con reproducción lineal continua con elementos auténticos de transmisión — bumpers, comerciales, pantallas de transición (*enseguidas*), música de fondo y un overlay estilo CRT en pantalla completa — todo diseñado para hacerte sentir que estás viendo televisión real otra vez.
+**Discovery Kids** es una aplicación Android que recrea fielmente la experiencia de ver un canal infantil de televisión clásico. Cuenta con reproducción lineal continua con elementos auténticos de transmisión — bumpers, comerciales, un overlay "a continuación" (*nextprogram*) sobre el final de cada programa, música de fondo y un overlay estilo CRT en pantalla completa — todo diseñado para hacerte sentir que estás viendo televisión real otra vez.
 
 El proyecto está organizado en tres etapas evolutivas que reflejan la historia del canal:
 
@@ -40,16 +40,16 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 📺 **Reproducción Lineal Continua** — Los programas se reproducen automáticamente en secuencia, igual que un canal de TV real
 - 🎬 **Bumpers** — Clips de identidad del canal entre programas, ahora en resolución mejorada
 - 📣 **Comerciales Dinámicos** — Bloques de publicidad que rotan durante la programación con intervalos aleatorios entre 3 y 9 minutos, incluyendo contenido de la era Y2K
-- ➡️ **Enseguidas** — Clips de transición "a continuación" entre programas
+- ⏭️ **NextProgram** *(Preview 2010.5.4.0.40)* — Overlay animado (GIF, uno por programa) que se superpone al programa mismo 31 segundos antes de su final real, anticipando qué sigue en el canal. Reemplaza a los "enseguidas" post-programa (clip aparte, eliminado)
 - 🎵 **Música de Fondo** — Música ambiente durante la reproducción de programas (volumen al 8%)
 - 🖥️ **Modo Pantalla Completa Inmersivo** — Sin distracciones de interfaz, experiencia TV pura
 - 📡 **Overlay Visual CRT** — Efectos de scanlines y pantalla para esa sensación retro de televisor
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
-- 🆕 **ScreenBug de 3 fases** — Marca de agua animada con el logo del canal: aparición (GIF), estático (PNG) y salida (GIF), apareciendo/desapareciendo de forma instantánea en momentos específicos del programa. Los GIF se reproducen con `GifMovieDrawable`, basado en la API nativa `android.graphics.Movie` (sin librerías externas — Release 2009.5.1.0). Nuevo contenido de Mayo–Julio 2009 (Release 2009.5.1.0), Julio 2009–2011 (Release 2009.5.2.0)
+- 🆕 **ScreenBug de 3 fases** — Marca de agua animada con el logo del canal: aparición (GIF), estático (PNG) y salida (GIF, ahora a partir de 46 segundos antes del final del programa — Preview 2010.5.4.0.40), apareciendo/desapareciendo de forma instantánea en momentos específicos del programa. Los GIF se reproducen con `GifMovieDrawable`, basado en la API nativa `android.graphics.Movie` (sin librerías externas — Release 2009.5.1.0). Nuevo contenido de Mayo–Julio 2009 (Release 2009.5.1.0), Julio 2009–2011 (Release 2009.5.2.0)
 - 🎄 **ScreenBug de Navidad** — Del 1 al 24 de diciembre (inclusive), la app usa automáticamente un set de ScreenBug con temática navideña, con el mismo comportamiento de 3 fases que el normal (Release 2010.5.3.0)
 - ⏸ **Pantalla "Ya Volvemos"** — Pantalla intersticial auténtica de "Volvemos en un momento"
-- 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo enseguidas, bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
-- ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Enseguida → StandaloneCommercial → Bumper → Programa), igual que cambiar de canal en TV real
+- 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
+- ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (StandaloneCommercial → Bumper → Programa), igual que cambiar de canal en TV real
 - ⚙️ **Pantalla de Configuración** — Accesible desde el botón de ajustes, con lista simple estilo Android Settings. Permite alternar música de fondo, efecto CRT y Forzar 4:3, y ajustar la duración del Screenbug y el intervalo entre comerciales — cada opción muestra su valor predeterminado
 - 🔄 **Actualizador integrado** — Desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub; si hay una versión más nueva, descarga el `.apk` con OkHttp (mostrando progreso y tamaño en vivo) y abre el instalador del sistema. Un switch "Habilitar versiones Preview" (desactivado por defecto) permite que también instale releases Preview, no solo estables. La pantalla del Actualizador calca el diseño nativo de "Actualización del sistema" de Android
 - 🔔 **Aviso de actualización al abrir la app** — Además de "Buscar actualizaciones" en Configuración, la app consulta en silencio al entrar y muestra un AlertDialog propio si hay una versión nueva (Release 2009.5.0.0)
@@ -88,7 +88,7 @@ Mové los 4 archivos a la carpeta **Movies** (Películas) del almacenamiento int
 
 **4. Abrí la app y disfrutá**
 
-La app detecta automáticamente los videos, los intercala con bumpers, comerciales, enseguidas y música de fondo, y te da una experiencia completa de canal de televisión retro. ¡Listo!
+La app detecta automáticamente los videos, los intercala con bumpers, comerciales, el overlay nextprogram y música de fondo, y te da una experiencia completa de canal de televisión retro. ¡Listo!
 
 > 💡 Si algún video no existe, la app lo omite automáticamente y continúa con el siguiente.
 
@@ -207,6 +207,7 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 ## ⚠️ Notas Importantes
 
+- **Este build (Preview 2010.5.4.0.40) no incluye los archivos de arte del overlay NextProgram** — hay que agregar `nextprogram1.gif`, `nextprogram2.gif`, `nextprogram3.gif` y `nextprogram4.gif` a `res/drawable/` antes de compilar. Ver [`RELEASE_NOTES.md`](./RELEASE_NOTES.md) para el detalle.
 - **Los videos de programas (`pro1–4.mp4`) en resolución 720p o superior pueden hacer que el ScreenBug quede oculto detrás del video.** Esto es una limitación conocida de `VideoView` (aceleración de hardware en resoluciones altas). Se probó un motor de video alternativo (TextureView) como workaround entre las Releases 2009.5.0.0 y 2009.5.2.0, pero se eliminó por completo en la 2009.5.2.1 por los problemas que traía — se recomienda usar programas en 480p o inferior. El contenedor de video siempre está en proporción 4:3; el switch "Forzar 4:3" (Configuración) decide si el video se estira para llenarlo exacto o se ajusta preservando su proporción real sin estirarse (Release 2009.5.2.1 — causa raíz real, corrige un diseño invertido de las dos Releases anteriores).
 - La primera sincronización de Gradle puede tardar varios minutos según la velocidad de conexión.
 - Gradle descargará todas las dependencias necesarias automáticamente.

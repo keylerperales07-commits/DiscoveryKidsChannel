@@ -238,8 +238,23 @@ object AppUpdater {
         // Se descarta el primer segmento (la Era, fija para todo el esquema
         // de versionado del proyecto) para que la comparación quede en el
         // mismo formato corto que usan los tags: MAJOR.MINOR.PATCH[.BUILD].
-        val segments = raw.split(".")
-        return if (segments.size > 1) segments.drop(1).joinToString(".") else raw
+        var segments = raw.split(".")
+        var versionWithoutEra = if (segments.size > 1) segments.drop(1).joinToString(".") else raw
+        
+        // Release 2009.4.6.1 — BUG FIX: el BUILD segment (4to segmento) hace que
+        // las previews (ej. 4.6.0.60) se comparen como "mayores" que la release
+        // final de la misma versión (ej. 4.6.0.01). Cuando alguien instala una
+        // preview (2008.4.6.0.60 → versionName da 4.6.0.60) y después quiere
+        // actualizar a la release final (tag en GitHub es v4.6.0 → se compara
+        // como 4.6.0), el comparador devuelve negativo (release < preview), así
+        // que el actualizador cree que ya está al día.
+        //
+        // Solución: devolver solo MAJOR.MINOR.PATCH, sin BUILD. Así:
+        // - preview 2008.4.6.0.60 → currentVersionName() da 4.6.0
+        // - release 2008.4.6.0.01 → currentVersionName() da 4.6.0
+        // - ambas se tratan como "4.6.0", y el comparador funciona bien.
+        segments = versionWithoutEra.split(".")
+        return if (segments.size > 3) segments.take(3).joinToString(".") else versionWithoutEra
     }
 
     /**

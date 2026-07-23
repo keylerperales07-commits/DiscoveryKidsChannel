@@ -12,8 +12,8 @@ android {
         applicationId "com.keyler.discoverykidschannel"
         minSdk 23
         targetSdk 36
-        versionCode 05030031
-        versionName "2010.5.3.0.01"
+        versionCode 05040040
+        versionName "2010.5.4.0.40"
         vectorDrawables { 
             useSupportLibrary true
         }

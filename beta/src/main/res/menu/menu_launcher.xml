@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ ESTO TIENE LICENCIA GNU LICENSE APACHE
+
+ NO ELIMINAR NINGUN COMENTARIO AGREGADO
+-->
+<!--
+    menu_launcher.xml — Release 2009.5.1.0
+
+    Ítem "Configuración" en la ActionBar original de Android del Launcher
+    (reemplaza al ImageButton custom que estaba en el MenuBar hecho a mano
+    de la 2009.5.0.0). Ver DiscoveryKidsLauncherActivity.onCreateOptionsMenu().
+-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menuLauncherSettings"
+        android:title="Configuración"
+        android:icon="@drawable/btn_settings"
+        app:showAsAction="never" />
+
+</menu>

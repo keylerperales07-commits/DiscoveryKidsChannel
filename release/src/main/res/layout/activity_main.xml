@@ -30,6 +30,20 @@
              android:alpha="0"
              android:id="@+id/screenBug" />
 
+        <!-- Preview 2010.5.4.0.40: overlay "nextprogram" (GIF), reemplaza al
+             enseguida post-programa. Full-frame como screenBug — el GIF trae
+             compuesto todo lo necesario (recuadro de vista previa + texto).
+             Va ARRIBA de screenBug en z-order porque ambos pueden estar
+             visibles a la vez (screenbug_end aparece 46s antes del final,
+             nextprogram 15s después, a los 31s antes del final). -->
+        <ImageView
+             android:layout_height="match_parent"
+             android:layout_width="match_parent"
+             android:src="@drawable/nextprogram1"
+             android:contentDescription="Next program preview"
+             android:alpha="0"
+             android:id="@+id/nextProgramBug" />
+
         <com.keyler.discoverykidschannel.CrtOverlayView
              android:layout_height="match_parent"
              android:layout_width="match_parent"

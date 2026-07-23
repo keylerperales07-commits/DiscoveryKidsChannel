@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Release 2009.5.1.0 — bool calificado día/noche para LauncherTheme
+     (android:windowLightStatusBar): claro → íconos oscuros; ver
+     values-night/bools.xml para el override en modo oscuro. -->
+<resources>
+    <bool name="md3_light_status_bar">true</bool>
+</resources>

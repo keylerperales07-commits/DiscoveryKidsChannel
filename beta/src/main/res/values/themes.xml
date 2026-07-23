@@ -6,17 +6,68 @@
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:statusBarColor">@android:color/black</item>
         <item name="android:navigationBarColor">@android:color/black</item>
-        <item name="android:fontFamily">@font/googlesans</item>
+        <!-- Release 2009.5.0.0: dk_font en vez de googlesans — ver spec de la
+             Release ("dk_font se aplica también a LiveDiscoveryKids, pero no
+             a Configuración ni al Actualizador"). Los TextViews de debug
+             (debugInfo/versionInfo en activity_main.xml) mantienen su
+             android:fontFamily="@font/googlesans" explícito, que tiene
+             prioridad sobre este default del theme. -->
+        <item name="android:fontFamily">@font/dk_font</item>
     </style>
 
     <!-- ══ SettingsActivity (Preview 2006.4.1.0.12) ══
          Rediseño a lista simple neutra. Ya no usa el acento verde fósforo
          de la versión anterior (menú OSD); los switches usan el color de
          control por defecto del sistema, igual que la referencia de diseño. -->
-    <style name="SettingsTheme" parent="Theme.AppCompat.NoActionBar">
+    <!-- Release 2009.5.2.1 — BUG FIX: "elimina el menú falso, usá el
+         ActionBar del SDK de Android". Antes: Theme.AppCompat.NoActionBar +
+         un header hecho a mano en el propio layout (ImageButton "Atrás" +
+         TextView "Configuración" simulando una barra). Ahora: ActionBar
+         real (Theme.AppCompat, sin ".NoActionBar"), con navegación "Up"
+         nativa — ver SettingsActivity.onCreate()/onSupportNavigateUp(). -->
+    <style name="SettingsTheme" parent="Theme.AppCompat">
         <item name="android:windowBackground">@color/dk_bg</item>
         <item name="android:statusBarColor">@color/dk_bg</item>
         <item name="android:navigationBarColor">@color/dk_bg</item>
         <item name="android:fontFamily">@font/googlesans</item>
+        <item name="colorPrimary">@color/dk_bg</item>
+        <item name="colorPrimaryDark">@color/dk_bg</item>
+    </style>
+
+    <!-- ══ Discovery Kids Launcher (Release 2009.5.1.0) ══
+         Rediseño completo a Material Design 3 puro:
+           - Theme.Material3.DayNight (CON ActionBar real de Android — la
+             que trae el sistema por defecto — en vez del MenuBar custom
+             hecho a mano que tenía la 2009.5.0.0).
+           - Colores: ver md3_* en values/colors.xml (claro) y
+             values-night/colors.xml (oscuro). Azul semilla #0061A4 (misma
+             familia que el degradado que usaba el menubar anterior),
+             DayNight = cambia solo según el tema del sistema, sin código.
+           - dk_font se mantiene (no es parte del sistema de color MD3). -->
+    <style name="LauncherTheme" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/md3_primary</item>
+        <item name="colorOnPrimary">@color/md3_on_primary</item>
+        <item name="colorPrimaryContainer">@color/md3_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/md3_on_primary_container</item>
+
+        <item name="colorSecondary">@color/md3_secondary</item>
+        <item name="colorOnSecondary">@color/md3_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/md3_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/md3_on_secondary_container</item>
+
+        <item name="android:colorBackground">@color/md3_background</item>
+        <item name="colorOnBackground">@color/md3_on_background</item>
+        <item name="colorSurface">@color/md3_surface</item>
+        <item name="colorOnSurface">@color/md3_on_surface</item>
+        <item name="colorSurfaceVariant">@color/md3_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/md3_on_surface_variant</item>
+        <item name="colorOutline">@color/md3_outline</item>
+        <item name="colorOutlineVariant">@color/md3_outline_variant</item>
+
+        <item name="android:statusBarColor">@color/md3_surface</item>
+        <item name="android:navigationBarColor">@color/md3_surface</item>
+        <item name="android:windowLightStatusBar">@bool/md3_light_status_bar</item>
+
+        <item name="android:fontFamily">@font/dk_font</item>
     </style>
 </resources>

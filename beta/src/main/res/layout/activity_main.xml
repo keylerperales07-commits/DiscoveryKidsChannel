@@ -11,17 +11,17 @@
          android:id="@+id/videoContainer"
          android:layout_gravity="center">
 
-        <VideoView
+        <!-- Release 2009.5.0.0: ya no es un <VideoView> fijo en XML. Se
+             reemplaza en tiempo de ejecución por un DkVideoView (Release
+             2009.5.2.1: envoltorio simple de VideoView clásico, el motor
+             alternativo TextureView se eliminó) dentro de este mismo
+             placeholder — ver LiveDiscoveryKids.onCreate(). -->
+        <FrameLayout
              android:layout_height="match_parent"
              android:layout_width="wrap_content"
-             android:id="@+id/videoView"
+             android:id="@+id/videoViewContainer"
              android:layout_gravity="center" />
 
-        <!--
-            ScreenBug movido DENTRO del AspectRatioFrameLayout (release 1999.2.2.1.02).
-            Al estar dentro del contenedor 4:3, queda encima del video pero debajo del CRT.
-            El CrtOverlayView declarado después tiene mayor z-order → CRT encima del screenbug.
-        -->
         <ImageView
              android:layout_height="match_parent"
              android:layout_width="match_parent"
@@ -30,16 +30,26 @@
              android:alpha="0"
              android:id="@+id/screenBug" />
 
-        <!--
-            CrtOverlayView dentro del 4:3 y declarado DESPUÉS del screenBug → encima de todo.
-            Orden z: VideoView → screenBug → CrtOverlayView (CRT encima de screenbug).
-        -->
-        <com.keyler.discoverykidschannel.CrtOverlayView
-             android:id="@+id/crtOverlay"
-             android:layout_width="match_parent"
+        <!-- Preview 2010.5.4.0.40: overlay "nextprogram" (GIF), reemplaza al
+             enseguida post-programa. Full-frame como screenBug — el GIF trae
+             compuesto todo lo necesario (recuadro de vista previa + texto).
+             Va ARRIBA de screenBug en z-order porque ambos pueden estar
+             visibles a la vez (screenbug_end aparece 46s antes del final,
+             nextprogram 15s después, a los 31s antes del final). -->
+        <ImageView
              android:layout_height="match_parent"
+             android:layout_width="match_parent"
+             android:src="@drawable/nextprogram1"
+             android:contentDescription="Next program preview"
+             android:alpha="0"
+             android:id="@+id/nextProgramBug" />
+
+        <com.keyler.discoverykidschannel.CrtOverlayView
+             android:layout_height="match_parent"
+             android:layout_width="match_parent"
              android:clickable="false"
-             android:focusable="false" />
+             android:focusable="false"
+             android:id="@+id/crtOverlay" />
 
     </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
 
@@ -48,9 +58,9 @@
          android:layout_width="wrap_content"
          android:gravity="center"
          android:alpha="1"
+         android:fontFamily="@font/googlesans"
          android:textColor="#FFFFFF"
          android:id="@+id/debugInfo"
-         android:fontFamily="@font/googlesans"
          android:layout_gravity="center|top"
          android:text="Espere..." />
 
@@ -74,15 +84,14 @@
          android:id="@+id/btnNext"
          android:layout_gravity="end|center_vertical" />
 
-    <!-- Botón de Configuración (Preview 2006.4.1.0.11) -->
     <ImageButton
          android:layout_height="wrap_content"
          android:layout_width="wrap_content"
          android:visibility="gone"
          android:src="@drawable/btn_settings"
+         android:layout_marginEnd="16dp"
          android:background="@android:color/transparent"
          android:layout_marginTop="16dp"
-         android:layout_marginEnd="16dp"
          android:id="@+id/btnSettings"
          android:layout_gravity="end|top" />
 
@@ -90,8 +99,8 @@
          android:layout_height="wrap_content"
          android:layout_width="wrap_content"
          android:background="#000"
-         android:id="@+id/versionInfo"
          android:fontFamily="@font/googlesans"
+         android:id="@+id/versionInfo"
          android:text="..."
          android:layout_gravity="end|bottom" />
 

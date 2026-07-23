@@ -6,6 +6,36 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2010.5.4.0.40] — 🧪 Preview · Era Doki 1.0 · Era 2010 · "Parque Imaginario" — 2026-07-22
+
+> *Reemplazo del "enseguida" post-programa por NextProgram: un overlay GIF que se superpone al programa mismo, no un clip aparte. El ScreenBug final ahora empieza 46s antes del final del programa (antes 20s), dejando lugar a que NextProgram aparezca 15s después, a los 31s antes del final. De paso, investigación a fondo destapó un bug de compilación arrastrado desde la 4.6.0: los 11 archivos de extensión que esa Release decía haber eliminado en realidad seguían en el proyecto, duplicando cada función de `LiveDiscoveryKids.kt` y rompiendo la build.*
+
+### ⏭️ Reemplazo de Enseguida → NextProgram
+
+El clip "enseguida" post-programa (`PlayItem.Enseguida`) desaparece del playlist por completo: el ciclo pasa de `Enseguida → Bumper → StandaloneCommercial → Programa` a `Bumper → StandaloneCommercial → Programa`. En su lugar, un nuevo overlay **NextProgram** (GIF) se superpone directamente sobre el programa que está terminando, `NEXTPROGRAM_SHOW_BEFORE_MS` (31 segundos) antes de su final real, con una animación de entrada (fade-in) de `NEXTPROGRAM_ANIM_MS` (500 ms).
+
+- `nextprogram1.gif`–`nextprogram4.gif`: uno por programa, misma asignación determinística por índice que `ya_regresaN`/`continuamosN` (`currentProgramIndex % NEXTPROGRAMS.size`).
+- Solo se agenda en el **último segmento real** del programa (`breakQueue` vacío al momento de programarlo) — nunca aparece antes de un corte comercial a mitad de programa.
+- Se oculta de golpe junto con el corte al terminar el programa (sin fadeOut propio), en los mismos puntos donde ya se reseteaba el ScreenBug: inicio de cualquier segmento, Prev/Next, entrada a comercial/bumper/standalone, y ambos caminos de fin de programa (normal y fallback).
+- Nueva función `scheduleNextProgramBug()`, análoga a `scheduleMultipleScreenbugs()`: si al restaurar sesión el punto de aparición ya pasó, se muestra de inmediato sin animación en vez de esperar un timer vencido.
+- Caché de los 4 `GifMovieDrawable` vía `preloadNextProgramGifs()`, llamada en `onCreate()` junto a `preloadScreenBugAssets()` — mismo motivo (evitar lag al decodificar el GIF la primera vez que se muestra).
+
+> ⚠️ Este build **no incluye los archivos de arte** de NextProgram — hay que agregar `nextprogram1.gif`, `nextprogram2.gif`, `nextprogram3.gif` y `nextprogram4.gif` a `res/drawable/` antes de compilar. El `ImageView` `nextProgramBug` se agregó full-frame (`match_parent`) igual que `screenBug`, asumiendo que cada GIF ya trae compuesto todo el contenido visible (recuadro de vista previa + logo + texto), tal como se ve en la imagen de referencia que enviaste. Si el asset final termina siendo más chico o necesita posicionamiento específico dentro del frame, avisame para ajustar el layout.
+
+### 🕐 ScreenBug final: 20s → 46s antes del final
+
+`SCREENBUG_END_SHOW_BEFORE_MS` pasa de 20 000 ms a 46 000 ms, para que el ScreenBug final (logo) ya esté en pantalla cuando aparece NextProgram 15s después (46s − 31s = 15s de diferencia entre ambos).
+
+### 🐛 BUG FIX (investigación a fondo) — 11 archivos duplicados impedían compilar
+
+Al tocar `ChannelScreenBug.kt` para este cambio, aparecieron **dos** declaraciones de `LiveDiscoveryKids.fadeInBug()` en el proyecto — una en `ChannelScreenBug.kt` y otra, más completa, ya reunificada en `LiveDiscoveryKids.kt`. Investigando la causa raíz: la Release 4.6.0 (REUNIFICACIÓN) documentó en un comentario que los 11 archivos de extensión (`ChannelPlaylist.kt`, `ChannelProgramPlayback.kt`, `ChannelCommercialBlock.kt`, `ChannelVideoTransitions.kt`, `ChannelMediaResolver.kt`, `ChannelBackgroundMusic.kt`, `ChannelSessionState.kt`, `ChannelPositionTracker.kt`, `ChannelScreenBug.kt`, `ChannelUiHelpers.kt`, `ChannelDebugOverlay.kt`) "dejan de existir como archivos separados" — pero en la práctica **nunca se borraron del disco**. Seguían presentes, con el contenido idéntico letra por letra al ya reunificado en `LiveDiscoveryKids.kt`, lo que hace que el proyecto no compile (error de redeclaración) desde esa Release. Se borraron los 11 archivos.
+
+### ⚠️ Alcance
+
+> Cambios de código en `LiveDiscoveryKids.kt` (`PlayItem.Enseguida` eliminado, `playEnseguida()` eliminada, `buildPlaylist()` sin Enseguida, `NEXTPROGRAMS`/`NEXTPROGRAM_SHOW_BEFORE_MS`/`NEXTPROGRAM_ANIM_MS` nuevas, `SCREENBUG_END_SHOW_BEFORE_MS` a 46 000, nuevas `scheduleNextProgramBug()`/`fadeInNextProgramBug()`/`showNextProgramResource()`/`preloadNextProgramGifs()`/`setNextProgramBugAlpha()`). `activity_main.xml` (nuevo `ImageView` `nextProgramBug`). Se eliminaron los 11 archivos de extensión duplicados listados arriba. `build.gradle`: `versionName` a `2010.5.4.0.40`.
+
+---
+
 ## [2010.5.3.0] — 🚀 Release · Era Doki 1.0 · Era 2010 · "Parque Imaginario" — 2026-07-20
 
 > *Cambio de Era (2009→2010). BUG FIX definitivo del fadeOut/fadeIn de programas — causa raíz real esta vez: el fix de la 2009.5.2.1 estaba incompleto, no contemplaba una reanudación (tras un corte comercial, volver de Configuración, etc.). Nuevo ScreenBug de Navidad (1–24 de diciembre), con el mismo comportamiento de 3 fases que el normal.*
