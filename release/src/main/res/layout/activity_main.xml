@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout
      xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
      android:layout_height="match_parent"
      android:layout_width="match_parent"
      android:background="#000000">
@@ -31,18 +32,63 @@
              android:id="@+id/screenBug" />
 
         <!-- Preview 2010.5.4.0.40: overlay "nextprogram" (GIF), reemplaza al
-             enseguida post-programa. Full-frame como screenBug — el GIF trae
-             compuesto todo lo necesario (recuadro de vista previa + texto).
-             Va ARRIBA de screenBug en z-order porque ambos pueden estar
-             visibles a la vez (screenbug_end aparece 46s antes del final,
-             nextprogram 15s después, a los 31s antes del final). -->
-        <ImageView
+             enseguida post-programa.
+             Release 5.4.0 — BUG FIX: antes era full-frame (match_parent),
+             asumiendo que el GIF traía compuesto todo el frame. Confirmado en
+             dispositivo que el asset real va POSICIONADO en el recuadro
+             específico de la imagen de referencia (la esquina superior
+             derecha, "cuadro rojo"), no a pantalla completa. Ahora se ubica
+             con 4 guías porcentuales de ConstraintLayout calculadas sobre esa
+             imagen de referencia (~46%–94% horizontal, ~9%–53% vertical del
+             marco 4:3) en vez de match_parent. Si el arte final de Keyler
+             termina teniendo otras proporciones, ajustar los 4
+             layout_constraintGuide_percent de abajo. -->
+        <androidx.constraintlayout.widget.ConstraintLayout
              android:layout_height="match_parent"
-             android:layout_width="match_parent"
-             android:src="@drawable/nextprogram1"
-             android:contentDescription="Next program preview"
-             android:alpha="0"
-             android:id="@+id/nextProgramBug" />
+             android:layout_width="match_parent">
+
+            <androidx.constraintlayout.widget.Guideline
+                 android:id="@+id/guideNextProgramStart"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:orientation="vertical"
+                 app:layout_constraintGuide_percent="0.46" />
+
+            <androidx.constraintlayout.widget.Guideline
+                 android:id="@+id/guideNextProgramEnd"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:orientation="vertical"
+                 app:layout_constraintGuide_percent="0.94" />
+
+            <androidx.constraintlayout.widget.Guideline
+                 android:id="@+id/guideNextProgramTop"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:orientation="horizontal"
+                 app:layout_constraintGuide_percent="0.09" />
+
+            <androidx.constraintlayout.widget.Guideline
+                 android:id="@+id/guideNextProgramBottom"
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:orientation="horizontal"
+                 app:layout_constraintGuide_percent="0.53" />
+
+            <ImageView
+                 android:id="@+id/nextProgramBug"
+                 android:layout_width="0dp"
+                 android:layout_height="0dp"
+                 android:scaleType="fitXY"
+                 android:src="@drawable/nextprogram1"
+                 android:contentDescription="Next program preview"
+                 android:alpha="0"
+                 app:layout_constraintStart_toStartOf="@id/guideNextProgramStart"
+                 app:layout_constraintEnd_toEndOf="@id/guideNextProgramEnd"
+                 app:layout_constraintTop_toTopOf="@id/guideNextProgramTop"
+                 app:layout_constraintBottom_toBottomOf="@id/guideNextProgramBottom" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <com.keyler.discoverykidschannel.CrtOverlayView
              android:layout_height="match_parent"
@@ -57,7 +103,7 @@
          android:layout_height="wrap_content"
          android:layout_width="wrap_content"
          android:gravity="center"
-         android:alpha="0"
+         android:alpha="1"
          android:fontFamily="@font/googlesans"
          android:textColor="#FFFFFF"
          android:id="@+id/debugInfo"

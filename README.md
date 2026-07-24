@@ -39,17 +39,18 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 
 - 📺 **Reproducción Lineal Continua** — Los programas se reproducen automáticamente en secuencia, igual que un canal de TV real
 - 🎬 **Bumpers** — Clips de identidad del canal entre programas, ahora en resolución mejorada
-- 📣 **Comerciales Dinámicos** — Bloques de publicidad que rotan durante la programación con intervalos aleatorios entre 3 y 9 minutos, incluyendo contenido de la era Y2K
-- ⏭️ **NextProgram** *(Preview 2010.5.4.0.40)* — Overlay animado (GIF, uno por programa) que se superpone al programa mismo 31 segundos antes de su final real, anticipando qué sigue en el canal. Reemplaza a los "enseguidas" post-programa (clip aparte, eliminado)
+- 📣 **Comerciales Dinámicos** — Bloques de publicidad que rotan con intervalos aleatorios entre 3 y 9 minutos, incluyendo contenido de la era Y2K. Desde la Release 5.4.0 aparecen ÚNICAMENTE interrumpiendo Programas (se eliminó el StandaloneCommercial, el bloque de comercial suelto entre Bumper y Programa)
+- 🎬 **Intro y Créditos personalizados** *(Release 5.4.0)* — Opcionales, por programa, configurables en Discovery Kids Launcher → Configuración de Programa. La Intro aparece después del Bumper y antes del Programa; los Créditos, al terminar el Programa. Ninguno tiene un video predeterminado — si se activan sin elegir un archivo, el Launcher bloquea "Iniciar canal" y avisa qué falta
+- ⏭️ **NextProgram** — Overlay animado (GIF, uno por programa, posicionado en el recuadro de vista previa) que anticipa qué sigue en el canal, 31 segundos antes del final REAL del bloque (Créditos si están activos, si no el Programa — Release 5.4.0). Reemplaza a los "enseguidas" post-programa (clip aparte, eliminado)
 - 🎵 **Música de Fondo** — Música ambiente durante la reproducción de programas (volumen al 8%)
 - 🖥️ **Modo Pantalla Completa Inmersivo** — Sin distracciones de interfaz, experiencia TV pura
 - 📡 **Overlay Visual CRT** — Efectos de scanlines y pantalla para esa sensación retro de televisor
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
-- 🆕 **ScreenBug de 3 fases** — Marca de agua animada con el logo del canal: aparición (GIF), estático (PNG) y salida (GIF, ahora a partir de 46 segundos antes del final del programa — Preview 2010.5.4.0.40), apareciendo/desapareciendo de forma instantánea en momentos específicos del programa. Los GIF se reproducen con `GifMovieDrawable`, basado en la API nativa `android.graphics.Movie` (sin librerías externas — Release 2009.5.1.0). Nuevo contenido de Mayo–Julio 2009 (Release 2009.5.1.0), Julio 2009–2011 (Release 2009.5.2.0)
+- 🆕 **ScreenBug de 3 fases** — Marca de agua animada con el logo del canal: aparición (GIF), estático (PNG) y salida (GIF, a partir de 46 segundos antes del final del bloque). Desde la Release 5.4.0, si el programa tiene Intro/Créditos activados, la aparición ocurre en la Intro y la salida en los Créditos — la cuenta de tiempo no se reinicia al cambiar de clip, "suma" la duración real de cada uno. Los GIF se reproducen con `GifMovieDrawable`, basado en la API nativa `android.graphics.Movie` (sin librerías externas — Release 2009.5.1.0). Nuevo contenido de Mayo–Julio 2009 (Release 2009.5.1.0), Julio 2009–2011 (Release 2009.5.2.0)
 - 🎄 **ScreenBug de Navidad** — Del 1 al 24 de diciembre (inclusive), la app usa automáticamente un set de ScreenBug con temática navideña, con el mismo comportamiento de 3 fases que el normal (Release 2010.5.3.0)
 - ⏸ **Pantalla "Ya Volvemos"** — Pantalla intersticial auténtica de "Volvemos en un momento"
 - 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
-- ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (StandaloneCommercial → Bumper → Programa), igual que cambiar de canal en TV real
+- ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Bumper → [Intro] → Programa), igual que cambiar de canal en TV real
 - ⚙️ **Pantalla de Configuración** — Accesible desde el botón de ajustes, con lista simple estilo Android Settings. Permite alternar música de fondo, efecto CRT y Forzar 4:3, y ajustar la duración del Screenbug y el intervalo entre comerciales — cada opción muestra su valor predeterminado
 - 🔄 **Actualizador integrado** — Desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub; si hay una versión más nueva, descarga el `.apk` con OkHttp (mostrando progreso y tamaño en vivo) y abre el instalador del sistema. Un switch "Habilitar versiones Preview" (desactivado por defecto) permite que también instale releases Preview, no solo estables. La pantalla del Actualizador calca el diseño nativo de "Actualización del sistema" de Android
 - 🔔 **Aviso de actualización al abrir la app** — Además de "Buscar actualizaciones" en Configuración, la app consulta en silencio al entrar y muestra un AlertDialog propio si hay una versión nueva (Release 2009.5.0.0)
@@ -67,10 +68,6 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 Pueden ser episodios de tu serie favorita, películas cortas, o cualquier contenido que quieras ver como si fuera un canal de TV. El formato recomendado es `.mp4`.
 
 > 🧪 **Alternativa (Experimental):** si activás "Habilitar funciones experimentales" en Configuración, la app abre en el Discovery Kids Launcher, donde podés elegir el video de cada programa con el selector de archivos del sistema — sin necesidad de renombrarlo ni copiarlo a Videos — y elegir cuántos programas querés (hasta 24). Si preferís el método clásico de abajo, dejá Experimental desactivado.
-## ⚠️ Nota técnica
-
-> Los videos de programas (`pro1–4.mp4`) deben estar en **resolución 480p o inferior**. De lo contrario tendras problemas de programación.
-
 **2. Renombrá los archivos exactamente así**
 
 ```
@@ -170,14 +167,22 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v5.3.0` *(Release · Era Doki 1.0 · Era 2010 · "Parque Imaginario")*
-> *Cambio de Era (2009→2010). BUG FIX definitivo del fadeOut/fadeIn de programas — causa raíz real esta vez: el fix anterior no contemplaba una reanudación (tras un corte comercial, volver de Configuración, etc.). Nuevo ScreenBug de Navidad (1–24 de diciembre), con el mismo comportamiento de 3 fases que el normal.*
+### 🚀 Última versión estable — `v5.4.0` *(Release · Era Doki 1.0 · Era 2010 · "Parque Imaginario")*
+> *NextProgram reposicionado en pantalla y ScreenBug/NextProgram ahora atados a Intro/Créditos (personalizados por programa, opcionales) en vez de siempre al Programa — sin reiniciar la cuenta de tiempo al cambiar de clip. Se eliminó StandaloneCommercial: los comerciales solo interrumpen Programas. 2 bug fixes de arranque: ANR al abrir la app, y la cantidad de programas quedándose vieja si el Launcher seguía en segundo plano.*
 
-- 🐛 **FadeOut/FadeIn de programas — bug definitivo.** El fix anterior calculaba el momento del fadeOut como si el video siempre arrancara desde el segundo 0, sin restar el punto real de reanudación — se rompía en cualquier programa con al menos un corte comercial (es decir, casi siempre). Corregido con el mismo cálculo que ya usaba correctamente el resto de la app.
-- 🎄 **Nuevo ScreenBug de Navidad** — del 1 al 24 de diciembre, mismo comportamiento de 3 fases que el normal, elegido automáticamente por fecha.
+- 🐛 **ANR "Discovery Kids no responde" al abrir la app** — la precarga de los GIFs de ScreenBug/NextProgram decodificaba hasta 8 GIFs de forma sincrónica en el hilo principal dentro de `onCreate()`; ahora corre en un hilo aparte.
+- 🐛 **Cantidad de programas desactualizada** — si `LiveDiscoveryKids` seguía vivo en segundo plano y la cantidad de programas cambiaba mientras tanto, la lista de reproducción quedaba con el valor viejo; `onResume()` ahora la reconstruye.
+- 🎯 **NextProgram reposicionado** — el overlay ocupaba toda la pantalla en vez del recuadro de vista previa; ahora se ubica ahí con `ConstraintLayout`.
+- ⏭️ **StandaloneCommercial eliminado** — los comerciales ahora solo interrumpen Programas en curso.
+- 🎬 **Intro y Créditos personalizados por programa** — opcionales, sin video predeterminado, configurables en Discovery Kids Launcher → Configuración de Programa. El ScreenBug de inicio se muestra en la Intro y el final (+ NextProgram) en los Créditos, cuando están activos — sin reiniciar la cuenta de tiempo al cambiar de clip.
+- ✅ **Validación antes de iniciar el canal** — el Launcher bloquea "Iniciar canal" si algo activado (Programa, Intro, Créditos, ya_regresa/continuamos personalizados) no tiene un video elegido.
 
 <details>
 <summary>📜 Versiones estables anteriores</summary>
+
+**`v5.3.0`** *(Release · Era Doki 1.0 · Era 2010 · "Parque Imaginario")* — Cambio de Era (2009→2010). BUG FIX definitivo del fadeOut/fadeIn de programas — causa raíz real esta vez: el fix anterior no contemplaba una reanudación (tras un corte comercial, volver de Configuración, etc.). Nuevo ScreenBug de Navidad (1–24 de diciembre), con el mismo comportamiento de 3 fases que el normal.
+- 🐛 FadeOut/FadeIn de programas — bug definitivo. El fix anterior calculaba el momento del fadeOut como si el video siempre arrancara desde el segundo 0, sin restar el punto real de reanudación. Corregido con el mismo cálculo que ya usaba correctamente el resto de la app.
+- 🎄 Nuevo ScreenBug de Navidad — del 1 al 24 de diciembre, elegido automáticamente por fecha.
 
 **`v5.2.1`** *(Bug Fix · Era Doki 1.0 · Era 2009 · "Parque Imaginario")* — TextureView eliminado por completo (motor de video, switch "Recortar 4:3" y AlertDialog de 720p+), 2 bugs de arrastre con causa raíz encontrada — el contenedor de video ya no cambia de forma con "Forzar 4:3" (siempre 4:3), y el programa ahora sí hace fadeOut al terminar — y rediseño: la ActionBar de Configuración deja de ser un header hecho a mano, y el logo del Launcher pasa de la ActionBar al cuerpo de la pantalla.
 - 🗑️ **TextureView eliminado por completo** — motor de video, switch "Recortar 4:3" y el AlertDialog de 720p+ que lo recomendaba. `DkVideoView` vuelve a ser una sola clase, envoltorio de `VideoView` clásico.
@@ -207,8 +212,8 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 ## ⚠️ Notas Importantes
 
-- **Este build (Preview 2010.5.4.0.40) no incluye los archivos de arte del overlay NextProgram** — hay que agregar `nextprogram1.gif`, `nextprogram2.gif`, `nextprogram3.gif` y `nextprogram4.gif` a `res/drawable/` antes de compilar. Ver [`RELEASE_NOTES.md`](./RELEASE_NOTES.md) para el detalle.
-- **Los videos de programas (`pro1–4.mp4`) en resolución 720p o superior pueden hacer que el ScreenBug quede oculto detrás del video.** Esto es una limitación conocida de `VideoView` (aceleración de hardware en resoluciones altas). Se probó un motor de video alternativo (TextureView) como workaround entre las Releases 2009.5.0.0 y 2009.5.2.0, pero se eliminó por completo en la 2009.5.2.1 por los problemas que traía — se recomienda usar programas en 480p o inferior. El contenedor de video siempre está en proporción 4:3; el switch "Forzar 4:3" (Configuración) decide si el video se estira para llenarlo exacto o se ajusta preservando su proporción real sin estirarse (Release 2009.5.2.1 — causa raíz real, corrige un diseño invertido de las dos Releases anteriores).
+- **Este build no incluye los archivos de arte del overlay NextProgram** — hay que agregar `nextprogram1.gif`, `nextprogram2.gif`, `nextprogram3.gif` y `nextprogram4.gif` a `res/drawable/` antes de compilar. Ver [`RELEASE_NOTES.md`](./RELEASE_NOTES.md) para el detalle de tamaño/posición.
+- **Intro y Créditos (Release 5.4.0) no tienen video predeterminado.** Si los activás en Configuración de Programa sin elegir un archivo, el Launcher bloquea "Iniciar canal" y te avisa cuáles faltan — no se saltean en silencio.
 - La primera sincronización de Gradle puede tardar varios minutos según la velocidad de conexión.
 - Gradle descargará todas las dependencias necesarias automáticamente.
 - Otorgá los permisos de almacenamiento si el sistema lo solicita.

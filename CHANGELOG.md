@@ -6,6 +6,64 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2010.5.4.0] — 🚀 Release · Era Doki 1.0 · Era 2010 · "Parque Imaginario" — 2026-07-24
+
+> *Consolida la Preview 2010.5.4.0.40 (NextProgram, ScreenBug final a 46s) como Release estable, y agrega lo pedido para el 24-07-26: 2 bug fixes de arranque (ANR, cantidad de programas), reposicionamiento real de NextProgram, eliminación de StandaloneCommercial, e Intro/Créditos personalizados por programa — con ScreenBug/NextProgram atados a ellos sin reiniciar la cuenta.*
+
+### 🐛 BUG FIX — ANR "Discovery Kids no responde" al abrir la app
+
+Causa raíz: `preloadScreenBugAssets()` y `preloadNextProgramGifs()` decodificaban hasta 8 GIFs (`Movie.decodeStream()`) de forma **sincrónica en el hilo principal**, dentro de `onCreate()` — la Preview 2010.5.4.0.40 sumó 4 GIFs más al mismo hilo (los de NextProgram), empujando el tiempo total por encima de lo que tolera Android antes de mostrar el diálogo "no responde". `GifMovieDrawable` no depende del hilo desde el que se construye (solo crea un `Handler` apuntando al Looper principal, válido desde cualquier hilo) — ahora ambas funciones decodifican en un hilo aparte y solo postean la asignación final a los campos de la Activity con `runOnUiThread()`.
+
+### 🐛 BUG FIX — NextProgram no se ubicaba en el recuadro ni animaba
+
+La Preview 2010.5.4.0.40 había agregado el `ImageView` de NextProgram a pantalla completa (`match_parent`), asumiendo que el GIF final traería compuesto todo el frame — confirmado en dispositivo que estaba mal. Ahora se ubica con 4 guías porcentuales de `ConstraintLayout` (~46%–94% horizontal, ~9%–53% vertical del marco 4:3), calculadas sobre la imagen de referencia que envió Keyler, con `scaleType="fitXY"`. La animación de aparición (fade-in, 500 ms) no tenía ningún problema de código — el `ImageView` fuera de lugar hacía parecer que "no animaba".
+
+### 🐛 BUG FIX — LiveDiscoveryKids seguía mostrando 4 programas con menos elegidos
+
+No se encontró un bug estático en `totalProgramCount()`/`buildPlaylist()` en sí (leen `SettingsManager.getProgramCount()` correctamente) — el camino más probable, dado que `DiscoveryKidsLauncherActivity` no cierra su propia Activity al iniciar el canal (`startActivity()` sin `finish()`): si `LiveDiscoveryKids` queda vivo en la pila de tareas y el usuario cambia la cantidad de programas y vuelve a esa misma instancia (por Recientes, sin pasar por `onCreate()` de nuevo), el `playlist` construido con la cantidad VIEJA nunca se actualizaba. `onResume()` ahora reconstruye `playlist` si la cantidad cambió desde la última construcción (`playlistBuiltForCount`), sin interrumpir el clip que esté sonando en ese momento.
+> Si el bug persiste después de este fix con otra causa, Keyler: pasame el logcat del momento exacto en que pasa — con el fix de arriba debería quedar resuelto para el escenario más probable, pero si hay otro camino que lo dispara, con logs lo encuentro más rápido que adivinando en el código.
+
+### ⏭️ Eliminado: StandaloneCommercial
+
+Ya no existe un ítem propio del playlist para los comerciales sueltos entre Bumper y Programa. El ciclo pasa de `Bumper → StandaloneCommercial → Programa` a `Bumper → [Intro] → Programa → [Créditos]` — los comerciales ahora **solo** aparecen interrumpiendo un Programa en curso (`playCommercial`, sin cambios en esa lógica).
+
+### 🎬 Nuevo: Intro y Créditos personalizados por programa
+
+Nueva sección en Discovery Kids Launcher → Configuración de Programa (por cada programa, junto a ya_regresa/continuamos personalizados): un switch de activar + un selector de archivo (SAF), sin video predeterminado incluido en la app.
+
+- **Intro**: aparece después del Bumper y antes del Programa. Solo se quita al terminar su propio video.
+- **Créditos**: aparecen al terminar el Programa. Solo se quitan al terminar su propio video.
+- Ambos son opcionales: si el usuario no los activó, o los activó pero no eligió un archivo, no se agregan al playlist (`hasValidIntro()`/`hasValidCreditos()`) — y el Launcher ahora **bloquea "Iniciar canal"** avisando cuáles faltan (ver bug fix de validación más abajo), en vez de saltearlos en silencio como antes hacía un programa sin `.mp4`.
+
+### 🔗 ScreenBug / NextProgram atados a Intro/Créditos, sin reiniciar la cuenta
+
+Pedido explícito: *"el screenbug de inicio debería aparecer en el Intro, y el screenbug final en los Créditos — y que la Intro, el Programa y los Créditos sumen, sean una sola duración, sin que la cuenta se reinicie ni se detenga al cambiar de clip."*
+
+- **ScreenBug inicio (fase 1/2, `screenbug_start`/`screenbug`)**: si hay Intro válida, la cuenta de 20s arranca ahí. Si la Intro dura menos de 20s, al pasar al Programa la cuenta CONTINÚA exactamente donde quedó (usa la duración real de la Intro, `lastIntroDurationMs`, no vuelve a 0) — nunca se reinicia ni se detiene, aunque la Intro sea muy corta.
+- **ScreenBug final (fase 3, `screenbug_end`) + NextProgram**: si hay Créditos válidos, NO corren en el Programa — se difieren a los Créditos, agendados con la duración REAL de los créditos (no la del programa) apenas se conoce (su propio `onPrepared`).
+- Sin Intro ni Créditos: comportamiento 100% igual que antes (cero riesgo de regresión para el caso clásico).
+- Implementación: no fue necesario precalcular la duración total del bloque de antemano — cada clip nuevo RECALCULA cuánto falta de cada cuenta usando la duración real del clip anterior, en vez de depender de que un mismo timer sobreviva el cambio de clip (eso sí hubiera reintroducido el bug ya solucionado antes de "el ScreenBug se reinicia" al pasar a segundo plano, porque los timers de Handler no se pausan cuando el video sí).
+- El resume desde segundo plano (`onResume()`) también quedó cubierto para Créditos: si la app vuelve mientras estaban sonando, se reagenda la fase 3 + NextProgram con la posición y duración correctas.
+
+### ✅ Nuevo: validación antes de iniciar el canal
+
+`DiscoveryKidsLauncherActivity` ahora revisa, antes de arrancar `LiveDiscoveryKids`, que todo lo activado en Configuración de Programa tenga un video real: Programas (con el mismo chequeo de archivo/MediaStore de `pro{N}.mp4` que usa el canal), Intro, Créditos, ya_regresa y continuamos personalizados. Si falta algo, un diálogo lista exactamente qué programa y qué campo — y no deja iniciar el canal hasta corregirlo.
+
+### 🕐 Cambios de timing
+
+- ScreenBug: 5s → 4,9s (`SCREENBUG_START_ESTIMATED_DURATION_MS` y `SCREENBUG_END_VISIBLE_DURATION_MS`) — evita el salto visible de loop del GIF al inicio.
+
+### 📝 Otras notas
+
+- **"Se ve 1ms del clip anterior tras la pantalla negra al cambiar de video":** no se tocó — coincidimos con la sospecha de Keyler de que es una particularidad de `VideoView`/el decoder de Android en el cambio de superficie, no algo controlable desde la lógica de la app. Si en algún momento se vuelve más notorio o hay pistas de que es evitable, avisame y lo investigo a fondo.
+- Se quitó del README la advertencia de usar programas en 480p o inferior (pedido explícito).
+
+### ⚠️ Alcance
+
+> Cambios de código en `LiveDiscoveryKids.kt` (preload en background, NextProgram reposicionado, `PlayItem.StandaloneCommercial` eliminado, `PlayItem.Intro`/`PlayItem.Creditos` nuevos, `playIntro()`/`playCreditos()`, `scheduleMultipleScreenbugs()`/`scheduleSegmentLogic()` reescritas para el timing de bloque, `playlistBuiltForCount` + reconstrucción en `onResume()`), `SettingsManager.kt` (keys de Intro/Créditos), `DiscoveryKidsLauncherActivity.kt` (filas de Intro/Créditos, `validateChannelSetup()`), `item_program_config.xml` (filas nuevas), `activity_main.xml` (NextProgram con `ConstraintLayout`). `build.gradle`: `versionName` a `2010.5.4.0` (Release estable, sin número de build).
+
+---
+
 ## [2010.5.4.0.40] — 🧪 Preview · Era Doki 1.0 · Era 2010 · "Parque Imaginario" — 2026-07-22
 
 > *Reemplazo del "enseguida" post-programa por NextProgram: un overlay GIF que se superpone al programa mismo, no un clip aparte. El ScreenBug final ahora empieza 46s antes del final del programa (antes 20s), dejando lugar a que NextProgram aparezca 15s después, a los 31s antes del final. De paso, investigación a fondo destapó un bug de compilación arrastrado desde la 4.6.0: los 11 archivos de extensión que esa Release decía haber eliminado en realidad seguían en el proyecto, duplicando cada función de `LiveDiscoveryKids.kt` y rompiendo la build.*

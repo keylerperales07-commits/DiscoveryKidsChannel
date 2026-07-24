@@ -36,7 +36,7 @@ import androidx.core.content.ContextCompat
 import java.io.File
 
 /**
- * Preview 2006.4.1.0.21
+ * Preview 2010.5.4.0.40
  *
  * Discovery Kids - TV Simulator • Era Doki 1.0 (2005–2009) • Preview Era 2006
  *

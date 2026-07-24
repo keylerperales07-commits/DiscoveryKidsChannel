@@ -41,13 +41,20 @@ import java.io.File
  * Discovery Kids - TV Simulator • Era Doki 1.0 (2005–2009) • Preview Era 2006
  *
  * Playlist sequence (all transitions: FadeOut 500 ms / FadeIn 1 s):
- *   StandaloneCommercial → Bumper → Programa → StandaloneCommercial → Bumper → Programa → ...
+ *   Bumper → [Intro] → Programa → [Créditos] → Bumper → [Intro] → Programa → [Créditos] → ...
+ *   (Intro/Créditos son opcionales por programa — ver hasValidIntro()/hasValidCreditos())
  *
  * Preview 2010.5.4.0.40 — REEMPLAZO DE ENSEGUIDA: el clip "enseguida" post-
- * programa (que antes ocupaba un ítem propio del playlist, entre el fin del
- * programa y el StandaloneCommercial) se elimina. En su lugar, "nextprogram"
- * es un GIF que se superpone AL PROGRAMA MISMO cerca de su final — ver
- * NEXTPROGRAM_SHOW_BEFORE_MS / scheduleNextProgramBug().
+ * programa (que antes ocupaba un ítem propio del playlist) se elimina. En su
+ * lugar, "nextprogram" es un GIF que se superpone AL PROGRAMA MISMO cerca de
+ * su final — ver NEXTPROGRAM_SHOW_BEFORE_MS / scheduleNextProgramBug().
+ *
+ * Release 5.4.0 — ELIMINACIÓN DE STANDALONECOMMERCIAL: los comerciales ya no
+ * tienen un ítem propio del playlist entre Bumper y Programa; ahora SOLO
+ * aparecen interrumpiendo un programa en curso (playCommercial/calcBreaks,
+ * sin cambios). NUEVO: Intro y Créditos, opcionales por programa (activados
+ * y elegidos por el usuario en Configuración de Programa, Discovery Kids
+ * Launcher) — ver playIntro()/playCreditos()/resolveIntroUri()/resolveCreditosUri().
  *
  * ya_regresa assignment: determinístico por índice de programa (0-based).
  *   programa 0 (pro1) → ya_regresa1/continuamos1
@@ -57,8 +64,8 @@ import java.io.File
  *
  * Programs (pro1..pro4.mp4) are read from the user's Movies folder.
  * Bumpers (bumper.mp4–bumper5.mp4) son aleatorios, sin repetir el mismo dos veces seguidas.
- * StandaloneCommercial: 4 comerciales (comercial1–4.mp4), aleatorios sin repetir el mismo
- *   dos veces seguidas. comercial1/comercial2 = Era 2006 (Preview 4.1.0.10);
+ * Los comerciales dentro del programa: 4 comerciales (comercial1–4.mp4), aleatorios sin
+ *   repetir el mismo dos veces seguidas. comercial1/comercial2 = Era 2006 (Preview 4.1.0.10);
  *   comercial3/comercial4 agregados en esta Preview (4.1.0.11).
  * Commercial scheduling: 1 break per every 3–9 minutes of program content, at random intervals.
  * Missing programs are skipped automatically.
@@ -239,18 +246,32 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // ── Playlist definition ────────────────────────────────────────────────────
     internal sealed class PlayItem {
         object Bumper : PlayItem()
-        object StandaloneCommercial : PlayItem()
+        data class Intro(val programIndex: Int) : PlayItem()      // Release 5.4.0 — opcional, por programa
         data class Program(val index: Int) : PlayItem()   // 0-based → pro(n+1).mp4
+        data class Creditos(val programIndex: Int) : PlayItem()   // Release 5.4.0 — opcional, por programa
     }
 
     // Release 2009.5.0.0 — antes era un `val` fijo de 4 programas. Ahora se
     // arma en onCreate() vía buildPlaylist(): con Experimental desactivado
     // sigue siendo el ciclo clásico de 4 programas (pro1–pro4.mp4); con
-    // Experimental activado, se repite el ciclo StandaloneCommercial→Bumper→
-    // Programa una vez por cada uno de los N programas que eligió el usuario
-    // (SettingsManager.getProgramCount(), 1–24).
-    // Preview 2010.5.4.0.40: se quitó "Enseguida" del ciclo — ver nextprogram.
+    // Experimental activado, se repite el ciclo Bumper→[Intro]→Programa→
+    // [Créditos] una vez por cada uno de los N programas que eligió el usuario
+    // (SettingsManager.getProgramCount(), 1–24). Intro/Créditos son opcionales
+    // — solo se incluyen si el usuario los activó Y eligió un video (ver
+    // hasValidIntro()/hasValidCreditos()).
+    // Release 5.4.0: se quitó StandaloneCommercial del ciclo — los comerciales
+    // ahora solo aparecen DENTRO de los programas (ver playCommercial()).
     internal var playlist: List<PlayItem> = emptyList()
+
+    // Release 5.4.0 — BUG FIX: cantidad de programas con la que se construyó
+    // `playlist` la última vez. Si LiveDiscoveryKids queda vivo en segundo
+    // plano (el usuario vuelve al Launcher con el botón Atrás sin cerrar esta
+    // Activity, cambia la cantidad de programas, y vuelve a esta misma
+    // instancia por Recientes en vez de crear una nueva) `playlist` queda
+    // armado con la cantidad VIEJA para siempre, porque onCreate() —donde se
+    // llama buildPlaylist()— no se vuelve a ejecutar. Se compara contra
+    // totalProgramCount() en onResume() y se reconstruye si cambió.
+    internal var playlistBuiltForCount = -1
 
     internal var playlistIndex = 0
     internal var currentProgramIndex = 0
@@ -271,6 +292,12 @@ class LiveDiscoveryKids : AppCompatActivity() {
     internal var breakQueue       = mutableListOf<Int>()   // upcoming break positions in ms
     internal var lastCommercialRes: Int = -1
     internal var lastBumperRes: Int = -1
+    // Release 5.4.0 — duración real (ms) de la última Intro reproducida.
+    // Se captura en playIntro() (onPrepared del videoView) y se consume una
+    // sola vez en scheduleSegmentLogic() del primer segmento del programa
+    // siguiente, para que la cuenta de 20s de la fase 1/2 del ScreenBug
+    // incluya lo que ya duró la Intro — ver scheduleMultipleScreenbugs().
+    internal var lastIntroDurationMs: Int = 0
     // ya_regresa determinístico: cada programa tiene asignado su propio ya_regresa fijo.
     // programa 0 (pro1) → ya_regresa1 | programa 1 (pro2) → ya_regresa2 | etc.
     // Se indexa por currentProgramIndex en playCommercial().
@@ -310,12 +337,17 @@ class LiveDiscoveryKids : AppCompatActivity() {
         //     cuando aparece screenbug_end (programDuration - 20s)
         //   screenbug_end (GIF): mostrar 20s antes del final, ocultar al final del programa
         internal const val SCREENBUG_START_DELAY_MS = 20_000L
-        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 5_000L  // Se oculta 15s después de mostrarse (antes: 5s)
+        // Release 5.4.0: 5s → 4,9s. El GIF de screenbug_start/screenbug_end dura
+        // ~5s exactos; a los 5s justos el sistema a veces ya arrancó el loop del
+        // GIF de nuevo antes de que el alpha llegue a 0, mostrándose un
+        // "salto" de un frame del inicio del loop siguiente. Ocultarlo 100ms
+        // antes evita ese salto.
+        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 4_900L  // Se oculta 15s después de mostrarse (antes: 5s → 4,9s en 5.4.0)
         internal const val SCREENBUG_MID_DELAY_AFTER_START_MS = 0L           // El PNG aparece inmediatamente al ocultarse screenbug_start (antes: 15s de espera)
         // Preview 2010.5.4.0.40: 20s → 46s antes del final, para dejar lugar
         // al nextprogram (aparece 15s después, a los 31s antes del final).
         internal const val SCREENBUG_END_SHOW_BEFORE_MS = 46_000L          // Mostrar screenbug_end 46s antes del final
-        internal const val SCREENBUG_END_VISIBLE_DURATION_MS = 5_000L      // Se oculta 5s después de mostrarse (antes se quedaba visible hasta el final del segmento, por lo que el GIF se veía repetirse en loop)
+        internal const val SCREENBUG_END_VISIBLE_DURATION_MS = 4_900L      // Se oculta 4,9s después de mostrarse (antes 5s → 4,9s en 5.4.0, ver comentario arriba)
 
         // Preview 2010.5.4.0.40 — NUEVO: overlay "nextprogram" (GIF), reemplaza
         // a los enseguida post-programa. Se superpone sobre el programa mismo
@@ -323,6 +355,13 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // programa (sin cortes comerciales pendientes) — ver scheduleNextProgramBug().
         internal const val NEXTPROGRAM_SHOW_BEFORE_MS = 31_000L   // Aparece 31s antes del final real del programa
         internal const val NEXTPROGRAM_ANIM_MS = 500L              // Duración del fade-in (imagen de referencia enviada por Keyler)
+
+        // Release 5.4.0 — "segmentEndMs" grande, usado al llamar
+        // scheduleMultipleScreenbugs() desde playIntro(): la Intro no tiene
+        // una fase 3 propia (suppressEndPhase=true), así que su duración
+        // real es irrelevante para esa llamada — solo hace falta un número
+        // mayor a cualquier duración real posible de video.
+        internal const val ONE_DAY_MS = 24 * 60 * 60 * 1000
 
         /** No commercial break is scheduled within this many ms of the program end. */
         internal const val BREAK_CUTOFF_MS = 3 * 60 * 1_000L         // 3 min
@@ -455,6 +494,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // DiscoveryKidsLauncherActivity); con Experimental desactivado se
         // mantiene el comportamiento clásico de 4 programas fijos.
         playlist = buildPlaylist()
+        playlistBuiltForCount = totalProgramCount()
 
         screenBug = findViewById(R.id.screenBug)
         screenBug.alpha = 0f
@@ -583,6 +623,19 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // aunque no sea un backgrounding real del sistema.
         applySettings()
 
+        // Release 5.4.0 — BUG FIX (ver comentario de playlistBuiltForCount):
+        // si la cantidad de programas cambió mientras esta instancia seguía
+        // viva en segundo plano, el playlist queda desactualizado. No se
+        // toca el clip que esté sonando ahora mismo — solo se reconstruye
+        // `playlist` para que el PRÓXIMO advance() ya use la cantidad nueva.
+        val currentCount = totalProgramCount()
+        if (playlist.isNotEmpty() && playlistBuiltForCount != currentCount) {
+            Log.w(TAG, "Cantidad de programas cambió en segundo plano (antes=$playlistBuiltForCount, ahora=$currentCount) — reconstruyendo playlist")
+            playlist = buildPlaylist()
+            playlistBuiltForCount = currentCount
+            if (playlist.isNotEmpty()) playlistIndex = playlistIndex % playlist.size
+        }
+
         if (!pausedByLifecycle) return
         pausedByLifecycle = false
 
@@ -620,7 +673,17 @@ class LiveDiscoveryKids : AppCompatActivity() {
                     advance(); return
                 }
                 Log.d(TAG, "onResume – reanudando clip tipo=$currentItemType en ${currentClipPositionMs}ms")
-                resumeUriWithSeek(uri, currentClipPositionMs, onComplete = onComplete)
+                // Release 5.4.0: si lo que se estaba reanudando eran los
+                // Créditos, hay que volver a agendar la fase 3 del ScreenBug
+                // + NextProgram con la duración real de este clip (recién
+                // disponible en su propio onPrepared) y el elapsed correcto
+                // — mismo patrón de "restaurar si ya debería estar visible"
+                // que el resto del sistema, para que no se note el paso por
+                // segundo plano.
+                val onPrepared: ((Int) -> Unit)? = if (currentItemType == "creditos") {
+                    { durationMs -> scheduleCreditosOverlays(durationMs, elapsed = currentClipPositionMs.toLong()) }
+                } else null
+                resumeUriWithSeek(uri, currentClipPositionMs, onPrepared = onPrepared, onComplete = onComplete)
             }
             else -> {
                 Log.d(TAG, "onResume – sin estado de clip guardado (tipo=$currentItemType) → reiniciando ítem")
@@ -685,7 +748,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // sobre esta misma clase y su mismo estado de instancia:
     //
     //   ChannelPlaylist.kt          → advance, playBumper,
-    //                                  playStandaloneCommercial,
+    //                                  playIntro, playCreditos,
     //                                  goToAdjacentProgram, findAvailableProgramIndex
     //   ChannelProgramPlayback.kt   → playProgram, beginProgramSegment,
     //                                  scheduleSegmentLogic, calcBreaks
@@ -748,11 +811,13 @@ class LiveDiscoveryKids : AppCompatActivity() {
  *
  * Funciones de extensión de LiveDiscoveryKids: el driver principal de la
  * playlist (advance()), los tipos de clip "de relleno" entre programas
- * (Bumper, StandaloneCommercial), y la navegación Prev/Next que salta
+ * (Bumper, Intro, Créditos), y la navegación Prev/Next que salta
  * directo entre programas.
  *
  * Preview 2010.5.4.0.40: se quitó Enseguida post-programa de este grupo —
  * ver nextprogram (overlay sobre el programa, no un clip aparte).
+ * Release 5.4.0: se quitó StandaloneCommercial (los comerciales ahora solo
+ * interrumpen programas en curso) y se agregaron Intro/Créditos.
  *
  * La reproducción del programa en sí (playProgram, beginProgramSegment,
  * scheduleSegmentLogic, calcBreaks) vive en ChannelProgramPlayback.kt; el
@@ -772,9 +837,10 @@ class LiveDiscoveryKids : AppCompatActivity() {
 internal fun LiveDiscoveryKids.advance() {
     if (playlistIndex >= playlist.size) playlistIndex = 0
     when (val item = playlist[playlistIndex]) {
-        is LiveDiscoveryKids.PlayItem.Bumper               -> playBumper()
-        is LiveDiscoveryKids.PlayItem.StandaloneCommercial -> playStandaloneCommercial()
-        is LiveDiscoveryKids.PlayItem.Program              -> playProgram(item.index)
+        is LiveDiscoveryKids.PlayItem.Bumper   -> playBumper()
+        is LiveDiscoveryKids.PlayItem.Intro    -> playIntro(item.programIndex)
+        is LiveDiscoveryKids.PlayItem.Program  -> playProgram(item.index)
+        is LiveDiscoveryKids.PlayItem.Creditos -> playCreditos(item.programIndex)
     }
 }
 
@@ -803,28 +869,116 @@ internal fun LiveDiscoveryKids.playBumper() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// Standalone Commercial – comercial en la programación lineal
-// Es independiente del bloque publicitario (playCommercial) que interrumpe
-// programas: no tiene ya_volvemos ni lógica de breakQueue.
-// Beta 3.0.0.2
+// Intro / Créditos — Release 5.4.0
+// Clips opcionales por programa, elegidos por el usuario en Configuración de
+// Programa (Discovery Kids Launcher). Sin lógica de cortes comerciales (los
+// comerciales solo interrumpen Programas).
+//
+// ScreenBug / NextProgram (ver comentario largo en scheduleMultipleScreenbugs()):
+//   - La Intro SÍ dispara la fase 1/2 del ScreenBug (screenbug_start/mid) al
+//     arrancar — es el inicio real del bloque Intro→Programa→[Créditos].
+//   - Los Créditos SÍ disparan la fase 3 (screenbug_end) + NextProgram al
+//     acercarse SU final — porque son el verdadero final del bloque cuando
+//     están activos (si no hay Créditos, esto sigue pasando en el Programa,
+//     sin cambios).
+//   - Ninguna de las dos cuentas se reinicia al cambiar de clip: la de 20s
+//     de la Intro sigue en el Programa si la Intro fue más corta, y la de
+//     46s de los Créditos usa la duración real de los créditos, no la del
+//     programa.
+//
+// Solo terminan al terminar su propio video (nunca se cortan antes) — igual
+// que cualquier otro playUriWithTransition(). Solo se agregan al playlist
+// (ver buildPlaylist()) si el usuario los activó Y ya eligió un video; si el
+// usuario desactivó Experimental o borró la selección DESPUÉS de armado el
+// playlist de esta sesión, el fallback de abajo (uri == null) los saltea sin
+// romper el ciclo, igual que un programa sin archivo.
 // ══════════════════════════════════════════════════════════════════════════
 
-internal fun LiveDiscoveryKids.playStandaloneCommercial() {
+internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
     cancelAllTasks()
     setBugAlpha(0f)
     setNextProgramBugAlpha(0f)
     stopBgMusic()
     isInProgramSegment  = false
     isInCommercialBlock = false
-    currentItemType     = "standaloneCommercial"
+    currentItemType      = "intro"
 
-    val candidates = LiveDiscoveryKids.COMMERCIALS.filter { it != lastCommercialRes }.ifEmpty { LiveDiscoveryKids.COMMERCIALS }
-    val chosenCommercial = candidates.random()
-    lastCommercialRes  = chosenCommercial
+    val uri = resolveIntroUri(programIndex)
+    if (uri == null) {
+        Log.w(LiveDiscoveryKids.TAG, "Intro del programa ${programIndex + 1} sin video válido – skipping")
+        playlistIndex++
+        advance()
+        return
+    }
 
-    Log.d(LiveDiscoveryKids.TAG, "▶ STANDALONE COMMERCIAL [res=$chosenCommercial]")
+    Log.d(LiveDiscoveryKids.TAG, "▶ INTRO [programa=${programIndex + 1}, uri=$uri]")
 
-    playUriWithTransition(rawUri(chosenCommercial)) {
+    // Release 5.4.0: el ScreenBug de inicio (fase 1/2) arranca acá — recién
+    // empieza el bloque Intro→Programa→[Créditos]. segmentEndMs se pasa
+    // "infinito" (1 día) y suppressEndPhase=true porque la fase 3
+    // (screenbug_end) NUNCA corresponde durante la Intro, sin importar
+    // cuánto dure — solo al final real del bloque (programa o créditos).
+    // Si la Intro dura más de 20s, esto ya se ve DURANTE la Intro; si dura
+    // menos, playProgram() retoma la cuenta exactamente donde quedó (ver
+    // lastIntroDurationMs / scheduleSegmentLogic()) — nunca se reinicia.
+    playUriWithTransition(
+        uri,
+        onPrepared = { durationMs ->
+            lastIntroDurationMs = durationMs
+            scheduleMultipleScreenbugs(
+                segmentStartMs = 0,
+                segmentEndMs = LiveDiscoveryKids.ONE_DAY_MS,
+                elapsed = 0L,
+                suppressEndPhase = true
+            )
+        }
+    ) {
+        playlistIndex++
+        advance()
+    }
+}
+
+/**
+ * Release 5.4.0 — agenda el ScreenBug final (fase 3, suprimiendo 1/2 porque
+ * ya se mostraron en la Intro o en el propio programa) y NextProgram sobre
+ * los Créditos, usando la duración REAL de los créditos (recién conocida
+ * en su propio onPrepared) en vez de la del programa. Compartida entre
+ * playCreditos() (arranque normal) y el resume genérico de onResume()
+ * (currentItemType == "creditos", ver resumeUriWithSeek()).
+ */
+private fun LiveDiscoveryKids.scheduleCreditosOverlays(creditosDurationMs: Int, elapsed: Long) {
+    scheduleMultipleScreenbugs(
+        segmentStartMs = 0,
+        segmentEndMs = creditosDurationMs,
+        elapsed = elapsed,
+        suppressStartMidPhases = true
+    )
+    scheduleNextProgramBug(0, creditosDurationMs, elapsed, isFinalSegment = true)
+}
+
+internal fun LiveDiscoveryKids.playCreditos(programIndex: Int) {
+    cancelAllTasks()
+    setBugAlpha(0f)
+    setNextProgramBugAlpha(0f)
+    stopBgMusic()
+    isInProgramSegment  = false
+    isInCommercialBlock = false
+    currentItemType      = "creditos"
+
+    val uri = resolveCreditosUri(programIndex)
+    if (uri == null) {
+        Log.w(LiveDiscoveryKids.TAG, "Créditos del programa ${programIndex + 1} sin video válido – skipping")
+        playlistIndex++
+        advance()
+        return
+    }
+
+    Log.d(LiveDiscoveryKids.TAG, "▶ CRÉDITOS [programa=${programIndex + 1}, uri=$uri]")
+
+    playUriWithTransition(
+        uri,
+        onPrepared = { durationMs -> scheduleCreditosOverlays(durationMs, elapsed = 0L) }
+    ) {
         playlistIndex++
         advance()
     }
@@ -845,7 +999,7 @@ internal fun LiveDiscoveryKids.playStandaloneCommercial() {
 //   nunca arranca.
 //
 // Solución: Prev / Next se comportan como un cambio de canal — van directo al
-// programa sin pasar por StandaloneCommercial → Bumper. Ese bloque ya ocurre
+// programa sin pasar por Bumper → [Intro]. Ese bloque ya ocurre
 // naturalmente cuando el programa termine por su propio onCompletionListener.
 // playlistIndex se fija en el PlayItem.Program para que advance() continúe
 // correctamente desde el siguiente ciclo al terminar el programa.
@@ -865,20 +1019,47 @@ internal fun LiveDiscoveryKids.totalProgramCount(): Int =
     if (SettingsManager.isExperimentalEnabled(this)) SettingsManager.getProgramCount(this) else 4
 
 /**
- * Release 2009.5.0.0 — arma el playlist: Bumper → StandaloneCommercial →
- * Programa(i), repetido una vez por cada programa (ver totalProgramCount()).
- * Reemplaza al `val playlist` fijo de 4 ciclos que existía antes de esta Release.
+ * Release 5.4.0 — true si el programa [index] tiene una Intro válida para
+ * reproducir: el usuario la activó Y ya eligió un video (a diferencia de
+ * ya_regresa/continuamos, Intro/Créditos NO tienen un video predeterminado
+ * incluido en la app — si no hay Uri elegida, no hay nada que reproducir).
+ * Solo aplica con Experimental activado, igual que el resto de la
+ * configuración por programa.
+ */
+internal fun LiveDiscoveryKids.hasValidIntro(index: Int): Boolean =
+    SettingsManager.isExperimentalEnabled(this) &&
+        SettingsManager.isIntroEnabled(this, index) &&
+        !SettingsManager.getIntroUri(this, index).isNullOrBlank()
+
+/** Release 5.4.0 — análogo a hasValidIntro() pero para Créditos. */
+internal fun LiveDiscoveryKids.hasValidCreditos(index: Int): Boolean =
+    SettingsManager.isExperimentalEnabled(this) &&
+        SettingsManager.isCreditosEnabled(this, index) &&
+        !SettingsManager.getCreditosUri(this, index).isNullOrBlank()
+
+/**
+ * Release 2009.5.0.0 — arma el playlist: Bumper → Programa(i), repetido una
+ * vez por cada programa (ver totalProgramCount()). Reemplaza al `val
+ * playlist` fijo de 4 ciclos que existía antes de esta Release.
  *
  * Preview 2010.5.4.0.40 — se quitó PlayItem.Enseguida del ciclo (el
  * "enseguida" post-programa ya no es un ítem del playlist; ver nextprogram,
  * el overlay que lo reemplaza dentro de playProgram/scheduleSegmentLogic).
+ *
+ * Release 5.4.0:
+ *   - Se quitó PlayItem.StandaloneCommercial del ciclo — los comerciales
+ *     ahora solo aparecen DENTRO de los programas (playCommercial).
+ *   - Se agregan PlayItem.Intro / PlayItem.Creditos, condicionales por
+ *     programa (ver hasValidIntro()/hasValidCreditos()): Bumper → [Intro] →
+ *     Programa → [Créditos].
  */
 internal fun LiveDiscoveryKids.buildPlaylist(): List<LiveDiscoveryKids.PlayItem> {
     val items = mutableListOf<LiveDiscoveryKids.PlayItem>()
     repeat(totalProgramCount()) { i ->
         items.add(LiveDiscoveryKids.PlayItem.Bumper)
-        items.add(LiveDiscoveryKids.PlayItem.StandaloneCommercial)
+        if (hasValidIntro(i)) items.add(LiveDiscoveryKids.PlayItem.Intro(i))
         items.add(LiveDiscoveryKids.PlayItem.Program(i))
+        if (hasValidCreditos(i)) items.add(LiveDiscoveryKids.PlayItem.Creditos(i))
     }
     return items
 }
@@ -1063,7 +1244,7 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
 
         if (startOffsetMs > 0) videoView.seekTo(startOffsetMs)
 
-        scheduleSegmentLogic(startOffsetMs, isNewSegment = isNewSegment)
+        scheduleSegmentLogic(startOffsetMs, isNewSegment = isNewSegment, isFirstPlay = isFirstPlay)
         videoView.alpha = 0f
         videoView.start()
         videoView.animate()
@@ -1145,20 +1326,52 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
  *
  * Sistema de 3 fases que reemplaza la lógica simple anterior:
  *   1. screenbug_start (GIF): mostrar en SCREENBUG_START_DELAY_MS (20s),
- *      ocultar en SCREENBUG_START_DELAY_MS + SCREENBUG_START_ESTIMATED_DURATION_MS (25s)
- *   2. screenbug (PNG): mostrar SCREENBUG_MID_DELAY_AFTER_START_MS (15s) después de
- *      que start se oculta (40s total), ocultar cuando aparece screenbug_end
- *   3. screenbug_end (GIF): mostrar SCREENBUG_END_SHOW_BEFORE_MS (20s) antes del final,
- *      ocultar al final del programa
+ *      ocultar en SCREENBUG_START_DELAY_MS + SCREENBUG_START_ESTIMATED_DURATION_MS (24,9s)
+ *   2. screenbug (PNG): mostrar SCREENBUG_MID_DELAY_AFTER_START_MS después de
+ *      que start se oculta, ocultar cuando aparece screenbug_end
+ *   3. screenbug_end (GIF): mostrar SCREENBUG_END_SHOW_BEFORE_MS (46s) antes del final,
+ *      ocultar 4,9s después
+ *
+ * Release 5.4.0 — Intro / Créditos: la cuenta de 20s de la fase 1 y la de 46s
+ * de la fase 3 ahora "suman" la duración de la Intro y de los Créditos en vez
+ * de reiniciarse en cada clip nuevo (pedido explícito de Keyler: "que la
+ * intro, el programa y los créditos sumen, sean solo una sola duración").
+ * Cómo se logra, sin necesitar la duración total del bloque de antemano:
+ *   - Si hay Intro válida: al empezar la Intro se llama esta misma función
+ *     con suppressEndPhase=true (elapsed=0, recién arranca el bloque) — así
+ *     la fase 1/2 puede llegar a VERSE durante la Intro si esta dura más de
+ *     20s. Al arrancar el programa (primer segmento), se vuelve a llamar
+ *     pasando [startMidElapsed] = duración real de la Intro que acaba de
+ *     terminar (lastIntroDurationMs) en vez de 0 — la función "restaura" la
+ *     fase que ya debería estar visible o agenda el resto del delay que
+ *     falte, exactamente igual que ya hace para volver de segundo plano.
+ *     Es decir: NO es un timer que sobrevive el cambio de clip, es un
+ *     recálculo — pero el resultado visual es el mismo: la cuenta nunca se
+ *     reinicia ni se detiene.
+ *   - Si hay Créditos válidos: el programa NO corre su propia fase 3 en el
+ *     segmento final (suppressEndPhase=true) — se difiere a playCreditos(),
+ *     que llama esta función con suppressStartMidPhases=true y
+ *     segmentEndMs=duración real de los créditos, así "46s antes del final"
+ *     cae dentro de los créditos y no del programa.
  *
  * @param segmentStartMs posición en ms del programa donde arrancó el segmento
  * @param segmentEndMs posición en ms donde termina el segmento (siguiente break o final)
- * @param elapsed ms ya transcurridos del segmento antes de este (re)arranque
+ * @param elapsed ms ya transcurridos DE ESTE CLIP (programa/créditos) — controla la fase 3 (screenbug_end)
+ * @param startMidElapsed ms a considerar para las fases 1/2 (screenbug_start/mid) — por
+ *   defecto igual a [elapsed]; el primer segmento de un programa con Intro pasa acá la
+ *   duración real de la Intro en vez de 0, para que la cuenta de 20s la incluya.
+ * @param suppressStartMidPhases true si las fases 1/2 no deben correr en este clip
+ *   (créditos: la fase 1/2 ya se mostró en la Intro o al inicio del programa)
+ * @param suppressEndPhase true si la fase 3 (+ NextProgram, agendado aparte) no debe
+ *   correr en este clip (programa con Créditos válidos: se difiere a playCreditos())
  */
 internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     segmentStartMs: Int,
     segmentEndMs: Int,
-    elapsed: Long
+    elapsed: Long,
+    startMidElapsed: Long = elapsed,
+    suppressStartMidPhases: Boolean = false,
+    suppressEndPhase: Boolean = false
 ) {
     val segmentDuration = (segmentEndMs - segmentStartMs).toLong().coerceAtLeast(0)
 
@@ -1179,7 +1392,12 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     val startShowAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS
     val startHideAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS
     val midShowAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS + LiveDiscoveryKids.SCREENBUG_MID_DELAY_AFTER_START_MS
-    val midHideAt = segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
+    // Release 5.4.0: si esta fase 3 se difiere a Créditos (suppressEndPhase), la
+    // fase 2 (PNG estático) no debe autoocultarse al llegar al final DE ESTE
+    // clip — tiene que quedarse fija hasta que Créditos la reemplace por su
+    // propia fase 3. MAX_VALUE hace que las condiciones de abajo ("segmentDuration
+    // > midHideAt") nunca se cumplan dentro de este clip.
+    val midHideAt = if (suppressEndPhase) Long.MAX_VALUE else segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
     val endShowAt = segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
     val endHideAt = endShowAt + LiveDiscoveryKids.SCREENBUG_END_VISIBLE_DURATION_MS
 
@@ -1195,59 +1413,65 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     // mostrando otra fase, fuera de lugar. Ahora, si corresponde, se restaura
     // la fase visible de inmediato — sin reiniciar el GIF al frame 0
     // (resetAnimation=false), para que no se note un salto.
-    when {
-        elapsed >= startShowAt && elapsed < startHideAt && segmentDuration > startShowAt ->
-            fadeInBugWithResource(startRes, resetAnimation = false)
-        elapsed >= midShowAt && elapsed < midHideAt && segmentDuration > midShowAt && midShowAt < midHideAt ->
-            fadeInBugWithResource(midRes, resetAnimation = false)
-        elapsed >= endShowAt && elapsed < endHideAt && segmentDuration > endShowAt ->
-            fadeInBugWithResource(endRes, resetAnimation = false)
+    if (!suppressStartMidPhases) {
+        when {
+            startMidElapsed >= startShowAt && startMidElapsed < startHideAt && segmentDuration > startShowAt ->
+                fadeInBugWithResource(startRes, resetAnimation = false)
+            startMidElapsed >= midShowAt && startMidElapsed < midHideAt && segmentDuration > midShowAt && midShowAt < midHideAt ->
+                fadeInBugWithResource(midRes, resetAnimation = false)
+        }
+
+        if (startMidElapsed < startShowAt && segmentDuration > startShowAt) {
+            val startDelay = (startShowAt - startMidElapsed).coerceAtLeast(0L)
+            post(startDelay) {
+                fadeInBugWithResource(startRes)
+                Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 1: screenbug_start shown (navidad=$christmas)")
+            }
+        }
+
+        if (startMidElapsed < startHideAt && segmentDuration > startHideAt) {
+            val hideDelay = (startHideAt - startMidElapsed).coerceAtLeast(0L)
+            // BUG FIX: antes usaba fadeOutBug() (con animación); el screenbug_start
+            // debe desaparecer de golpe, sin fadeout.
+            post(hideDelay) { setBugAlpha(0f) }
+        }
+
+        // --- PHASE 2: screenbug (PNG) ---
+        if (startMidElapsed < midShowAt && segmentDuration > midShowAt && midShowAt < midHideAt) {
+            val midDelay = (midShowAt - startMidElapsed).coerceAtLeast(0L)
+            post(midDelay) {
+                fadeInBugWithResource(midRes)
+                Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 2: screenbug shown (navidad=$christmas)")
+            }
+        }
+
+        if (startMidElapsed < midHideAt && segmentDuration > midHideAt && midHideAt > midShowAt) {
+            val hideDelay = (midHideAt - startMidElapsed).coerceAtLeast(0L)
+            post(hideDelay) { fadeOutBug() }
+        }
     }
 
-    if (elapsed < startShowAt && segmentDuration > startShowAt) {
-        val startDelay = (startShowAt - elapsed).coerceAtLeast(0L)
-        post(startDelay) { 
-            fadeInBugWithResource(startRes)
-            Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 1: screenbug_start shown (navidad=$christmas)")
-        }
-    }
-    
-    if (elapsed < startHideAt && segmentDuration > startHideAt) {
-        val hideDelay = (startHideAt - elapsed).coerceAtLeast(0L)
-        // BUG FIX: antes usaba fadeOutBug() (con animación); el screenbug_start
-        // debe desaparecer de golpe, sin fadeout.
-        post(hideDelay) { setBugAlpha(0f) }
-    }
-    
-    // --- PHASE 2: screenbug (PNG) ---
-    if (elapsed < midShowAt && segmentDuration > midShowAt && midShowAt < midHideAt) {
-        val midDelay = (midShowAt - elapsed).coerceAtLeast(0L)
-        post(midDelay) { 
-            fadeInBugWithResource(midRes)
-            Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 2: screenbug shown (navidad=$christmas)")
-        }
-    }
-    
-    if (elapsed < midHideAt && segmentDuration > midHideAt && midHideAt > midShowAt) {
-        val hideDelay = (midHideAt - elapsed).coerceAtLeast(0L)
-        post(hideDelay) { fadeOutBug() }
-    }
-    
     // --- PHASE 3: screenbug_end (GIF) ---
     // BUG FIX: antes endHideAt = segmentDuration, así que quedaba visible los
     // 20s completos de la ventana final y el GIF (más corto) se veía repetirse
-    // en loop. Ahora se oculta 5s después de mostrarse, igual que screenbug_start.
-    if (elapsed < endShowAt && segmentDuration > endShowAt) {
-        val endDelay = (endShowAt - elapsed).coerceAtLeast(0L)
-        post(endDelay) { 
-            fadeInBugWithResource(endRes)
-            Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 3: screenbug_end shown (navidad=$christmas)")
+    // en loop. Ahora se oculta 4,9s después de mostrarse, igual que screenbug_start.
+    if (!suppressEndPhase) {
+        if (elapsed >= endShowAt && elapsed < endHideAt && segmentDuration > endShowAt) {
+            fadeInBugWithResource(endRes, resetAnimation = false)
         }
-    }
-    
-    if (elapsed < endHideAt && segmentDuration > endHideAt) {
-        val hideDelay = (endHideAt - elapsed).coerceAtLeast(0L)
-        post(hideDelay) { fadeOutBug() }
+
+        if (elapsed < endShowAt && segmentDuration > endShowAt) {
+            val endDelay = (endShowAt - elapsed).coerceAtLeast(0L)
+            post(endDelay) {
+                fadeInBugWithResource(endRes)
+                Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 3: screenbug_end shown (navidad=$christmas)")
+            }
+        }
+
+        if (elapsed < endHideAt && segmentDuration > endHideAt) {
+            val hideDelay = (endHideAt - elapsed).coerceAtLeast(0L)
+            post(hideDelay) { fadeOutBug() }
+        }
     }
 }
 
@@ -1280,7 +1504,7 @@ internal fun isChristmasScreenBugActive(): Boolean {
  * Preview 2006.4.1.0.12: bugShowDelayMs ahora es configurable desde
  * SettingsActivity (antes BUG_SHOW_DELAY fijo en 20 s).
  */
-internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSegment: Boolean) {
+internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSegment: Boolean, isFirstPlay: Boolean) {
     val previousSegmentStartMs = currentSegmentStartMs
     if (isNewSegment) {
         currentSegmentStartMs = segmentStartMs
@@ -1294,16 +1518,42 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
     val baseSegmentStartMs = if (isNewSegment) segmentStartMs else previousSegmentStartMs
     val elapsed = (segmentStartMs - baseSegmentStartMs).toLong().coerceAtLeast(0L)
 
+    // Release 5.4.0 — Intro / Créditos (ver comentario largo en scheduleMultipleScreenbugs()):
+    //   - Si este es el PRIMER segmento del programa Y hubo una Intro válida
+    //     antes, la cuenta de 20s de la fase 1/2 debe incluir lo que ya duró
+    //     la Intro (lastIntroDurationMs) en vez de arrancar de 0 otra vez.
+    //   - Si este es el ÚLTIMO segmento (sin cortes pendientes) Y hay
+    //     Créditos válidos configurados para este programa, la fase 3
+    //     (screenbug_end) y NextProgram NO corren acá — se difieren a
+    //     playCreditos(), que los agenda usando la duración real de los
+    //     créditos.
+    val startMidElapsed = if (isFirstPlay && hasValidIntro(currentProgramIndex)) {
+        (elapsed + lastIntroDurationMs).also {
+            Log.d(LiveDiscoveryKids.TAG, "ScreenBug: primer segmento con Intro previa — cuenta de 20s continúa en ${it}ms (Intro duró ${lastIntroDurationMs}ms)")
+        }
+    } else {
+        elapsed
+    }
+    val isFinalSegment = breakQueue.isEmpty()
+    val deferToCreditos = isFinalSegment && hasValidCreditos(currentProgramIndex)
+
     // Release 2009.4.6.1 — NUEVO: reemplazo de la lógica simple de screenbug
     // por el sistema de 3 screenbug secuenciales. Usa la nueva función
     // scheduleMultipleScreenbugs() que maneja los timings de los 3 drawables.
-    scheduleMultipleScreenbugs(segmentStartMs, segmentEndMs, elapsed)
+    scheduleMultipleScreenbugs(
+        segmentStartMs, segmentEndMs, elapsed,
+        startMidElapsed = startMidElapsed,
+        suppressEndPhase = deferToCreditos
+    )
 
     // Preview 2010.5.4.0.40 — NUEVO: overlay "nextprogram". Solo tiene
     // sentido en el ÚLTIMO segmento del programa (sin cortes comerciales
     // pendientes en este punto, breakQueue vacío ⇒ segmentEndMs == programDuration);
     // no debe aparecer antes de un corte comercial a mitad del programa.
-    scheduleNextProgramBug(segmentStartMs, segmentEndMs, elapsed, isFinalSegment = breakQueue.isEmpty())
+    // Release 5.4.0: si hay Créditos válidos, tampoco corre acá — se difiere
+    // a playCreditos() (NextProgram debe anticipar lo que sigue en el CANAL,
+    // tiene sentido que aparezca sobre los créditos, no sobre el programa).
+    scheduleNextProgramBug(segmentStartMs, segmentEndMs, elapsed, isFinalSegment = isFinalSegment && !deferToCreditos)
 
     if (breakQueue.isNotEmpty()) {
         val breakProgramPos = breakQueue[0]
@@ -1656,6 +1906,7 @@ internal fun LiveDiscoveryKids.playUri(uri: Uri, onComplete: () -> Unit) {
 internal fun LiveDiscoveryKids.playUriWithTransition(
     uri: Uri,
     fadeOutMs: Long = LiveDiscoveryKids.TRANSITION_FADE_OUT_MS,
+    onPrepared: ((durationMs: Int) -> Unit)? = null,
     onComplete: () -> Unit
 ) {
     // Release 2006.4.1.1: guarda qué clip está sonando y cómo continuar el
@@ -1683,6 +1934,7 @@ internal fun LiveDiscoveryKids.playUriWithTransition(
                     .start()
 
                 val duration = mp.duration
+                onPrepared?.invoke(duration)
                 val fadeOutDelay = (duration - fadeOutMs).coerceAtLeast(0L)
                 post(fadeOutDelay) {
                     if (!transitionCompleted) {
@@ -1737,6 +1989,7 @@ internal fun LiveDiscoveryKids.resumeUriWithSeek(
     uri: Uri,
     startOffsetMs: Int,
     fadeOutMs: Long = LiveDiscoveryKids.TRANSITION_FADE_OUT_MS,
+    onPrepared: ((durationMs: Int) -> Unit)? = null,
     onComplete: () -> Unit
 ) {
     currentClipUri = uri
@@ -1759,6 +2012,7 @@ internal fun LiveDiscoveryKids.resumeUriWithSeek(
             .start()
 
         val duration = mp.duration
+        onPrepared?.invoke(duration)
         val remaining = (duration - startOffsetMs).toLong().coerceAtLeast(0L)
         val fadeOutDelay = (remaining - fadeOutMs).coerceAtLeast(0L)
         post(fadeOutDelay) {
@@ -1913,6 +2167,38 @@ internal fun LiveDiscoveryKids.resolveContinuamosUri(programIndex: Int): Uri {
     val defaultPreComercial = LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL[programIndex % LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL.size]
     val defaultRes = LiveDiscoveryKids.ENSEGUIDA_YA_VOLVEMOS_MAP[defaultPreComercial] ?: R.raw.continuamos1
     return rawUri(defaultRes)
+}
+
+/**
+ * Release 5.4.0 — resuelve la Intro del programa [programIndex]. A
+ * diferencia de ya_regresa/continuamos, NO hay un video predeterminado
+ * incluido en la app: si el usuario no activó Intro para este programa o no
+ * eligió un video, devuelve null (y quien llame debe saltear, ver
+ * playIntro()). buildPlaylist() ya se asegura de esto vía hasValidIntro()
+ * al armar el playlist, pero se vuelve a validar acá por si la
+ * configuración cambió después de armado el playlist de esta sesión.
+ */
+internal fun LiveDiscoveryKids.resolveIntroUri(programIndex: Int): Uri? {
+    if (!hasValidIntro(programIndex)) return null
+    val customUri = SettingsManager.getIntroUri(this, programIndex)
+    return try {
+        Uri.parse(customUri)
+    } catch (e: Exception) {
+        Log.e(LiveDiscoveryKids.TAG, "Uri de Intro inválida (programa $programIndex): $customUri", e)
+        null
+    }
+}
+
+/** Release 5.4.0 — análogo a resolveIntroUri() pero para Créditos. */
+internal fun LiveDiscoveryKids.resolveCreditosUri(programIndex: Int): Uri? {
+    if (!hasValidCreditos(programIndex)) return null
+    val customUri = SettingsManager.getCreditosUri(this, programIndex)
+    return try {
+        Uri.parse(customUri)
+    } catch (e: Exception) {
+        Log.e(LiveDiscoveryKids.TAG, "Uri de Créditos inválida (programa $programIndex): $customUri", e)
+        null
+    }
 }
 
 
@@ -2234,7 +2520,7 @@ internal fun LiveDiscoveryKids.showExitConfirmationDialog() {
                 videoView.start()
                 bgPlayer?.start()
                 startPositionTracker()
-                scheduleSegmentLogic(pausedPositionMs, isNewSegment = false)
+                scheduleSegmentLogic(pausedPositionMs, isNewSegment = false, isFirstPlay = false)
                 Log.d(LiveDiscoveryKids.TAG, "Exit cancelled – resuming from ${pausedPositionMs}ms")
             }
         }
@@ -2384,25 +2670,47 @@ private fun LiveDiscoveryKids.showScreenBugResource(res: Int, resetAnimation: Bo
  * (y, desde la 2010.5.3.0, sus variantes de Navidad) en memoria una sola
  * vez, para no re-decodificar el GIF cada vez que se muestra. Llamar una
  * sola vez en onCreate(), antes de que arranque cualquier programa.
+ *
+ * Release 5.4.0 — BUG FIX (ANR "Discovery Kids no responde" al abrir la
+ * app): Movie.decodeStream() es una decodificación de imagen bit a bit,
+ * relativamente lenta, y esta función decodificaba 4 GIFs de forma
+ * SINCRÓNICA en el hilo principal dentro de onCreate() — junto con los 4
+ * GIFs más de preloadNextProgramGifs() (Preview 2010.5.4.0.40, agregados
+ * DESPUÉS de esta función, sumando aún más trabajo al mismo hilo), esto
+ * podía superar los ~5s que tolera el sistema antes de mostrar el diálogo
+ * "no responde". GifMovieDrawable no toca vistas ni depende del hilo desde
+ * el que se construye (ver GifMovieDrawable.kt: solo crea un Handler
+ * apuntando al Looper principal, lo cual es válido desde cualquier hilo) —
+ * así que ahora la decodificación entera corre en un hilo aparte, y solo la
+ * asignación final a los campos de la Activity se posta de vuelta al hilo
+ * principal con runOnUiThread().
  */
 @Suppress("DEPRECATION")
 internal fun LiveDiscoveryKids.preloadScreenBugAssets() {
-    try {
-        resources.openRawResource(R.drawable.screenbug_start).use { stream ->
-            android.graphics.Movie.decodeStream(stream)?.let { screenBugStartGif = GifMovieDrawable(it) }
+    Thread({
+        try {
+            val start = resources.openRawResource(R.drawable.screenbug_start).use { stream ->
+                android.graphics.Movie.decodeStream(stream)?.let { GifMovieDrawable(it) }
+            }
+            val end = resources.openRawResource(R.drawable.screenbug_end).use { stream ->
+                android.graphics.Movie.decodeStream(stream)?.let { GifMovieDrawable(it) }
+            }
+            val startNavidad = resources.openRawResource(R.drawable.screenbug_start_navidad).use { stream ->
+                android.graphics.Movie.decodeStream(stream)?.let { GifMovieDrawable(it) }
+            }
+            val endNavidad = resources.openRawResource(R.drawable.screenbug_end_navidad).use { stream ->
+                android.graphics.Movie.decodeStream(stream)?.let { GifMovieDrawable(it) }
+            }
+            runOnUiThread {
+                screenBugStartGif = start
+                screenBugEndGif = end
+                screenBugStartNavidadGif = startNavidad
+                screenBugEndNavidadGif = endNavidad
+            }
+        } catch (e: Exception) {
+            Log.e(LiveDiscoveryKids.TAG, "Error precargando GIFs de screenbug", e)
         }
-        resources.openRawResource(R.drawable.screenbug_end).use { stream ->
-            android.graphics.Movie.decodeStream(stream)?.let { screenBugEndGif = GifMovieDrawable(it) }
-        }
-        resources.openRawResource(R.drawable.screenbug_start_navidad).use { stream ->
-            android.graphics.Movie.decodeStream(stream)?.let { screenBugStartNavidadGif = GifMovieDrawable(it) }
-        }
-        resources.openRawResource(R.drawable.screenbug_end_navidad).use { stream ->
-            android.graphics.Movie.decodeStream(stream)?.let { screenBugEndNavidadGif = GifMovieDrawable(it) }
-        }
-    } catch (e: Exception) {
-        Log.e(LiveDiscoveryKids.TAG, "Error precargando GIFs de screenbug", e)
-    }
+    }, "preload-screenbug-gifs").start()
 }
 
 internal fun LiveDiscoveryKids.fadeOutBug() {
@@ -2463,18 +2771,24 @@ private fun LiveDiscoveryKids.showNextProgramResource() {
  * Precarga y cachea los GifMovieDrawable de los 4 nextprogram en memoria una
  * sola vez, igual que preloadScreenBugAssets(). Llamar una sola vez en
  * onCreate(), antes de que arranque cualquier programa.
+ *
+ * Release 5.4.0 — mismo BUG FIX de ANR que preloadScreenBugAssets(): corre
+ * en un hilo aparte, ver comentario ahí.
  */
 @Suppress("DEPRECATION")
 internal fun LiveDiscoveryKids.preloadNextProgramGifs() {
-    LiveDiscoveryKids.NEXTPROGRAMS.forEachIndexed { index, res ->
-        try {
-            resources.openRawResource(res).use { stream ->
-                android.graphics.Movie.decodeStream(stream)?.let { nextProgramGifs[index] = GifMovieDrawable(it) }
+    Thread({
+        LiveDiscoveryKids.NEXTPROGRAMS.forEachIndexed { index, res ->
+            try {
+                val decoded = resources.openRawResource(res).use { stream ->
+                    android.graphics.Movie.decodeStream(stream)?.let { GifMovieDrawable(it) }
+                }
+                if (decoded != null) runOnUiThread { nextProgramGifs[index] = decoded }
+            } catch (e: Exception) {
+                Log.e(LiveDiscoveryKids.TAG, "Error precargando nextprogram GIF #$index", e)
             }
-        } catch (e: Exception) {
-            Log.e(LiveDiscoveryKids.TAG, "Error precargando nextprogram GIF #$index", e)
         }
-    }
+    }, "preload-nextprogram-gifs").start()
 }
 
 /** Instantly sets alpha without animation (usado en transiciones y al cortar junto con el fin del programa). */

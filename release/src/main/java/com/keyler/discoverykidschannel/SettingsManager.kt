@@ -59,6 +59,14 @@ import android.content.SharedPreferences
  *
  * Release 2009.5.2.1 — ELIMINADO: KEY_TEXTURE_VIEW_ENABLED y el motor de
  *   video basado en TextureView que activaba (ver DkVideoView.kt).
+ *
+ * Release 5.4.0 — NUEVO: KEY_INTRO_ENABLED_PREFIX/KEY_INTRO_URI_PREFIX y
+ *   KEY_CREDITOS_ENABLED_PREFIX/KEY_CREDITOS_URI_PREFIX — Intro y Créditos
+ *   por programa, configurables desde Discovery Kids Launcher →
+ *   Configuración de Programa. A diferencia de ya_regresa/continuamos NO
+ *   traen un video predeterminado: por eso son "activado" + "Uri" en vez de
+ *   "personalizado" (si no hay Uri elegida, no se agregan al playlist — ver
+ *   LiveDiscoveryKids.hasValidIntro()/hasValidCreditos()).
  */
 object SettingsManager {
 
@@ -81,6 +89,15 @@ object SettingsManager {
     private const val KEY_YAREGRESA_URI_PREFIX = "yaregresa_uri_"
     private const val KEY_CONTINUAMOS_CUSTOM_PREFIX = "continuamos_custom_"
     private const val KEY_CONTINUAMOS_URI_PREFIX = "continuamos_uri_"
+    // ── Release 5.4.0 — Intro / Créditos por programa ────────────────────────
+    // A diferencia de ya_regresa/continuamos, Intro y Créditos NO tienen un
+    // video predeterminado incluido en la app: por eso son dos keys por
+    // separado (activado + Uri) en vez de "personalizado" — si no hay Uri
+    // elegida, no hay nada que reproducir (ver LiveDiscoveryKids.hasValidIntro()/hasValidCreditos()).
+    private const val KEY_INTRO_ENABLED_PREFIX = "intro_enabled_"
+    private const val KEY_INTRO_URI_PREFIX = "intro_uri_"
+    private const val KEY_CREDITOS_ENABLED_PREFIX = "creditos_enabled_"
+    private const val KEY_CREDITOS_URI_PREFIX = "creditos_uri_"
 
     // ── Valores por defecto ─────────────────────────────────────────────────
     const val DEFAULT_BG_MUSIC_ENABLED = true
@@ -97,6 +114,8 @@ object SettingsManager {
     const val MAX_PROGRAM_COUNT = 24
     const val DEFAULT_YAREGRESA_CUSTOM = false
     const val DEFAULT_CONTINUAMOS_CUSTOM = false
+    const val DEFAULT_INTRO_ENABLED = false      // Release 5.4.0
+    const val DEFAULT_CREDITOS_ENABLED = false   // Release 5.4.0
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -240,5 +259,40 @@ object SettingsManager {
 
     fun setContinuamosUri(context: Context, index: Int, uri: String?) {
         prefs(context).edit().putString(KEY_CONTINUAMOS_URI_PREFIX + index, uri).apply()
+    }
+
+    // ── Intro por programa (Release 5.4.0) ──────────────────────────────────
+    // Sin video predeterminado: isIntroEnabled=true con getIntroUri=null
+    // significa "activado pero sin elegir todavía" — LiveDiscoveryKids no lo
+    // incluye en el playlist hasta que haya Uri (ver hasValidIntro()), y
+    // DiscoveryKidsLauncherActivity.validateChannelSetup() lo marca como
+    // pendiente para avisarle al usuario antes de arrancar el canal.
+    fun isIntroEnabled(context: Context, index: Int): Boolean =
+        prefs(context).getBoolean(KEY_INTRO_ENABLED_PREFIX + index, DEFAULT_INTRO_ENABLED)
+
+    fun setIntroEnabled(context: Context, index: Int, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_INTRO_ENABLED_PREFIX + index, enabled).apply()
+    }
+
+    fun getIntroUri(context: Context, index: Int): String? =
+        prefs(context).getString(KEY_INTRO_URI_PREFIX + index, null)
+
+    fun setIntroUri(context: Context, index: Int, uri: String?) {
+        prefs(context).edit().putString(KEY_INTRO_URI_PREFIX + index, uri).apply()
+    }
+
+    // ── Créditos por programa (Release 5.4.0) ───────────────────────────────
+    fun isCreditosEnabled(context: Context, index: Int): Boolean =
+        prefs(context).getBoolean(KEY_CREDITOS_ENABLED_PREFIX + index, DEFAULT_CREDITOS_ENABLED)
+
+    fun setCreditosEnabled(context: Context, index: Int, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_CREDITOS_ENABLED_PREFIX + index, enabled).apply()
+    }
+
+    fun getCreditosUri(context: Context, index: Int): String? =
+        prefs(context).getString(KEY_CREDITOS_URI_PREFIX + index, null)
+
+    fun setCreditosUri(context: Context, index: Int, uri: String?) {
+        prefs(context).edit().putString(KEY_CREDITOS_URI_PREFIX + index, uri).apply()
     }
 }

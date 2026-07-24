@@ -7,7 +7,10 @@ package com.keyler.discoverykidschannel
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.text.InputType
 import android.util.Log
@@ -21,6 +24,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.google.android.material.button.MaterialButton
+import java.io.File
 
 /**
  * DiscoveryKidsLauncherActivity — Release 2009.5.0.0 ("Parque Imaginario")
@@ -62,7 +66,7 @@ import com.google.android.material.button.MaterialButton
  */
 class DiscoveryKidsLauncherActivity : AppCompatActivity() {
 
-    private enum class PickTarget { PROGRAM, YA_REGRESA, CONTINUAMOS }
+    private enum class PickTarget { PROGRAM, YA_REGRESA, CONTINUAMOS, INTRO, CREDITOS }
 
     private var pendingPickIndex = -1
     private var pendingPickTarget: PickTarget? = null
@@ -105,7 +109,12 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         }
 
         findViewById<MaterialButton>(R.id.btnStartChannel).setOnClickListener {
-            startActivity(Intent(this, LiveDiscoveryKids::class.java))
+            val problems = validateChannelSetup()
+            if (problems.isEmpty()) {
+                startActivity(Intent(this, LiveDiscoveryKids::class.java))
+            } else {
+                showSetupProblemsDialog(problems)
+            }
         }
 
         containerPrograms = findViewById(R.id.containerPrograms)
@@ -194,6 +203,79 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Release 5.4.0 — chequeo previo a "Iniciar canal": evita que
+     * LiveDiscoveryKids arranque un ciclo con clips activados (Intro,
+     * Créditos, ya_regresa/continuamos personalizados, o Programas) que en
+     * realidad no tienen un video asociado — antes esto se saltaba en
+     * silencio dentro del canal (advance() sin más), lo cual el usuario
+     * podía no notar hasta ver el hueco en la programación.
+     *
+     * No reimplica la resolución completa de resolveProgram() (que vive
+     * como función de extensión de LiveDiscoveryKids, otra Activity) —
+     * hace el mismo chequeo de archivo/MediaStore en forma liviana, acá
+     * mismo, solo para el caso "no eligió Uri propia".
+     *
+     * @return lista de problemas legibles para el usuario; vacía si todo OK.
+     */
+    private fun validateChannelSetup(): List<String> {
+        val problems = mutableListOf<String>()
+        val count = SettingsManager.getProgramCount(this)
+
+        for (index in 0 until count) {
+            val programUri = SettingsManager.getProgramUri(this, index)
+            if (programUri.isNullOrBlank() && !classicProgramFileExists(index)) {
+                problems += "Programa ${index + 1}: no elegiste un video y no se encontró pro${index + 1}.mp4 en Videos"
+            }
+            if (SettingsManager.isIntroEnabled(this, index) && SettingsManager.getIntroUri(this, index).isNullOrBlank()) {
+                problems += "Programa ${index + 1}: activaste Intro pero no elegiste el video"
+            }
+            if (SettingsManager.isCreditosEnabled(this, index) && SettingsManager.getCreditosUri(this, index).isNullOrBlank()) {
+                problems += "Programa ${index + 1}: activaste Créditos pero no elegiste el video"
+            }
+            if (SettingsManager.isYaRegresaCustom(this, index) && SettingsManager.getYaRegresaUri(this, index).isNullOrBlank()) {
+                problems += "Programa ${index + 1}: activaste \"ya_regresa\" personalizado pero no elegiste el video"
+            }
+            if (SettingsManager.isContinuamosCustom(this, index) && SettingsManager.getContinuamosUri(this, index).isNullOrBlank()) {
+                problems += "Programa ${index + 1}: activaste \"continuamos\" personalizado pero no elegiste el video"
+            }
+        }
+        return problems
+    }
+
+    /** Mismo chequeo liviano de archivo/MediaStore que resolveProgram() en LiveDiscoveryKids.kt, para pro{N}.mp4. */
+    private fun classicProgramFileExists(index: Int): Boolean {
+        val fileName = "pro${index + 1}.mp4"
+        val moviesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+        if (File(moviesDir, fileName).exists()) return true
+        return try {
+            val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+            else
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            contentResolver.query(
+                collection,
+                arrayOf(MediaStore.Video.Media._ID),
+                "${MediaStore.Video.Media.DISPLAY_NAME} = ?",
+                arrayOf(fileName),
+                null
+            )?.use { it.moveToFirst() } ?: false
+        } catch (e: Exception) {
+            Log.w("DKLauncher", "No se pudo chequear $fileName vía MediaStore", e)
+            true   // ante la duda, no bloquear el arranque por un error de nuestro chequeo
+        }
+    }
+
+    private fun showSetupProblemsDialog(problems: List<String>) {
+        val message = "Antes de iniciar el canal, revisá esto en Configuración de Programa:\n\n• " +
+            problems.joinToString("\n• ")
+        AlertDialog.Builder(this)
+            .setTitle("Faltan videos por elegir")
+            .setMessage(message)
+            .setPositiveButton("Entendido", null)
+            .show()
+    }
+
     private fun bindProgramRow(row: View, index: Int) {
         val txtTitle = row.findViewById<TextView>(R.id.txtProgramTitle)
         val txtVideoStatus = row.findViewById<TextView>(R.id.txtProgramVideoStatus)
@@ -241,6 +323,57 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
             pendingPickTarget = PickTarget.CONTINUAMOS
             pickVideoLauncher.launch(arrayOf("video/*"))
         }
+
+        // ── Intro / Créditos (Release 5.4.0) — sin video predeterminado: el
+        // switch activa/desactiva, y el texto de estado siempre está visible
+        // mientras esté activado (a diferencia de ya_regresa/continuamos, acá
+        // SÍ importa que el usuario vea claramente si ya eligió un video o
+        // no, porque si no elige uno el clip simplemente no aparece).
+        val txtIntroStatus = row.findViewById<TextView>(R.id.txtIntroVideoStatus)
+        val switchIntro = row.findViewById<SwitchCompat>(R.id.switchIntroEnabled)
+        val btnPickIntro = row.findViewById<LinearLayout>(R.id.btnPickIntroVideo)
+
+        fun refreshIntroStatus() {
+            val uri = SettingsManager.getIntroUri(this, index)
+            txtIntroStatus.text = if (uri.isNullOrBlank()) "Sin video elegido" else "Video elegido: ${displayNameFor(Uri.parse(uri))}"
+        }
+        switchIntro.isChecked = SettingsManager.isIntroEnabled(this, index)
+        txtIntroStatus.visibility = if (switchIntro.isChecked) View.VISIBLE else View.GONE
+        btnPickIntro.visibility = if (switchIntro.isChecked) View.VISIBLE else View.GONE
+        refreshIntroStatus()
+        switchIntro.setOnCheckedChangeListener { _, checked ->
+            SettingsManager.setIntroEnabled(this, index, checked)
+            txtIntroStatus.visibility = if (checked) View.VISIBLE else View.GONE
+            btnPickIntro.visibility = if (checked) View.VISIBLE else View.GONE
+        }
+        btnPickIntro.setOnClickListener {
+            pendingPickIndex = index
+            pendingPickTarget = PickTarget.INTRO
+            pickVideoLauncher.launch(arrayOf("video/*"))
+        }
+
+        val txtCreditosStatus = row.findViewById<TextView>(R.id.txtCreditosVideoStatus)
+        val switchCreditos = row.findViewById<SwitchCompat>(R.id.switchCreditosEnabled)
+        val btnPickCreditos = row.findViewById<LinearLayout>(R.id.btnPickCreditosVideo)
+
+        fun refreshCreditosStatus() {
+            val uri = SettingsManager.getCreditosUri(this, index)
+            txtCreditosStatus.text = if (uri.isNullOrBlank()) "Sin video elegido" else "Video elegido: ${displayNameFor(Uri.parse(uri))}"
+        }
+        switchCreditos.isChecked = SettingsManager.isCreditosEnabled(this, index)
+        txtCreditosStatus.visibility = if (switchCreditos.isChecked) View.VISIBLE else View.GONE
+        btnPickCreditos.visibility = if (switchCreditos.isChecked) View.VISIBLE else View.GONE
+        refreshCreditosStatus()
+        switchCreditos.setOnCheckedChangeListener { _, checked ->
+            SettingsManager.setCreditosEnabled(this, index, checked)
+            txtCreditosStatus.visibility = if (checked) View.VISIBLE else View.GONE
+            btnPickCreditos.visibility = if (checked) View.VISIBLE else View.GONE
+        }
+        btnPickCreditos.setOnClickListener {
+            pendingPickIndex = index
+            pendingPickTarget = PickTarget.CREDITOS
+            pickVideoLauncher.launch(arrayOf("video/*"))
+        }
     }
 
     /**
@@ -264,6 +397,8 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
             PickTarget.PROGRAM -> SettingsManager.setProgramUri(this, index, uri.toString())
             PickTarget.YA_REGRESA -> SettingsManager.setYaRegresaUri(this, index, uri.toString())
             PickTarget.CONTINUAMOS -> SettingsManager.setContinuamosUri(this, index, uri.toString())
+            PickTarget.INTRO -> SettingsManager.setIntroUri(this, index, uri.toString())
+            PickTarget.CREDITOS -> SettingsManager.setCreditosUri(this, index, uri.toString())
             null -> return
         }
 
