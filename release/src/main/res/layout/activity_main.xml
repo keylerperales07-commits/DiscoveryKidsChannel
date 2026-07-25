@@ -16,7 +16,12 @@
              reemplaza en tiempo de ejecución por un DkVideoView (Release
              2009.5.2.1: envoltorio simple de VideoView clásico, el motor
              alternativo TextureView se eliminó) dentro de este mismo
-             placeholder — ver LiveDiscoveryKids.onCreate(). -->
+             placeholder — ver LiveDiscoveryKids.onCreate().
+             Release 5.4.1: este es el ÚNICO elemento que se achica y
+             reposiciona dentro del recuadro de NextProgram — ver
+             LiveDiscoveryKids.showVideoInBox(). El logo/marco (nextProgramBug,
+             más abajo) vive en un AspectRatioFrameLayout APARTE que nunca se
+             toca, para que no se achique junto con el video. -->
         <FrameLayout
              android:layout_height="match_parent"
              android:layout_width="wrap_content"
@@ -31,65 +36,6 @@
              android:alpha="0"
              android:id="@+id/screenBug" />
 
-        <!-- Preview 2010.5.4.0.40: overlay "nextprogram" (GIF), reemplaza al
-             enseguida post-programa.
-             Release 5.4.0 — BUG FIX: antes era full-frame (match_parent),
-             asumiendo que el GIF traía compuesto todo el frame. Confirmado en
-             dispositivo que el asset real va POSICIONADO en el recuadro
-             específico de la imagen de referencia (la esquina superior
-             derecha, "cuadro rojo"), no a pantalla completa. Ahora se ubica
-             con 4 guías porcentuales de ConstraintLayout calculadas sobre esa
-             imagen de referencia (~46%–94% horizontal, ~9%–53% vertical del
-             marco 4:3) en vez de match_parent. Si el arte final de Keyler
-             termina teniendo otras proporciones, ajustar los 4
-             layout_constraintGuide_percent de abajo. -->
-        <androidx.constraintlayout.widget.ConstraintLayout
-             android:layout_height="match_parent"
-             android:layout_width="match_parent">
-
-            <androidx.constraintlayout.widget.Guideline
-                 android:id="@+id/guideNextProgramStart"
-                 android:layout_width="wrap_content"
-                 android:layout_height="wrap_content"
-                 android:orientation="vertical"
-                 app:layout_constraintGuide_percent="0.46" />
-
-            <androidx.constraintlayout.widget.Guideline
-                 android:id="@+id/guideNextProgramEnd"
-                 android:layout_width="wrap_content"
-                 android:layout_height="wrap_content"
-                 android:orientation="vertical"
-                 app:layout_constraintGuide_percent="0.94" />
-
-            <androidx.constraintlayout.widget.Guideline
-                 android:id="@+id/guideNextProgramTop"
-                 android:layout_width="wrap_content"
-                 android:layout_height="wrap_content"
-                 android:orientation="horizontal"
-                 app:layout_constraintGuide_percent="0.09" />
-
-            <androidx.constraintlayout.widget.Guideline
-                 android:id="@+id/guideNextProgramBottom"
-                 android:layout_width="wrap_content"
-                 android:layout_height="wrap_content"
-                 android:orientation="horizontal"
-                 app:layout_constraintGuide_percent="0.53" />
-
-            <ImageView
-                 android:id="@+id/nextProgramBug"
-                 android:layout_width="0dp"
-                 android:layout_height="0dp"
-                 android:scaleType="fitXY"
-                 android:src="@drawable/nextprogram1"
-                 android:contentDescription="Next program preview"
-                 android:alpha="0"
-                 app:layout_constraintStart_toStartOf="@id/guideNextProgramStart"
-                 app:layout_constraintEnd_toEndOf="@id/guideNextProgramEnd"
-                 app:layout_constraintTop_toTopOf="@id/guideNextProgramTop"
-                 app:layout_constraintBottom_toBottomOf="@id/guideNextProgramBottom" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
         <com.keyler.discoverykidschannel.CrtOverlayView
              android:layout_height="match_parent"
              android:layout_width="match_parent"
@@ -99,11 +45,42 @@
 
     </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
 
+    <!-- Preview 2010.5.4.0.40: overlay "nextprogram" (GIF), reemplaza al
+         enseguida post-programa.
+         Release 5.4.1 — CORRECCIÓN (2 partes):
+         1) Este GIF es el MARCO decorativo (logo, texto, el borde amarillo
+            del recuadro) con el recuadro en sí TRANSPARENTE/vacío en el
+            arte — lo que va DENTRO es el VIDEO del programa mismo, sin
+            estirar (ver videoContainer arriba y
+            LiveDiscoveryKids.showVideoInBox()/restoreVideoFullScreen()).
+         2) Por eso NO puede vivir dentro de videoContainer (se achicaría
+            junto con el video cuando este se reposiciona en el recuadro,
+            arruinando el logo/texto que debe quedarse a tamaño completo).
+            Va en su PROPIO AspectRatioFrameLayout, hermano de videoContainer
+            — mismo criterio de altura → ancho×4/3 centrado, así queda
+            siempre perfectamente alineado con el marco 4:3 del video
+            (esté achicado o no), sin importar la proporción real de la
+            pantalla del dispositivo. -->
+    <com.keyler.discoverykidschannel.AspectRatioFrameLayout
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:layout_gravity="center">
+
+        <ImageView
+             android:layout_height="match_parent"
+             android:layout_width="match_parent"
+             android:src="@drawable/nextprogram1"
+             android:contentDescription="Next program frame"
+             android:alpha="0"
+             android:id="@+id/nextProgramBug" />
+
+    </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
+
     <TextView
          android:layout_height="wrap_content"
          android:layout_width="wrap_content"
          android:gravity="center"
-         android:alpha="1"
+         android:alpha="0"
          android:fontFamily="@font/googlesans"
          android:textColor="#FFFFFF"
          android:id="@+id/debugInfo"

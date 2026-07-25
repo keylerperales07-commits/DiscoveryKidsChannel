@@ -41,7 +41,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 🎬 **Bumpers** — Clips de identidad del canal entre programas, ahora en resolución mejorada
 - 📣 **Comerciales Dinámicos** — Bloques de publicidad que rotan con intervalos aleatorios entre 3 y 9 minutos, incluyendo contenido de la era Y2K. Desde la Release 5.4.0 aparecen ÚNICAMENTE interrumpiendo Programas (se eliminó el StandaloneCommercial, el bloque de comercial suelto entre Bumper y Programa)
 - 🎬 **Intro y Créditos personalizados** *(Release 5.4.0)* — Opcionales, por programa, configurables en Discovery Kids Launcher → Configuración de Programa. La Intro aparece después del Bumper y antes del Programa; los Créditos, al terminar el Programa. Ninguno tiene un video predeterminado — si se activan sin elegir un archivo, el Launcher bloquea "Iniciar canal" y avisa qué falta
-- ⏭️ **NextProgram** — Overlay animado (GIF, uno por programa, posicionado en el recuadro de vista previa) que anticipa qué sigue en el canal, 31 segundos antes del final REAL del bloque (Créditos si están activos, si no el Programa — Release 5.4.0). Reemplaza a los "enseguidas" post-programa (clip aparte, eliminado)
+- ⏭️ **NextProgram** — Marco decorativo animado (GIF, uno por programa) con el video del programa EN CURSO mostrado en vivo dentro de su recuadro (sin estirar ni deformar — Release 5.4.1), que anticipa qué sigue en el canal 31 segundos antes del final REAL del bloque (Créditos si están activos, si no el Programa). Reemplaza a los "enseguidas" post-programa (clip aparte, eliminado)
 - 🎵 **Música de Fondo** — Música ambiente durante la reproducción de programas (volumen al 8%)
 - 🖥️ **Modo Pantalla Completa Inmersivo** — Sin distracciones de interfaz, experiencia TV pura
 - 📡 **Overlay Visual CRT** — Efectos de scanlines y pantalla para esa sensación retro de televisor
@@ -167,18 +167,21 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v5.4.0` *(Release · Era Doki 1.0 · Era 2010 · "Parque Imaginario")*
-> *NextProgram reposicionado en pantalla y ScreenBug/NextProgram ahora atados a Intro/Créditos (personalizados por programa, opcionales) en vez de siempre al Programa — sin reiniciar la cuenta de tiempo al cambiar de clip. Se eliminó StandaloneCommercial: los comerciales solo interrumpen Programas. 2 bug fixes de arranque: ANR al abrir la app, y la cantidad de programas quedándose vieja si el Launcher seguía en segundo plano.*
+### 🚀 Última versión estable — `v5.4.1` *(Bug Fix · Era Doki 1.0 · Era 2010 · "Parque Imaginario")*
+> *El ScreenBug de inicio/final directamente no aparecía en Intro/Créditos (bug real de cálculo, no de paciencia) — corregido. Y el recuadro de NextProgram: lo que va adentro es el video del programa en curso, sin estirar, no otro gráfico — corregido también.*
 
-- 🐛 **ANR "Discovery Kids no responde" al abrir la app** — la precarga de los GIFs de ScreenBug/NextProgram decodificaba hasta 8 GIFs de forma sincrónica en el hilo principal dentro de `onCreate()`; ahora corre en un hilo aparte.
-- 🐛 **Cantidad de programas desactualizada** — si `LiveDiscoveryKids` seguía vivo en segundo plano y la cantidad de programas cambiaba mientras tanto, la lista de reproducción quedaba con el valor viejo; `onResume()` ahora la reconstruye.
-- 🎯 **NextProgram reposicionado** — el overlay ocupaba toda la pantalla en vez del recuadro de vista previa; ahora se ubica ahí con `ConstraintLayout`.
-- ⏭️ **StandaloneCommercial eliminado** — los comerciales ahora solo interrumpen Programas en curso.
-- 🎬 **Intro y Créditos personalizados por programa** — opcionales, sin video predeterminado, configurables en Discovery Kids Launcher → Configuración de Programa. El ScreenBug de inicio se muestra en la Intro y el final (+ NextProgram) en los Créditos, cuando están activos — sin reiniciar la cuenta de tiempo al cambiar de clip.
-- ✅ **Validación antes de iniciar el canal** — el Launcher bloquea "Iniciar canal" si algo activado (Programa, Intro, Créditos, ya_regresa/continuamos personalizados) no tiene un video elegido.
+- 🐛 **ScreenBug ausente en Intro/Créditos** — los tiempos normales (20s / 46s) se aplicaban tal cual sobre clips que suelen ser más cortos que eso; el cálculo daba negativo y no se agendaba nada. Ahora se ajustan automáticamente a la duración real de cada clip.
+- 🎯 **Recuadro de NextProgram corregido** — ahora muestra el video del programa en curso (achicado sin estirar, dentro del recuadro), en vez de reposicionar el GIF ahí.
 
 <details>
 <summary>📜 Versiones estables anteriores</summary>
+
+**`v5.4.0`** *(Release · Era Doki 1.0 · Era 2010 · "Parque Imaginario")* — NextProgram reposicionado en pantalla y ScreenBug/NextProgram atados a Intro/Créditos (personalizados por programa, opcionales) en vez de siempre al Programa. Se eliminó StandaloneCommercial: los comerciales solo interrumpen Programas. 2 bug fixes de arranque: ANR al abrir la app, y la cantidad de programas quedándose vieja si el Launcher seguía en segundo plano.
+- 🐛 ANR "Discovery Kids no responde" al abrir la app — la precarga de los GIFs de ScreenBug/NextProgram decodificaba hasta 8 GIFs de forma sincrónica en el hilo principal dentro de `onCreate()`; ahora corre en un hilo aparte.
+- 🐛 Cantidad de programas desactualizada — si `LiveDiscoveryKids` seguía vivo en segundo plano y la cantidad de programas cambiaba mientras tanto, la lista de reproducción quedaba con el valor viejo; `onResume()` ahora la reconstruye.
+- ⏭️ StandaloneCommercial eliminado — los comerciales ahora solo interrumpen Programas en curso.
+- 🎬 Intro y Créditos personalizados por programa — opcionales, sin video predeterminado, configurables en Discovery Kids Launcher → Configuración de Programa.
+- ✅ Validación antes de iniciar el canal — el Launcher bloquea "Iniciar canal" si algo activado no tiene un video elegido.
 
 **`v5.3.0`** *(Release · Era Doki 1.0 · Era 2010 · "Parque Imaginario")* — Cambio de Era (2009→2010). BUG FIX definitivo del fadeOut/fadeIn de programas — causa raíz real esta vez: el fix anterior no contemplaba una reanudación (tras un corte comercial, volver de Configuración, etc.). Nuevo ScreenBug de Navidad (1–24 de diciembre), con el mismo comportamiento de 3 fases que el normal.
 - 🐛 FadeOut/FadeIn de programas — bug definitivo. El fix anterior calculaba el momento del fadeOut como si el video siempre arrancara desde el segundo 0, sin restar el punto real de reanudación. Corregido con el mismo cálculo que ya usaba correctamente el resto de la app.
@@ -212,8 +215,7 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 
 ## ⚠️ Notas Importantes
 
-- **Este build no incluye los archivos de arte del overlay NextProgram** — hay que agregar `nextprogram1.gif`, `nextprogram2.gif`, `nextprogram3.gif` y `nextprogram4.gif` a `res/drawable/` antes de compilar. Ver [`RELEASE_NOTES.md`](./RELEASE_NOTES.md) para el detalle de tamaño/posición.
-- **Intro y Créditos (Release 5.4.0) no tienen video predeterminado.** Si los activás en Configuración de Programa sin elegir un archivo, el Launcher bloquea "Iniciar canal" y te avisa cuáles faltan — no se saltean en silencio.
+- **Intro y Créditos no tienen video predeterminado.** Si los activás en Configuración de Programa sin elegir un archivo, el Launcher bloquea "Iniciar canal" y te avisa cuáles faltan — no se saltean en silencio.
 - La primera sincronización de Gradle puede tardar varios minutos según la velocidad de conexión.
 - Gradle descargará todas las dependencias necesarias automáticamente.
 - Otorgá los permisos de almacenamiento si el sistema lo solicita.

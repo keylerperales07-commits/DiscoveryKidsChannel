@@ -6,6 +6,32 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2010.5.4.1] — 🐛 Bug Fix · Era Doki 1.0 · Era 2010 · "Parque Imaginario" — 2026-07-25
+
+> *3 correcciones sobre la 5.4.0: el ScreenBug de inicio/final directamente no aparecía en Intro/Créditos (bug real, no de paciencia — la cuenta de 20s/46s nunca entraba en clips cortos y no se agendaba nada), y NextProgram tenía mal la idea de qué va en el recuadro: es el VIDEO del programa, no otro GIF.*
+
+### 🐛 BUG FIX — ScreenBug no aparecía en Intro ni en Créditos
+
+Causa raíz real: `SCREENBUG_START_DELAY_MS` (20s) y `SCREENBUG_END_SHOW_BEFORE_MS` (46s) se usaban tal cual sobre la duración real de la Intro/Créditos — clips que en la práctica suelen ser bastante más cortos que eso (créditos de 10-15s, por ejemplo). El cálculo daba negativo y la condición de guarda (`segmentDuration > X`) hacía que directamente **nunca se agendara nada** — no es que apareciera tarde o hubiera que tener paciencia, no aparecía nunca.
+
+- `scheduleMultipleScreenbugs()` ahora hace clamp de `startShowAt`/`endShowAt` a la duración real del clip (`coerceAtMost`/`coerceAtLeast`), en vez de usar los 20s/46s "a ciegas". En clips largos (cualquier Programa normal) el resultado es idéntico a antes — el clamp no cambia nada cuando sobra tiempo de sobra. En clips cortos, aparece lo antes posible para GARANTIZAR que se llegue a mostrar.
+- Se descartó el diseño original de "suprimir la fase 1/2 en el Programa si hubo Intro" (asumiendo que la Intro ya la dejaba mostrada): `beginProgramSegment()` siempre resetea el ScreenBug a oculto al arrancar cualquier segmento nuevo, así que esa supresión causaba que lo que se llegó a mostrar en la Intro se ocultara de golpe justo al cortar a Programa y **nunca volviera a aparecer**. Ahora la fase 1/2 corre en la Intro (si existe) Y SIEMPRE en el Programa también — en el peor caso se ve dos veces, pero nunca deja de aparecer.
+- `scheduleNextProgramBug()` tenía el mismo bug (con `NEXTPROGRAM_SHOW_BEFORE_MS`, 31s) — mismo fix.
+
+### 🎯 BUG FIX — El recuadro de NextProgram mostraba el marco mal entendido
+
+Corrección de diseño, no solo de código: lo que va DENTRO del recuadro (la zona que la Release 5.4.0 dejó transparente en el GIF `nextprogram*.gif`) es el **VideoView del programa en curso**, mostrado sin estirar ni deformar — NO otro GIF ni el mismo `nextprogram*.gif` reposicionado, como se había interpretado en la 5.4.0.
+
+- El GIF `nextprogram*.gif` vuelve a ser el marco decorativo de pantalla completa (logo, texto, borde amarillo del recuadro), con el recuadro TRANSPARENTE en el arte.
+- Mientras el marco está visible, `videoContainer` (el contenedor real del video, `AspectRatioFrameLayout`) se achica y reposiciona con `LiveDiscoveryKids.showVideoInBox()` para caer exactamente dentro del recuadro — conserva su proporción real en todo momento (`AspectRatioFrameLayout` siempre deriva el ancho como alto×4/3, nunca estira). Al terminar, `restoreVideoFullScreen()` lo vuelve a pantalla completa.
+- BUG FIX adicional encontrado armando esto: `nextProgramBug` (el marco) vivía DENTRO de `videoContainer` en la 5.4.0 — si se hubiera dejado así, el logo/texto del marco se habría achicado JUNTO con el video al reposicionarlo en el recuadro, arruinando el diseño. Se movió a su propio `AspectRatioFrameLayout` hermano en `activity_main.xml`, con el mismo criterio de tamaño (alto de pantalla → ancho×4/3 centrado) para que quede perfectamente alineado con el marco del video esté achicado o no, sin importar la proporción real de la pantalla del dispositivo.
+
+### ⚠️ Alcance
+
+> Cambios de código en `LiveDiscoveryKids.kt` (`scheduleMultipleScreenbugs()`/`scheduleNextProgramBug()` con clamp interno, `showVideoInBox()`/`restoreVideoFullScreen()` nuevas, `playIntro()`/`scheduleCreditosOverlays()` simplificadas). `activity_main.xml` (`nextProgramBug` movido a su propio `AspectRatioFrameLayout`). `build.gradle`: `versionName` a `2010.5.4.1`.
+
+---
+
 ## [2010.5.4.0] — 🚀 Release · Era Doki 1.0 · Era 2010 · "Parque Imaginario" — 2026-07-24
 
 > *Consolida la Preview 2010.5.4.0.40 (NextProgram, ScreenBug final a 46s) como Release estable, y agrega lo pedido para el 24-07-26: 2 bug fixes de arranque (ANR, cantidad de programas), reposicionamiento real de NextProgram, eliminación de StandaloneCommercial, e Intro/Créditos personalizados por programa — con ScreenBug/NextProgram atados a ellos sin reiniciar la cuenta.*

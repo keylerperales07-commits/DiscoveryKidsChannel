@@ -23,6 +23,7 @@ import android.provider.MediaStore
 import android.util.Log
 import android.view.Choreographer
 import android.view.MotionEvent
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
@@ -292,12 +293,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
     internal var breakQueue       = mutableListOf<Int>()   // upcoming break positions in ms
     internal var lastCommercialRes: Int = -1
     internal var lastBumperRes: Int = -1
-    // Release 5.4.0 — duración real (ms) de la última Intro reproducida.
-    // Se captura en playIntro() (onPrepared del videoView) y se consume una
-    // sola vez en scheduleSegmentLogic() del primer segmento del programa
-    // siguiente, para que la cuenta de 20s de la fase 1/2 del ScreenBug
-    // incluya lo que ya duró la Intro — ver scheduleMultipleScreenbugs().
-    internal var lastIntroDurationMs: Int = 0
     // ya_regresa determinístico: cada programa tiene asignado su propio ya_regresa fijo.
     // programa 0 (pro1) → ya_regresa1 | programa 1 (pro2) → ya_regresa2 | etc.
     // Se indexa por currentProgramIndex en playCommercial().
@@ -355,13 +350,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // programa (sin cortes comerciales pendientes) — ver scheduleNextProgramBug().
         internal const val NEXTPROGRAM_SHOW_BEFORE_MS = 31_000L   // Aparece 31s antes del final real del programa
         internal const val NEXTPROGRAM_ANIM_MS = 500L              // Duración del fade-in (imagen de referencia enviada por Keyler)
-
-        // Release 5.4.0 — "segmentEndMs" grande, usado al llamar
-        // scheduleMultipleScreenbugs() desde playIntro(): la Intro no tiene
-        // una fase 3 propia (suppressEndPhase=true), así que su duración
-        // real es irrelevante para esa llamada — solo hace falta un número
-        // mayor a cualquier duración real posible de video.
-        internal const val ONE_DAY_MS = 24 * 60 * 60 * 1000
 
         /** No commercial break is scheduled within this many ms of the program end. */
         internal const val BREAK_CUTOFF_MS = 3 * 60 * 1_000L         // 3 min
@@ -433,9 +421,10 @@ class LiveDiscoveryKids : AppCompatActivity() {
          */
         internal val NEXTPROGRAMS = listOf(
             R.drawable.nextprogram1,
+            /*
             R.drawable.nextprogram2,
             R.drawable.nextprogram3,
-            R.drawable.nextprogram4
+            R.drawable.nextprogram4 */
         )
 
         /**
@@ -913,21 +902,21 @@ internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
 
     Log.d(LiveDiscoveryKids.TAG, "▶ INTRO [programa=${programIndex + 1}, uri=$uri]")
 
-    // Release 5.4.0: el ScreenBug de inicio (fase 1/2) arranca acá — recién
-    // empieza el bloque Intro→Programa→[Créditos]. segmentEndMs se pasa
-    // "infinito" (1 día) y suppressEndPhase=true porque la fase 3
-    // (screenbug_end) NUNCA corresponde durante la Intro, sin importar
-    // cuánto dure — solo al final real del bloque (programa o créditos).
-    // Si la Intro dura más de 20s, esto ya se ve DURANTE la Intro; si dura
-    // menos, playProgram() retoma la cuenta exactamente donde quedó (ver
-    // lastIntroDurationMs / scheduleSegmentLogic()) — nunca se reinicia.
+    // Release 5.4.0/5.4.1: el ScreenBug de inicio (fase 1/2) corre COMPLETO
+    // acá — la Intro es la única responsable, el primer segmento del
+    // Programa la suprime (ver scheduleSegmentLogic()).
+    //
+    // BUG FIX 5.4.1: se pasa la duración REAL de la Intro como segmentEndMs
+    // (antes: un "1 día" ficticio) para que el clamp interno de
+    // scheduleMultipleScreenbugs() (ver comentario largo ahí) pueda
+    // garantizar que se muestre incluso en Intros más cortas que el delay
+    // normal de 20s.
     playUriWithTransition(
         uri,
         onPrepared = { durationMs ->
-            lastIntroDurationMs = durationMs
             scheduleMultipleScreenbugs(
                 segmentStartMs = 0,
-                segmentEndMs = LiveDiscoveryKids.ONE_DAY_MS,
+                segmentEndMs = durationMs,
                 elapsed = 0L,
                 suppressEndPhase = true
             )
@@ -945,6 +934,13 @@ internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
  * en su propio onPrepared) en vez de la del programa. Compartida entre
  * playCreditos() (arranque normal) y el resume genérico de onResume()
  * (currentItemType == "creditos", ver resumeUriWithSeek()).
+ *
+ * Release 5.4.1 — BUG FIX: antes se pasaba SCREENBUG_END_SHOW_BEFORE_MS
+ * (46s) implícito, y en créditos más cortos que eso (lo más común) el
+ * cálculo daba negativo y el ScreenBug final nunca llegaba a agendarse —
+ * ver el comentario largo en scheduleMultipleScreenbugs() sobre el clamp
+ * que lo soluciona ahí adentro (a partir de esta Release, automático para
+ * cualquier caller — no hace falta calcular nada acá).
  */
 private fun LiveDiscoveryKids.scheduleCreditosOverlays(creditosDurationMs: Int, elapsed: Long) {
     scheduleMultipleScreenbugs(
@@ -1332,36 +1328,43 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
  *   3. screenbug_end (GIF): mostrar SCREENBUG_END_SHOW_BEFORE_MS (46s) antes del final,
  *      ocultar 4,9s después
  *
- * Release 5.4.0 — Intro / Créditos: la cuenta de 20s de la fase 1 y la de 46s
- * de la fase 3 ahora "suman" la duración de la Intro y de los Créditos en vez
- * de reiniciarse en cada clip nuevo (pedido explícito de Keyler: "que la
- * intro, el programa y los créditos sumen, sean solo una sola duración").
- * Cómo se logra, sin necesitar la duración total del bloque de antemano:
- *   - Si hay Intro válida: al empezar la Intro se llama esta misma función
- *     con suppressEndPhase=true (elapsed=0, recién arranca el bloque) — así
- *     la fase 1/2 puede llegar a VERSE durante la Intro si esta dura más de
- *     20s. Al arrancar el programa (primer segmento), se vuelve a llamar
- *     pasando [startMidElapsed] = duración real de la Intro que acaba de
- *     terminar (lastIntroDurationMs) en vez de 0 — la función "restaura" la
- *     fase que ya debería estar visible o agenda el resto del delay que
- *     falte, exactamente igual que ya hace para volver de segundo plano.
- *     Es decir: NO es un timer que sobrevive el cambio de clip, es un
- *     recálculo — pero el resultado visual es el mismo: la cuenta nunca se
- *     reinicia ni se detiene.
- *   - Si hay Créditos válidos: el programa NO corre su propia fase 3 en el
- *     segmento final (suppressEndPhase=true) — se difiere a playCreditos(),
- *     que llama esta función con suppressStartMidPhases=true y
- *     segmentEndMs=duración real de los créditos, así "46s antes del final"
- *     cae dentro de los créditos y no del programa.
+ * Release 5.4.0 — Intro / Créditos: si hay Intro válida, la fase 1/2
+ * (screenbug_start/mid) TAMBIÉN corre durante la Intro (además del Programa,
+ * sin cambios ahí); si hay Créditos válidos, la fase 3 (screenbug_end) +
+ * NextProgram corren DURANTE los Créditos EN VEZ de en el Programa — ver
+ * playIntro()/scheduleCreditosOverlays() y suppressEndPhase acá abajo.
+ *
+ * Release 5.4.1 — BUG FIX (causa raíz, "no aparece en la Intro/Créditos"):
+ * el diseño original de la 5.4.0 usaba SCREENBUG_START_DELAY_MS (20s) /
+ * SCREENBUG_END_SHOW_BEFORE_MS (46s) tal cual, calculados sobre la duración
+ * de la Intro/Créditos — pero esos clips suelen ser bastante más cortos que
+ * eso (créditos de 10-15s, por ejemplo). El cálculo daba negativo y la
+ * condición de guarda (`segmentDuration > X`) hacía que directamente nunca
+ * se agendara nada — no es que apareciera tarde, no aparecía NUNCA. Ahora:
+ *   - startShowAt/endShowAt se calculan acá ADENTRO con clamp (coerceAtMost/
+ *     coerceAtLeast) a la duración real de [segmentEndMs]-[segmentStartMs]:
+ *     si el delay normal (20s / 46s) no entra completo en el clip, se corre
+ *     lo antes posible para que SIEMPRE llegue a mostrarse algo. En clips
+ *     largos (cualquier Programa normal) el resultado es idéntico a antes.
+ *     playIntro() y scheduleCreditosOverlays() ya no necesitan calcular
+ *     ningún ajuste — pasan la duración real del clip como segmentEndMs y
+ *     el clamp de acá adentro hace el resto.
+ *   - Se probó además suprimir la fase 1/2 en el primer segmento del
+ *     Programa cuando hay Intro válida (asumiendo que la Intro "ya la
+ *     dejaba mostrada") — pero beginProgramSegment() siempre resetea el
+ *     ScreenBug a oculto al arrancar cualquier segmento nuevo, así que eso
+ *     causaba un flash-y-desaparece-para-siempre justo al cortar de Intro a
+ *     Programa. Se descartó: la fase 1/2 corre en AMBOS (Intro si aplica, y
+ *     el Programa siempre) — en el peor caso se ve dos veces, pero nunca
+ *     deja de aparecer.
  *
  * @param segmentStartMs posición en ms del programa donde arrancó el segmento
  * @param segmentEndMs posición en ms donde termina el segmento (siguiente break o final)
- * @param elapsed ms ya transcurridos DE ESTE CLIP (programa/créditos) — controla la fase 3 (screenbug_end)
+ * @param elapsed ms ya transcurridos DE ESTE CLIP — controla la fase 3 (screenbug_end)
  * @param startMidElapsed ms a considerar para las fases 1/2 (screenbug_start/mid) — por
- *   defecto igual a [elapsed]; el primer segmento de un programa con Intro pasa acá la
- *   duración real de la Intro en vez de 0, para que la cuenta de 20s la incluya.
+ *   defecto igual a [elapsed]
  * @param suppressStartMidPhases true si las fases 1/2 no deben correr en este clip
- *   (créditos: la fase 1/2 ya se mostró en la Intro o al inicio del programa)
+ *   (Créditos: la fase 1/2 no tiene sentido ahí, ya corrió en la Intro y/o el Programa)
  * @param suppressEndPhase true si la fase 3 (+ NextProgram, agendado aparte) no debe
  *   correr en este clip (programa con Créditos válidos: se difiere a playCreditos())
  */
@@ -1389,16 +1392,35 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     // como esta es una función de extensión top-level (fuera de la clase), hay que
     // calificarlas con "LiveDiscoveryKids." o el compilador las marca como
     // "Unresolved reference" (igual que TAG más abajo).
-    val startShowAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS
-    val startHideAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS
-    val midShowAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS + LiveDiscoveryKids.SCREENBUG_MID_DELAY_AFTER_START_MS
+    //
+    // Release 5.4.1 — BUG FIX (causa raíz real): SCREENBUG_START_DELAY_MS
+    // (20s) se usaba TAL CUAL como el momento de aparición, sin importar la
+    // duración real de [segmentDuration]. Si el clip (Intro/Créditos, ambos
+    // suelen ser cortos) dura menos que eso, el show nunca "entraba" en la
+    // ventana disponible y las guardas de abajo (segmentDuration > X) hacían
+    // que no se agendara NADA — no es que apareciera tarde, no aparecía
+    // nunca. Ahora se hace clamp: si el delay normal no entra completo
+    // (con su duración visible incluida) dentro del clip, se corre lo antes
+    // posible para que SIEMPRE llegue a mostrarse algo, incluso en clips muy
+    // cortos. Para clips largos (el caso normal de todo Programa) el
+    // resultado es IDÉNTICO a antes — el min()/max() no hace nada distinto
+    // cuando sobra tiempo de sobra.
+    val startShowAt = LiveDiscoveryKids.SCREENBUG_START_DELAY_MS.coerceAtMost(
+        (segmentDuration - LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS).coerceAtLeast(0L)
+    )
+    val startHideAt = startShowAt + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS
+    val midShowAt = startShowAt + LiveDiscoveryKids.SCREENBUG_START_ESTIMATED_DURATION_MS + LiveDiscoveryKids.SCREENBUG_MID_DELAY_AFTER_START_MS
     // Release 5.4.0: si esta fase 3 se difiere a Créditos (suppressEndPhase), la
     // fase 2 (PNG estático) no debe autoocultarse al llegar al final DE ESTE
     // clip — tiene que quedarse fija hasta que Créditos la reemplace por su
     // propia fase 3. MAX_VALUE hace que las condiciones de abajo ("segmentDuration
     // > midHideAt") nunca se cumplan dentro de este clip.
-    val midHideAt = if (suppressEndPhase) Long.MAX_VALUE else segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
-    val endShowAt = segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS
+    // Release 5.4.1 — mismo BUG FIX que en la fase 1: endShowAt se clampea a
+    // 0 en vez de poder quedar negativo, para que SIEMPRE llegue a mostrarse
+    // en clips más cortos que SCREENBUG_END_SHOW_BEFORE_MS (46s) — como los
+    // Créditos (ver comentario largo más arriba en la fase 1).
+    val endShowAt = (segmentDuration - LiveDiscoveryKids.SCREENBUG_END_SHOW_BEFORE_MS).coerceAtLeast(0L)
+    val midHideAt = if (suppressEndPhase) Long.MAX_VALUE else endShowAt
     val endHideAt = endShowAt + LiveDiscoveryKids.SCREENBUG_END_VISIBLE_DURATION_MS
 
     // BUG FIX (investigación a fondo — "el ScreenBug se reinicia"): esta función
@@ -1505,6 +1527,10 @@ internal fun isChristmasScreenBugActive(): Boolean {
  * SettingsActivity (antes BUG_SHOW_DELAY fijo en 20 s).
  */
 internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSegment: Boolean, isFirstPlay: Boolean) {
+    // Nota: isFirstPlay ya no se usa acá adentro desde la Release 5.4.1 (ver
+    // comentario de scheduleMultipleScreenbugs() sobre por qué se dejó de
+    // suprimir la fase 1/2 en el primer segmento). Se mantiene en la firma
+    // para no tocar los 2 call-sites y por si vuelve a hacer falta.
     val previousSegmentStartMs = currentSegmentStartMs
     if (isNewSegment) {
         currentSegmentStartMs = segmentStartMs
@@ -1518,22 +1544,25 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
     val baseSegmentStartMs = if (isNewSegment) segmentStartMs else previousSegmentStartMs
     val elapsed = (segmentStartMs - baseSegmentStartMs).toLong().coerceAtLeast(0L)
 
-    // Release 5.4.0 — Intro / Créditos (ver comentario largo en scheduleMultipleScreenbugs()):
-    //   - Si este es el PRIMER segmento del programa Y hubo una Intro válida
-    //     antes, la cuenta de 20s de la fase 1/2 debe incluir lo que ya duró
-    //     la Intro (lastIntroDurationMs) en vez de arrancar de 0 otra vez.
-    //   - Si este es el ÚLTIMO segmento (sin cortes pendientes) Y hay
-    //     Créditos válidos configurados para este programa, la fase 3
-    //     (screenbug_end) y NextProgram NO corren acá — se difieren a
-    //     playCreditos(), que los agenda usando la duración real de los
-    //     créditos.
-    val startMidElapsed = if (isFirstPlay && hasValidIntro(currentProgramIndex)) {
-        (elapsed + lastIntroDurationMs).also {
-            Log.d(LiveDiscoveryKids.TAG, "ScreenBug: primer segmento con Intro previa — cuenta de 20s continúa en ${it}ms (Intro duró ${lastIntroDurationMs}ms)")
-        }
-    } else {
-        elapsed
-    }
+    // Release 5.4.1 — Intro / Créditos (ver comentario largo en scheduleMultipleScreenbugs()):
+    //   - La fase 1/2 del ScreenBug NO se suprime en el Programa aunque haya
+    //     Intro válida — corre normal acá también (con [elapsed] fresco,
+    //     0 = recién arranca el Programa), exactamente igual que si no
+    //     hubiera Intro. Se probó suprimirla (asumiendo que la Intro ya la
+    //     "dejaba mostrada"), pero beginProgramSegment() siempre resetea el
+    //     ScreenBug a oculto al arrancar cualquier segmento nuevo (ver
+    //     setBugAlpha(0f) ahí) — así que suprimirla acá significaba que lo
+    //     que se llegó a mostrar en la Intro se ocultaba de golpe justo al
+    //     cortar a Programa y NUNCA volvía a aparecer. Dejarla correr acá
+    //     también es más simple y más seguro: en el peor caso se ve dos
+    //     veces (una breve en la Intro, otra normal ~20s adentro del
+    //     Programa) — pero JAMÁS deja de aparecer.
+    //   - La fase 3 (screenbug_end) + NextProgram SÍ se suprimen en el
+    //     último segmento del Programa cuando hay Créditos válidos — acá si
+    //     corresponde diferir por completo, porque a diferencia de la fase
+    //     1/2 esta si no se difiere, se termina mostrando 46s antes del
+    //     final del PROGRAMA (mientras el programa sigue en pantalla), que
+    //     es exactamente lo que Keyler pidió evitar.
     val isFinalSegment = breakQueue.isEmpty()
     val deferToCreditos = isFinalSegment && hasValidCreditos(currentProgramIndex)
 
@@ -1542,7 +1571,6 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
     // scheduleMultipleScreenbugs() que maneja los timings de los 3 drawables.
     scheduleMultipleScreenbugs(
         segmentStartMs, segmentEndMs, elapsed,
-        startMidElapsed = startMidElapsed,
         suppressEndPhase = deferToCreditos
     )
 
@@ -1586,6 +1614,21 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
  *   segmento termina en un corte comercial), no se programa nada — el
  *   nextprogram nunca debe aparecer antes de un corte a mitad de programa.
  */
+/**
+ * Release 5.4.0 — agenda el overlay NextProgram (el marco decorativo) para
+ * el ÚLTIMO segmento del bloque (Créditos si existen, si no el Programa).
+ *
+ * Release 5.4.1 — BUG FIX: [showAt] se calculaba como
+ * `segmentDuration - NEXTPROGRAM_SHOW_BEFORE_MS` (31s) y si eso daba
+ * negativo (clip más corto que 31s — muy común en Créditos) la función
+ * cortaba con `return` sin agendar NADA, así que NextProgram nunca
+ * aparecía. Ahora se hace clamp a 0: si el clip es más corto que 31s,
+ * aparece apenas arranca en vez de no aparecer nunca.
+ *
+ * Release 5.4.1 — además de mostrar el marco (fadeInNextProgramBug()),
+ * ahora también dispara showVideoInBox(): lo que va DENTRO del recuadro es
+ * el VideoView del programa mismo, sin estirar — ver showVideoInBox().
+ */
 internal fun LiveDiscoveryKids.scheduleNextProgramBug(
     segmentStartMs: Int,
     segmentEndMs: Int,
@@ -1595,14 +1638,13 @@ internal fun LiveDiscoveryKids.scheduleNextProgramBug(
     if (!isFinalSegment) return
 
     val segmentDuration = (segmentEndMs - segmentStartMs).toLong().coerceAtLeast(0)
-    val showAt = segmentDuration - LiveDiscoveryKids.NEXTPROGRAM_SHOW_BEFORE_MS
-    // Programa más corto que 31s desde el arranque de este tramo final: no alcanza a mostrarse.
-    if (showAt < 0) return
+    val showAt = (segmentDuration - LiveDiscoveryKids.NEXTPROGRAM_SHOW_BEFORE_MS).coerceAtLeast(0L)
 
     if (elapsed >= showAt) {
         Log.d(LiveDiscoveryKids.TAG, "NextProgramBug: elapsed=${elapsed}ms >= showAt(${showAt}ms) → aparece inmediatamente")
         showNextProgramResource()
         setNextProgramBugAlpha(1f)
+        showVideoInBox()
     } else {
         val delay = (showAt - elapsed).coerceAtLeast(0L)
         post(delay) { fadeInNextProgramBug() }
@@ -2726,16 +2768,25 @@ internal fun LiveDiscoveryKids.setBugAlpha(alpha: Float) {
 
 
 // ══════════════════════════════════════════════════════════════════════════
-// NextProgram overlay (Preview 2010.5.4.0.40)
+// NextProgram overlay (Preview 2010.5.4.0.40, corregido en Release 5.4.1)
 // ══════════════════════════════════════════════════════════════════════════
 // Reemplaza a los "enseguida" post-programa: en vez de un clip aparte entre
-// el fin del programa y el StandaloneCommercial, es un GIF superpuesto AL
-// PROGRAMA MISMO, cerca de su final (ver scheduleNextProgramBug()). Mismo
-// patrón de caché que screenBugStartGif/screenBugEndGif (GifMovieDrawable
+// el fin del programa y el StandaloneCommercial, es un marco decorativo
+// (GIF, pantalla completa: logo, texto, borde amarillo del recuadro) que se
+// superpone cerca del final del bloque (ver scheduleNextProgramBug()).
+//
+// Release 5.4.1 — CORRECCIÓN: el recuadro del marco NO trae el contenido
+// dentro (el GIF lo deja transparente/vacío ahí) — lo que se ve adentro es
+// el VIDEO DEL PROGRAMA MISMO, reposicionado y encogido para entrar en el
+// recuadro sin estirarse (ver showVideoInBox()/restoreVideoFullScreen()),
+// no otro GIF. fadeInNextProgramBug() dispara ambas cosas juntas: el marco
+// (fade-in) y el reposicionamiento del video (instantáneo).
+//
+// Mismo patrón de caché que screenBugStartGif/screenBugEndGif (GifMovieDrawable
 // decodificado una sola vez por GIF, seekToStart()+start() en cada aparición)
 // para que no haya lag al mostrarlo.
 
-/** Aparición animada (fade-in, NEXTPROGRAM_ANIM_MS) del nextprogram del programa actual. */
+/** Aparición animada (fade-in, NEXTPROGRAM_ANIM_MS) del marco NextProgram + reposicionamiento del video en el recuadro. */
 internal fun LiveDiscoveryKids.fadeInNextProgramBug() {
     Log.d(LiveDiscoveryKids.TAG, "NextProgramBug FADE IN [program=$currentProgramIndex]")
     showNextProgramResource()
@@ -2745,6 +2796,7 @@ internal fun LiveDiscoveryKids.fadeInNextProgramBug() {
         .alpha(1f)
         .setDuration(LiveDiscoveryKids.NEXTPROGRAM_ANIM_MS)
         .start()
+    showVideoInBox()
 }
 
 /**
@@ -2791,10 +2843,97 @@ internal fun LiveDiscoveryKids.preloadNextProgramGifs() {
     }, "preload-nextprogram-gifs").start()
 }
 
-/** Instantly sets alpha without animation (usado en transiciones y al cortar junto con el fin del programa). */
+/**
+ * Instantly sets alpha without animation (usado en transiciones y al cortar
+ * junto con el fin del programa). Release 5.4.1: al ocultar (alpha=0),
+ * también restaura el VideoView a pantalla completa — ver
+ * restoreVideoFullScreen(). Si alpha>0 no toca el video: quien muestra el
+ * marco (fadeInNextProgramBug()/scheduleNextProgramBug()) es responsable de
+ * llamar showVideoInBox() por su cuenta.
+ */
 internal fun LiveDiscoveryKids.setNextProgramBugAlpha(alpha: Float) {
     nextProgramBug.animate().cancel()
     nextProgramBug.alpha = alpha
+    if (alpha == 0f) restoreVideoFullScreen()
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Video en el recuadro de NextProgram — Release 5.4.1
+// ══════════════════════════════════════════════════════════════════════════
+// Mientras el marco NextProgram está visible, el VIDEO DEL PROGRAMA (no un
+// GIF aparte) se ve DENTRO del recuadro que deja transparente el marco,
+// encogido pero SIN estirarse ni deformarse — mismo criterio 4:3 que ya
+// aplica siempre videoContainer (AspectRatioFrameLayout, ver ese archivo).
+//
+// Cómo funciona: videoContainer normalmente es match_parent/match_parent,
+// centrado. Achicarlo a un alto explícito (en vez de match_parent) hace que
+// AspectRatioFrameLayout.onMeasure() — que SIEMPRE deriva el ancho como
+// alto×4/3, sin excepción — recalcule un ancho proporcionalmente más chico
+// también; el video adentro (DkVideoView, dentro de videoViewContainer) ya
+// sabe encajarse dentro de lo que le dé este contenedor sin estirarse. Solo
+// hace falta fijar el alto y la posición (margins + gravity) para que ese
+// rectángulo más chico caiga exactamente en el recuadro de la imagen de
+// referencia — el ancho lo calcula solo, siempre en proporción 4:3 real.
+//
+// Los % de la imagen de referencia (recuadro ≈46%–94% horizontal, ≈9%–53%
+// vertical del marco) fueron los mismos que se habían calculado para
+// posicionar el ImageView en la Release 5.4.0 — ver ese CHANGELOG.
+
+private const val NEXTPROGRAM_BOX_LEFT_FRACTION = 0.46f
+private const val NEXTPROGRAM_BOX_TOP_FRACTION = 0.09f
+private const val NEXTPROGRAM_BOX_BOTTOM_FRACTION = 0.53f
+
+/**
+ * Achica y reposiciona videoContainer para que el video quede dentro del
+ * recuadro del marco NextProgram, sin estirarse. Idempotente — llamarla de
+ * nuevo mientras ya está en el recuadro no hace nada raro.
+ *
+ * Los % (NEXTPROGRAM_BOX_*_FRACTION) están calculados sobre el MARCO 4:3
+ * real (el mismo que ocupa videoContainer sin achicar, y el AspectRatioFrameLayout
+ * hermano que contiene a nextProgramBug en activity_main.xml) — NO sobre el
+ * ancho/alto físico de la pantalla del dispositivo, que casi nunca es 4:3
+ * (suele quedar con franjas a los costados, "pillarboxing"). Por eso el
+ * cálculo de acá reconstruye ese marco (altura = altura de la pantalla,
+ * ancho = altura×4/3, centrado) antes de aplicar los %.
+ */
+internal fun LiveDiscoveryKids.showVideoInBox() {
+    val root = videoContainer.parent as? View ?: return
+    val rootWidth = root.width
+    val rootHeight = root.height
+    if (rootWidth <= 0 || rootHeight <= 0) {
+        // Layout todavía no midió (carrera rara al arrancar la Activity) —
+        // reintenta en el próximo frame en vez de no hacer nada.
+        videoContainer.post { showVideoInBox() }
+        return
+    }
+
+    // Reconstruye el marco 4:3 real dentro de la pantalla (igual criterio
+    // que AspectRatioFrameLayout.onMeasure(): ancho = alto×4/3) y su offset
+    // horizontal por quedar centrado (layout_gravity="center").
+    val frameHeight = rootHeight
+    val frameWidth = (frameHeight * 4) / 3
+    val frameLeftInRoot = (rootWidth - frameWidth) / 2
+
+    val boxHeightPx = ((NEXTPROGRAM_BOX_BOTTOM_FRACTION - NEXTPROGRAM_BOX_TOP_FRACTION) * frameHeight).toInt()
+    val boxTopPx = (NEXTPROGRAM_BOX_TOP_FRACTION * frameHeight).toInt()
+    val boxLeftPx = frameLeftInRoot + (NEXTPROGRAM_BOX_LEFT_FRACTION * frameWidth).toInt()
+
+    val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, boxHeightPx)
+    lp.gravity = Gravity.TOP or Gravity.START
+    lp.leftMargin = boxLeftPx
+    lp.topMargin = boxTopPx
+    videoContainer.layoutParams = lp
+}
+
+/** Vuelve videoContainer a pantalla completa (estado original de activity_main.xml). */
+internal fun LiveDiscoveryKids.restoreVideoFullScreen() {
+    val current = videoContainer.layoutParams as? FrameLayout.LayoutParams ?: return
+    if (current.width == FrameLayout.LayoutParams.MATCH_PARENT && current.height == FrameLayout.LayoutParams.MATCH_PARENT) {
+        return   // ya está a pantalla completa, no reasignar layoutParams sin necesidad (evita un re-layout de más)
+    }
+    val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+    lp.gravity = Gravity.CENTER
+    videoContainer.layoutParams = lp
 }
 
 
