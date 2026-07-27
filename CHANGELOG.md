@@ -6,7 +6,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2011.5.5.0] — 🚀 Release · Era Doki 1.0 · Era 2011 · "Parque Imaginario" — 2026-07-26
+## [2011.5.5.0] — 🚀 Release · Era Doki 1.0 · Era 2011 · "Parque Imaginario" — 2026-07-27
 
 > *Cambio de Era (2010→2011). Nueva Activity Configuración de Programa (extraída del Launcher), NextProgram personalizado, 4 ScreenBugs de eventos (Navidad ahora también configurable, + Año Nuevo, Pascua, Día de la Tierra), y 4 correcciones: ActionBar tapando contenido, ScreenBug repitiéndose entre Intro/Programa/Créditos, CRT ausente en NextProgram, y el ajuste fino de la posición del recuadro.*
 
