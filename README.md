@@ -47,7 +47,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 📡 **Overlay Visual CRT** — Efectos de scanlines y pantalla para esa sensación retro de televisor
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
 - 🆕 **ScreenBug de 3 fases** — Marca de agua animada con el logo del canal: aparición (GIF), estático (PNG) y salida (GIF, a partir de 46 segundos antes del final del bloque). Desde la Release 5.4.0, si el programa tiene Intro/Créditos activados, la aparición ocurre en la Intro y la salida en los Créditos — la cuenta de tiempo no se reinicia al cambiar de clip, "suma" la duración real de cada uno. Los GIF se reproducen con `GifMovieDrawable`, basado en la API nativa `android.graphics.Movie` (sin librerías externas — Release 2009.5.1.0). Nuevo contenido de Mayo–Julio 2009 (Release 2009.5.1.0), Julio 2009–2011 (Release 2009.5.2.0)
-- 🎄 **ScreenBug de Navidad** — Del 1 al 24 de diciembre (inclusive), la app usa automáticamente un set de ScreenBug con temática navideña, con el mismo comportamiento de 3 fases que el normal (Release 2010.5.3.0)
+- 🎄 **ScreenBugs de eventos** — Navidad (1-24 dic, 3 fases completas, Release 2010.5.3.0), Año Nuevo (25 dic-7 ene), Pascua (Domingo de Pascua) y Día de la Tierra (22 de abril) — estos 3 últimos reemplazan solo el logo estático del medio (Release 5.5.0). Los 4 se activan/desactivan individualmente en Configuración de Programa
 - ⏸ **Pantalla "Ya Volvemos"** — Pantalla intersticial auténtica de "Volvemos en un momento"
 - 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
 - ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Bumper → [Intro] → Programa), igual que cambiar de canal en TV real
@@ -167,14 +167,23 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v5.4.1` *(Bug Fix · Era Doki 1.0 · Era 2010 · "Parque Imaginario")*
-> *El ScreenBug de inicio/final directamente no aparecía en Intro/Créditos (bug real de cálculo, no de paciencia) — corregido. Y el recuadro de NextProgram: lo que va adentro es el video del programa en curso, sin estirar, no otro gráfico — corregido también.*
+### 🚀 Última versión estable — `v5.5.0` *(Release · Era Doki 1.0 · Era 2011 · "Parque Imaginario")*
+> *Cambio de Era (2010→2011). Nueva Activity Configuración de Programa (extraída del Launcher), NextProgram personalizado, 4 ScreenBugs de eventos (Navidad, Año Nuevo, Pascua, Día de la Tierra — todos configurables), y 4 correcciones: ActionBar tapando contenido, ScreenBug repitiéndose entre Intro/Programa/Créditos, CRT ausente en NextProgram, y ajuste fino de la posición del recuadro.*
 
-- 🐛 **ScreenBug ausente en Intro/Créditos** — los tiempos normales (20s / 46s) se aplicaban tal cual sobre clips que suelen ser más cortos que eso; el cálculo daba negativo y no se agendaba nada. Ahora se ajustan automáticamente a la duración real de cada clip.
-- 🎯 **Recuadro de NextProgram corregido** — ahora muestra el video del programa en curso (achicado sin estirar, dentro del recuadro), en vez de reposicionar el GIF ahí.
+- 🆕 **Nueva Activity: Configuración de Programa** — la sección "Programas" del Launcher (cantidad, videos, personalizaciones) pasa a tener su propia pantalla.
+- 🎬 **NextProgram personalizado por programa** — imagen o GIF propio en vez del de fábrica.
+- 🎄 **3 ScreenBugs de eventos nuevos** — Año Nuevo, Pascua (fechas 2026-2030), Día de la Tierra — más Navidad, ahora también configurable. Los 4 se pueden activar/desactivar individualmente.
+- 🐛 **ActionBar tapando el layout** — un `setTheme()` redundante en tiempo de ejecución interfería con el cálculo del inset de contenido; eliminado.
+- 🐛 **ScreenBug repitiéndose entre Intro/Programa/Créditos** — ya no se re-muestra la animación de aparición si ya se mostró en la Intro; la fase intermedia se restaura en vez de ocultarse al pasar a Créditos.
+- 🐛 **NextProgram sin efecto CRT** — el marco vive en un contenedor aparte del video; se le agregó su propia instancia de `CrtOverlayView`.
+- 🎯 **Ajuste fino del recuadro** — posición remedida sobre una imagen de referencia más precisa.
 
 <details>
 <summary>📜 Versiones estables anteriores</summary>
+
+**`v5.4.1`** *(Bug Fix · Era Doki 1.0 · Era 2010 · "Parque Imaginario")* — El ScreenBug de inicio/final directamente no aparecía en Intro/Créditos (bug real de cálculo, no de paciencia). Y el recuadro de NextProgram: lo que va adentro es el video del programa en curso, sin estirar, no otro gráfico.
+- 🐛 ScreenBug ausente en Intro/Créditos — los tiempos normales (20s/46s) se aplicaban tal cual sobre clips más cortos que eso; el cálculo daba negativo y no se agendaba nada.
+- 🎯 Recuadro de NextProgram corregido — ahora muestra el video del programa en curso, no otro gráfico.
 
 **`v5.4.0`** *(Release · Era Doki 1.0 · Era 2010 · "Parque Imaginario")* — NextProgram reposicionado en pantalla y ScreenBug/NextProgram atados a Intro/Créditos (personalizados por programa, opcionales) en vez de siempre al Programa. Se eliminó StandaloneCommercial: los comerciales solo interrumpen Programas. 2 bug fixes de arranque: ANR al abrir la app, y la cantidad de programas quedándose vieja si el Launcher seguía en segundo plano.
 - 🐛 ANR "Discovery Kids no responde" al abrir la app — la precarga de los GIFs de ScreenBug/NextProgram decodificaba hasta 8 GIFs de forma sincrónica en el hilo principal dentro de `onCreate()`; ahora corre en un hilo aparte.

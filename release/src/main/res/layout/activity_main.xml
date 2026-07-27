@@ -74,6 +74,20 @@
              android:alpha="0"
              android:id="@+id/nextProgramBug" />
 
+        <!-- Release 5.5.0 — BUG FIX ("el nextprogram no aparece con el crt"):
+             el CrtOverlayView original vive DENTRO de videoContainer, así que
+             nunca cubría este marco (que es un AspectRatioFrameLayout
+             HERMANO, fuera de videoContainer). Se agrega una segunda
+             instancia acá, con los mismos parámetros (ver
+             LiveDiscoveryKids.applySettings(): nextProgramCrtOverlay.effectEnabled
+             se configura junto con crtOverlay). -->
+        <com.keyler.discoverykidschannel.CrtOverlayView
+             android:layout_height="match_parent"
+             android:layout_width="match_parent"
+             android:clickable="false"
+             android:focusable="false"
+             android:id="@+id/nextProgramCrtOverlay" />
+
     </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
 
     <TextView

@@ -122,6 +122,9 @@ class LiveDiscoveryKids : AppCompatActivity() {
     internal lateinit var settingsButton: ImageButton  // Preview 2006.4.1.0.11
     // Overlay CRT: scanlines + phosphor mask + vignette + flicker (Canvas puro)
     internal lateinit var crtOverlay: CrtOverlayView
+    // Release 5.5.0 — ver comentario en activity_main.xml: segunda instancia
+    // de CRT, exclusiva del marco NextProgram (que vive fuera de videoContainer).
+    internal lateinit var nextProgramCrtOverlay: CrtOverlayView
 
     // ── Configuración (Preview 2006.4.1.0.12) ───────────────────────────────────
     // Antes eran `const val` en companion object; ahora son configurables desde
@@ -293,6 +296,18 @@ class LiveDiscoveryKids : AppCompatActivity() {
     internal var breakQueue       = mutableListOf<Int>()   // upcoming break positions in ms
     internal var lastCommercialRes: Int = -1
     internal var lastBumperRes: Int = -1
+    // Release 5.5.0 — duración real (ms) de la última Intro reproducida.
+    // Se captura en playIntro() (onPrepared) y se consume una sola vez en
+    // scheduleSegmentLogic() del primer segmento del Programa siguiente,
+    // para RESTAURAR la fase de ScreenBug correcta (no re-disparar el
+    // inicio desde cero) — ver comentario largo en scheduleMultipleScreenbugs().
+    internal var lastIntroDurationMs: Int = 0
+    // Release 5.5.0 — true mientras la fase 2 (mid, PNG estático) del
+    // ScreenBug está actualmente visible. Se usa para restaurarla de
+    // inmediato al empezar los Créditos (que suprimen su propia fase 1/2)
+    // en vez de que se quede oculta desde el corte Programa→Créditos hasta
+    // que le toque a la fase 3 — ver scheduleCreditosOverlays().
+    internal var screenBugMidVisible: Boolean = false
     // ya_regresa determinístico: cada programa tiene asignado su propio ya_regresa fijo.
     // programa 0 (pro1) → ya_regresa1 | programa 1 (pro2) → ya_regresa2 | etc.
     // Se indexa por currentProgramIndex en playCommercial().
@@ -421,8 +436,8 @@ class LiveDiscoveryKids : AppCompatActivity() {
          */
         internal val NEXTPROGRAMS = listOf(
             R.drawable.nextprogram1,
-            /*
             R.drawable.nextprogram2,
+            /*
             R.drawable.nextprogram3,
             R.drawable.nextprogram4 */
         )
@@ -495,6 +510,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
         nextButton = findViewById(R.id.btnNext)
         settingsButton = findViewById(R.id.btnSettings)  // Preview 2006.4.1.0.11
         crtOverlay = findViewById(R.id.crtOverlay)
+        nextProgramCrtOverlay = findViewById(R.id.nextProgramCrtOverlay)
 
         // Botones ocultos al inicio; aparecen al tocar la pantalla
         prevButton.visibility = View.GONE
@@ -902,18 +918,23 @@ internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
 
     Log.d(LiveDiscoveryKids.TAG, "▶ INTRO [programa=${programIndex + 1}, uri=$uri]")
 
-    // Release 5.4.0/5.4.1: el ScreenBug de inicio (fase 1/2) corre COMPLETO
-    // acá — la Intro es la única responsable, el primer segmento del
-    // Programa la suprime (ver scheduleSegmentLogic()).
+    // Release 5.4.0/5.4.1/5.5.0: el ScreenBug de inicio (fase 1/2) arranca
+    // acá — se pasa la duración REAL de la Intro como segmentEndMs para que
+    // el clamp interno de scheduleMultipleScreenbugs() garantice que se
+    // muestre incluso en Intros cortas.
     //
-    // BUG FIX 5.4.1: se pasa la duración REAL de la Intro como segmentEndMs
-    // (antes: un "1 día" ficticio) para que el clamp interno de
-    // scheduleMultipleScreenbugs() (ver comentario largo ahí) pueda
-    // garantizar que se muestre incluso en Intros más cortas que el delay
-    // normal de 20s.
+    // BUG FIX 5.5.0 ("se reinicia y vuelve a mostrar screenbug de inicio
+    // sabiendo que ya se mostró en el intro"): además, se guarda la
+    // duración real en lastIntroDurationMs — scheduleSegmentLogic() la usa
+    // para el primer segmento del Programa (startMidElapsed = elapsed +
+    // lastIntroDurationMs, en vez de arrancar de 0), así el Programa
+    // RESTAURA la fase que corresponda (mid si la Intro ya mostró y ocultó
+    // el start, o directamente el resto del delay si la Intro fue corta)
+    // en vez de re-disparar el start desde cero.
     playUriWithTransition(
         uri,
         onPrepared = { durationMs ->
+            lastIntroDurationMs = durationMs
             scheduleMultipleScreenbugs(
                 segmentStartMs = 0,
                 segmentEndMs = durationMs,
@@ -941,8 +962,21 @@ internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
  * ver el comentario largo en scheduleMultipleScreenbugs() sobre el clamp
  * que lo soluciona ahí adentro (a partir de esta Release, automático para
  * cualquier caller — no hace falta calcular nada acá).
+ *
+ * Release 5.5.0 — BUG FIX ("lo mismo pasa en créditos con el screenbug"):
+ * como acá suppressStartMidPhases=true (los Créditos nunca corren su
+ * propia fase 1/2), si el Programa estaba mostrando la fase 2 (mid) justo
+ * antes del corte, se quedaba oculta desde el arranque de los Créditos
+ * hasta que le tocara a la fase 3 — un hueco sin ScreenBug que no debería
+ * estar ahí. Ahora, si screenBugMidVisible ya venía en true, se restaura
+ * de inmediato (mismo criterio que el resto: resetAnimation=false, sin
+ * reiniciar nada) antes de agendar la fase 3 — que la va a reemplazar más
+ * adelante en el momento que le corresponda.
  */
 private fun LiveDiscoveryKids.scheduleCreditosOverlays(creditosDurationMs: Int, elapsed: Long) {
+    if (screenBugMidVisible) {
+        fadeInBugWithResource(currentMidScreenBugResource(), resetAnimation = false)
+    }
     scheduleMultipleScreenbugs(
         segmentStartMs = 0,
         segmentEndMs = creditosDurationMs,
@@ -1384,7 +1418,7 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     // de la función — ver isChristmasScreenBugActive().
     val christmas = isChristmasScreenBugActive()
     val startRes = if (christmas) R.drawable.screenbug_start_navidad else R.drawable.screenbug_start
-    val midRes = if (christmas) R.drawable.screenbug_navidad else R.drawable.screenbug
+    val midRes = currentMidScreenBugResource()
     val endRes = if (christmas) R.drawable.screenbug_end_navidad else R.drawable.screenbug_end
 
     // --- PHASE 1: screenbug_start (GIF) ---
@@ -1439,8 +1473,10 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
         when {
             startMidElapsed >= startShowAt && startMidElapsed < startHideAt && segmentDuration > startShowAt ->
                 fadeInBugWithResource(startRes, resetAnimation = false)
-            startMidElapsed >= midShowAt && startMidElapsed < midHideAt && segmentDuration > midShowAt && midShowAt < midHideAt ->
+            startMidElapsed >= midShowAt && startMidElapsed < midHideAt && segmentDuration > midShowAt && midShowAt < midHideAt -> {
                 fadeInBugWithResource(midRes, resetAnimation = false)
+                screenBugMidVisible = true
+            }
         }
 
         if (startMidElapsed < startShowAt && segmentDuration > startShowAt) {
@@ -1463,13 +1499,17 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
             val midDelay = (midShowAt - startMidElapsed).coerceAtLeast(0L)
             post(midDelay) {
                 fadeInBugWithResource(midRes)
+                screenBugMidVisible = true
                 Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 2: screenbug shown (navidad=$christmas)")
             }
         }
 
         if (startMidElapsed < midHideAt && segmentDuration > midHideAt && midHideAt > midShowAt) {
             val hideDelay = (midHideAt - startMidElapsed).coerceAtLeast(0L)
-            post(hideDelay) { fadeOutBug() }
+            post(hideDelay) {
+                fadeOutBug()
+                screenBugMidVisible = false
+            }
         }
     }
 
@@ -1480,12 +1520,14 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     if (!suppressEndPhase) {
         if (elapsed >= endShowAt && elapsed < endHideAt && segmentDuration > endShowAt) {
             fadeInBugWithResource(endRes, resetAnimation = false)
+            screenBugMidVisible = false
         }
 
         if (elapsed < endShowAt && segmentDuration > endShowAt) {
             val endDelay = (endShowAt - elapsed).coerceAtLeast(0L)
             post(endDelay) {
                 fadeInBugWithResource(endRes)
+                screenBugMidVisible = false
                 Log.d(LiveDiscoveryKids.TAG, "ScreenBug PHASE 3: screenbug_end shown (navidad=$christmas)")
             }
         }
@@ -1499,15 +1541,86 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
 
 /**
  * Release 2010.5.3.0 — true entre el 1 y el 24 de diciembre (inclusive),
- * cualquier año. Decide si scheduleMultipleScreenbugs() usa el set de
- * ScreenBug de Navidad (screenbug_start_navidad.gif / screenbug_navidad.png
- * / screenbug_end_navidad.gif) en vez del normal.
+ * cualquier año, SI el usuario no lo desactivó en Configuración de
+ * Programa (Release 5.5.0: SettingsManager.isNavidadScreenBugEnabled(),
+ * default activado — mantiene el comportamiento previo a esta Release).
+ * Decide si scheduleMultipleScreenbugs() usa el set de ScreenBug de
+ * Navidad (screenbug_start_navidad.gif / screenbug_navidad.png /
+ * screenbug_end_navidad.gif) en vez del normal.
  */
-internal fun isChristmasScreenBugActive(): Boolean {
+internal fun LiveDiscoveryKids.isChristmasScreenBugActive(): Boolean {
+    if (!SettingsManager.isNavidadScreenBugEnabled(this)) return false
     val cal = java.util.Calendar.getInstance()
     val month = cal.get(java.util.Calendar.MONTH)  // 0-indexado: Calendar.DECEMBER == 11
     val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
     return month == java.util.Calendar.DECEMBER && day in 1..24
+}
+
+/**
+ * Release 5.5.0 — true del 25 de diciembre al 7 de enero (inclusive),
+ * cualquier año, si el usuario lo activó. A diferencia de Navidad, Año
+ * Nuevo/Pascua/Día de la Tierra solo reemplazan la fase 2 (screenbug.png,
+ * el PNG estático) — las fases 1/3 (screenbug_start/end) siguen siendo
+ * siempre las normales, tal como pidió Keyler ("remplaza screenbug.png por
+ * screenbug_year.png").
+ */
+internal fun LiveDiscoveryKids.isAnoNuevoScreenBugActive(): Boolean {
+    if (!SettingsManager.isAnoNuevoScreenBugEnabled(this)) return false
+    val cal = java.util.Calendar.getInstance()
+    val month = cal.get(java.util.Calendar.MONTH)
+    val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
+    return (month == java.util.Calendar.DECEMBER && day in 25..31) ||
+        (month == java.util.Calendar.JANUARY && day in 1..7)
+}
+
+/**
+ * Release 5.5.0 — fechas de Domingo de Pascua 2026-2030 (algoritmo de
+ * Computus, calendario gregoriano). Agregar años más adelante cuando haga
+ * falta — no hay una fórmula "en vivo" acá adentro a propósito, para poder
+ * revisar/confirmar cada fecha a mano antes de que el ScreenBug la use.
+ */
+private val PASCUA_MES_DIA_POR_ANIO: Map<Int, Pair<Int, Int>> = mapOf(
+    2026 to (4 to 5),
+    2027 to (3 to 28),
+    2028 to (4 to 16),
+    2029 to (4 to 1),
+    2030 to (4 to 21)
+)
+
+/** Release 5.5.0 — true el Domingo de Pascua del año en curso (ver PASCUA_MES_DIA_POR_ANIO), si el usuario lo activó. */
+internal fun LiveDiscoveryKids.isPascuaScreenBugActive(): Boolean {
+    if (!SettingsManager.isPascuaScreenBugEnabled(this)) return false
+    val cal = java.util.Calendar.getInstance()
+    val year = cal.get(java.util.Calendar.YEAR)
+    val month = cal.get(java.util.Calendar.MONTH) + 1   // 1-indexado, para comparar directo contra el mapa
+    val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
+    val target = PASCUA_MES_DIA_POR_ANIO[year] ?: return false
+    return month == target.first && day == target.second
+}
+
+/** Release 5.5.0 — true el 22 de abril (Día de la Tierra), cualquier año, si el usuario lo activó. */
+internal fun LiveDiscoveryKids.isDiaTierraScreenBugActive(): Boolean {
+    if (!SettingsManager.isDiaTierraScreenBugEnabled(this)) return false
+    val cal = java.util.Calendar.getInstance()
+    val month = cal.get(java.util.Calendar.MONTH)
+    val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
+    return month == java.util.Calendar.APRIL && day == 22
+}
+
+/**
+ * Release 5.5.0 — resuelve cuál PNG usar para la fase 2 (mid) del ScreenBug
+ * en este momento, según qué evento esté activo (y habilitado por el
+ * usuario). Orden de prioridad (no se solapan en la práctica, pero por las
+ * dudas): Navidad > Año Nuevo > Pascua > Día de la Tierra > normal.
+ * Compartida entre scheduleMultipleScreenbugs() y scheduleCreditosOverlays()
+ * (para restaurar la fase 2 correcta al entrar a Créditos sin reiniciarla).
+ */
+internal fun LiveDiscoveryKids.currentMidScreenBugResource(): Int = when {
+    isChristmasScreenBugActive() -> R.drawable.screenbug_navidad
+    isAnoNuevoScreenBugActive() -> R.drawable.screenbug_year
+    isPascuaScreenBugActive() -> R.drawable.screenbug_easteregg
+    isDiaTierraScreenBugActive() -> R.drawable.screenbug_tierra
+    else -> R.drawable.screenbug
 }
 
 /**
@@ -1527,10 +1640,6 @@ internal fun isChristmasScreenBugActive(): Boolean {
  * SettingsActivity (antes BUG_SHOW_DELAY fijo en 20 s).
  */
 internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSegment: Boolean, isFirstPlay: Boolean) {
-    // Nota: isFirstPlay ya no se usa acá adentro desde la Release 5.4.1 (ver
-    // comentario de scheduleMultipleScreenbugs() sobre por qué se dejó de
-    // suprimir la fase 1/2 en el primer segmento). Se mantiene en la firma
-    // para no tocar los 2 call-sites y por si vuelve a hacer falta.
     val previousSegmentStartMs = currentSegmentStartMs
     if (isNewSegment) {
         currentSegmentStartMs = segmentStartMs
@@ -1544,25 +1653,35 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
     val baseSegmentStartMs = if (isNewSegment) segmentStartMs else previousSegmentStartMs
     val elapsed = (segmentStartMs - baseSegmentStartMs).toLong().coerceAtLeast(0L)
 
-    // Release 5.4.1 — Intro / Créditos (ver comentario largo en scheduleMultipleScreenbugs()):
-    //   - La fase 1/2 del ScreenBug NO se suprime en el Programa aunque haya
-    //     Intro válida — corre normal acá también (con [elapsed] fresco,
-    //     0 = recién arranca el Programa), exactamente igual que si no
-    //     hubiera Intro. Se probó suprimirla (asumiendo que la Intro ya la
-    //     "dejaba mostrada"), pero beginProgramSegment() siempre resetea el
-    //     ScreenBug a oculto al arrancar cualquier segmento nuevo (ver
-    //     setBugAlpha(0f) ahí) — así que suprimirla acá significaba que lo
-    //     que se llegó a mostrar en la Intro se ocultaba de golpe justo al
-    //     cortar a Programa y NUNCA volvía a aparecer. Dejarla correr acá
-    //     también es más simple y más seguro: en el peor caso se ve dos
-    //     veces (una breve en la Intro, otra normal ~20s adentro del
-    //     Programa) — pero JAMÁS deja de aparecer.
-    //   - La fase 3 (screenbug_end) + NextProgram SÍ se suprimen en el
-    //     último segmento del Programa cuando hay Créditos válidos — acá si
-    //     corresponde diferir por completo, porque a diferencia de la fase
-    //     1/2 esta si no se difiere, se termina mostrando 46s antes del
-    //     final del PROGRAMA (mientras el programa sigue en pantalla), que
-    //     es exactamente lo que Keyler pidió evitar.
+    // Release 5.5.0 — BUG FIX (causa raíz real, "el ScreenBug se reinicia y
+    // vuelve a mostrar el de inicio sabiendo que ya se mostró en el intro"):
+    // la 5.4.1 hacía correr la fase 1/2 COMPLETA de nuevo en el primer
+    // segmento del Programa (elapsed=0 fresco) aunque ya hubiera corrido en
+    // la Intro, razonando que "peor es que no aparezca nunca". Pero eso es
+    // exactamente lo que Keyler reportó como bug: se ve el screenbug_start
+    // (el GIF de aparición) DE NUEVO en el Programa, como si se hubiera
+    // reiniciado, en vez de continuar en la fase que ya le tocaba (mid, si
+    // la Intro ya alcanzó a mostrar y ocultar el start).
+    //
+    // Se vuelve al enfoque de la 5.4.0 (carry-over), esta vez SIN el bug de
+    // cálculo negativo que tenía esa versión: [startMidElapsed] pasa acá la
+    // duración real de la Intro (lastIntroDurationMs) sumada al elapsed
+    // fresco de este segmento, en vez de 0 — scheduleMultipleScreenbugs()
+    // (con el clamp interno ya corregido en la 5.4.1) usa ese valor para
+    // decidir qué fase RESTAURAR de inmediato (mid, si ya tocaba) o cuánto
+    // falta del delay original (si la Intro fue corta) — nunca vuelve a
+    // programar el start desde cero si ya se mostró.
+    val startMidElapsed = if (isFirstPlay && hasValidIntro(currentProgramIndex)) {
+        (elapsed + lastIntroDurationMs).also {
+            Log.d(LiveDiscoveryKids.TAG, "ScreenBug: primer segmento con Intro previa — se restaura/continúa en ${it}ms (Intro duró ${lastIntroDurationMs}ms), no se reinicia")
+        }
+    } else {
+        elapsed
+    }
+
+    // La fase 3 (screenbug_end) + NextProgram SÍ se suprimen en el último
+    // segmento del Programa cuando hay Créditos válidos — se difieren a
+    // playCreditos(), que los agenda con la duración real de los créditos.
     val isFinalSegment = breakQueue.isEmpty()
     val deferToCreditos = isFinalSegment && hasValidCreditos(currentProgramIndex)
 
@@ -1571,6 +1690,7 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
     // scheduleMultipleScreenbugs() que maneja los timings de los 3 drawables.
     scheduleMultipleScreenbugs(
         segmentStartMs, segmentEndMs, elapsed,
+        startMidElapsed = startMidElapsed,
         suppressEndPhase = deferToCreditos
     )
 
@@ -2805,8 +2925,50 @@ internal fun LiveDiscoveryKids.fadeInNextProgramBug() {
  * Usa el GifMovieDrawable cacheado por preloadNextProgramGifs(); si por
  * algún motivo el preload todavía no corrió, cae a setImageResource()
  * (se ve el primer frame congelado, pero no crashea).
+ *
+ * Release 5.5.0 — NUEVO: si el usuario activó un NextProgram personalizado
+ * para este programa (Configuración de Programa) y eligió un archivo, se
+ * usa ese en vez del de fábrica. Admite GIF animado o una imagen estática
+ * (PNG/JPG) — se intenta decodificar como GIF primero (Movie), y si no es
+ * un GIF válido, cae a Bitmap estático.
+ *
+ * ⚠️ Nota de rendimiento: a diferencia de los 4 nextprogramN.gif de
+ * fábrica (precargados en un hilo aparte en onCreate(), ver
+ * preloadNextProgramGifs()), el archivo personalizado se lee y decodifica
+ * acá mismo, en el momento en que NextProgram tiene que aparecer — si el
+ * usuario elige un archivo muy pesado, podría notarse un pequeño
+ * tranco justo en ese instante. No se resolvió en esta Release por
+ * mantener el alcance acotado; si se nota en la práctica, se puede
+ * precargar el personalizado también en un hilo aparte más adelante.
  */
 private fun LiveDiscoveryKids.showNextProgramResource() {
+    val customUriString = if (SettingsManager.isNextProgramCustom(this, currentProgramIndex))
+        SettingsManager.getNextProgramUri(this, currentProgramIndex)
+    else null
+
+    if (!customUriString.isNullOrBlank()) {
+        try {
+            val bytes = contentResolver.openInputStream(Uri.parse(customUriString))?.use { it.readBytes() }
+            if (bytes != null) {
+                val movie = android.graphics.Movie.decodeByteArray(bytes, 0, bytes.size)
+                if (movie != null) {
+                    nextProgramBug.setImageDrawable(GifMovieDrawable(movie))
+                } else {
+                    val bmp = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    if (bmp != null) {
+                        nextProgramBug.setImageBitmap(bmp)
+                    } else {
+                        Log.w(LiveDiscoveryKids.TAG, "NextProgram personalizado (programa $currentProgramIndex): archivo no es GIF ni imagen válida")
+                    }
+                }
+                return
+            }
+        } catch (e: Exception) {
+            Log.e(LiveDiscoveryKids.TAG, "Error cargando NextProgram personalizado (programa $currentProgramIndex) — se usa el de fábrica", e)
+            // sigue abajo y cae al de fábrica
+        }
+    }
+
     val index = currentProgramIndex % LiveDiscoveryKids.NEXTPROGRAMS.size
     val res = LiveDiscoveryKids.NEXTPROGRAMS[index]
     val cached = nextProgramGifs.getOrNull(index)
@@ -2879,9 +3041,15 @@ internal fun LiveDiscoveryKids.setNextProgramBugAlpha(alpha: Float) {
 // vertical del marco) fueron los mismos que se habían calculado para
 // posicionar el ImageView en la Release 5.4.0 — ver ese CHANGELOG.
 
-private const val NEXTPROGRAM_BOX_LEFT_FRACTION = 0.46f
-private const val NEXTPROGRAM_BOX_TOP_FRACTION = 0.09f
-private const val NEXTPROGRAM_BOX_BOTTOM_FRACTION = 0.53f
+// Release 5.5.0 — ajuste fino ("le falta poco para ubicarse"): remedidas
+// sobre la nueva imagen de referencia (12160.jpg, con el video YA
+// mostrándose adentro) en vez de la estimación original a ojo. Marco 4:3
+// detectado en x:[325,1269] / y:[0,720]; borde amarillo del recuadro en
+// x:[765,1210] / y:[60,378] → fracciones sobre el marco: left=0.466,
+// top=0.083, bottom=0.525.
+private const val NEXTPROGRAM_BOX_LEFT_FRACTION = 0.466f
+private const val NEXTPROGRAM_BOX_TOP_FRACTION = 0.083f
+private const val NEXTPROGRAM_BOX_BOTTOM_FRACTION = 0.525f
 
 /**
  * Achica y reposiciona videoContainer para que el video quede dentro del
@@ -3052,6 +3220,7 @@ internal fun LiveDiscoveryKids.goFullscreen() {
  */
 internal fun LiveDiscoveryKids.applySettings() {
     crtOverlay.effectEnabled = SettingsManager.isCrtEffectEnabled(this)
+    nextProgramCrtOverlay.effectEnabled = SettingsManager.isCrtEffectEnabled(this)
     bugShowDelayMs = SettingsManager.getScreenbugDelaySec(this) * 1_000L
     breakIntervalMinMs = SettingsManager.getCommercialMinMinutes(this) * 60 * 1_000L
     breakIntervalMaxMs = SettingsManager.getCommercialMaxMinutes(this) * 60 * 1_000L

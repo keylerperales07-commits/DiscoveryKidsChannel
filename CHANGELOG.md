@@ -6,6 +6,60 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2011.5.5.0] — 🚀 Release · Era Doki 1.0 · Era 2011 · "Parque Imaginario" — 2026-07-26
+
+> *Cambio de Era (2010→2011). Nueva Activity Configuración de Programa (extraída del Launcher), NextProgram personalizado, 4 ScreenBugs de eventos (Navidad ahora también configurable, + Año Nuevo, Pascua, Día de la Tierra), y 4 correcciones: ActionBar tapando contenido, ScreenBug repitiéndose entre Intro/Programa/Créditos, CRT ausente en NextProgram, y el ajuste fino de la posición del recuadro.*
+
+### 🆕 Nueva Activity: Configuración de Programa
+
+Se extrajo la sección "Programas" (cantidad, video de cada uno, ya_regresa/continuamos/Intro/Créditos personalizados) de `DiscoveryKidsLauncherActivity` a su propia Activity, `ProgramConfigActivity` — accesible desde un botón en el Launcher. Mismo comportamiento y persistencia (SAF, permisos de lectura) que antes, solo organizado en su propia pantalla.
+
+- Nuevo `activity_program_config.xml`, mismo criterio visual (Material3, `MaterialCardView`) que ya tenía esta sección dentro del Launcher.
+- `DiscoveryKidsLauncherActivity` se achica a lo esencial: redirección automática si Experimental está desactivado, botón "Iniciar canal" (+ validación previa), botón "Configuración de Programa", y el menú de Configuración general.
+
+### 🎬 NextProgram personalizado por programa
+
+Nueva fila en Configuración de Programa: activar + elegir una imagen o GIF propio para el NextProgram de cada programa, en vez del `nextprogramN.gif` de fábrica. A diferencia de Intro/Créditos, sí tiene un valor por defecto (los 4 de fábrica) — mismo patrón "personalizado" que ya_regresa/continuamos.
+
+> ⚠️ El archivo personalizado se decodifica en el momento en que NextProgram aparece (no se precarga en un hilo aparte como los 4 de fábrica) — si el usuario elige un archivo muy pesado, podría notarse un pequeño tranco justo en ese instante. Alcance acotado a propósito para esta Release; si se nota en la práctica, se resuelve precargándolo también en segundo plano.
+
+### 🎄 ScreenBugs de eventos: Año Nuevo, Pascua, Día de la Tierra (+ Navidad ahora configurable)
+
+Tres ScreenBugs de evento nuevos, todos reemplazando SOLO la fase 2 (`screenbug.png`, el PNG estático) — las fases 1/3 (`screenbug_start`/`screenbug_end`) siguen siendo siempre las normales:
+
+- **Año Nuevo** (`screenbug_year.png`): 25 de diciembre al 7 de enero.
+- **Pascua** (`screenbug_easteregg.png`): Domingo de Pascua — fechas 2026-2030 precalculadas (algoritmo de Computus) y confirmadas a mano: 5 abr 2026, 28 mar 2027, 16 abr 2028, 1 abr 2029, 21 abr 2030.
+- **Día de la Tierra** (`screenbug_tierra.png`): 22 de abril, todos los años.
+
+Los 4 (incluida Navidad, que ya existía desde la 2010.5.3.0 pero sin forma de desactivarla) ahora son configurables individualmente desde Configuración de Programa → "ScreenBugs de eventos" — todos activados por defecto (mismo comportamiento que ya tenía Navidad).
+
+### 🐛 BUG FIX — ActionBar tapando el layout
+
+Causa más probable: `DiscoveryKidsLauncherActivity.onCreate()` tenía un `setTheme(R.style.LauncherTheme)` redundante ANTES de `setContentView()` — el manifiesto ya declara ese tema para la Activity. Reaplicar el tema en runtime, después de que la ventana ya se creó con el tema del manifiesto, es un problema conocido de AppCompat que puede alterar cómo se calcula el inset de contenido bajo la ActionBar. Se sacó por completo.
+
+### 🐛 BUG FIX — ScreenBug se reinicia entre Intro/Programa/Créditos
+
+*"El screenbug se reinicia y vuelve a mostrar screenbug de inicio cuando cambia de intro a programa sabiendo de que ya se mostró en el intro, lo mismo pasa en créditos."*
+
+La 5.4.1 hacía correr la fase 1/2 completa de nuevo en el primer segmento del Programa aunque ya hubiera corrido en la Intro (para garantizar que apareciera al menos una vez) — pero eso es justo lo que se veía como "se reinicia": el GIF de aparición se mostraba de nuevo, en vez de continuar en la fase que le tocaba.
+
+- **Intro → Programa**: se volvió al enfoque de carry-over (`lastIntroDurationMs`): el Programa usa la duración real de la Intro para decidir qué fase RESTAURAR (mid, si la Intro ya la mostró y ocultó el start) o cuánto falta del delay original — nunca vuelve a agendar el start desde cero si ya se mostró. Combinado con el clamp de duración corta ya arreglado en la 5.4.1, no reintroduce el bug de "nunca aparece" en Intros cortas.
+- **Programa → Créditos**: nuevo flag `screenBugMidVisible` — si la fase 2 (mid) estaba visible justo antes del corte a Créditos, se restaura de inmediato ahí (en vez de quedar oculta hasta que le toque a la fase 3).
+
+### 🐛 BUG FIX — NextProgram sin efecto CRT
+
+El `CrtOverlayView` original vive dentro de `videoContainer` — desde la Release 5.4.1, el marco NextProgram vive en su PROPIO `AspectRatioFrameLayout` hermano (para que el logo no se achique junto con el video del recuadro), así que nunca tenía el efecto CRT encima. Se agregó una segunda instancia de `CrtOverlayView` en ese mismo contenedor, configurada junto con la original en `applySettings()`.
+
+### 🎯 Ajuste fino de la posición del recuadro
+
+Remedido sobre la nueva imagen de referencia (con el video ya mostrándose adentro, a diferencia de la anterior): `NEXTPROGRAM_BOX_LEFT_FRACTION` 0.46→0.466, `TOP` 0.09→0.083, `BOTTOM` 0.53→0.525.
+
+### ⚠️ Alcance
+
+> Nuevo: `ProgramConfigActivity.kt`, `activity_program_config.xml`. Modificados: `LiveDiscoveryKids.kt` (eventos estacionales, NextProgram personalizado, carry-over de ScreenBug, segundo CRT, fracciones del recuadro), `SettingsManager.kt` (keys de NextProgram/eventos), `DiscoveryKidsLauncherActivity.kt` (extracción), `activity_launcher.xml`, `item_program_config.xml`, `activity_main.xml`, `AndroidManifest.xml`. `build.gradle`: `versionName` a `2011.5.5.0`.
+
+---
+
 ## [2010.5.4.1] — 🐛 Bug Fix · Era Doki 1.0 · Era 2010 · "Parque Imaginario" — 2026-07-25
 
 > *3 correcciones sobre la 5.4.0: el ScreenBug de inicio/final directamente no aparecía en Intro/Créditos (bug real, no de paciencia — la cuenta de 20s/46s nunca entraba en clips cortos y no se agendaba nada), y NextProgram tenía mal la idea de qué va en el recuadro: es el VIDEO del programa, no otro GIF.*

@@ -313,6 +313,60 @@
             android:fontFamily="@font/dk_font" />
     </LinearLayout>
 
+    <!-- ── NextProgram personalizado (Release 5.5.0) — SÍ tiene default de fábrica ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="NextProgram personalizado"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:fontFamily="@font/dk_font" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchNextProgramCustom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btnPickNextProgramImage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_video_pick"
+            android:contentDescription="Elegir imagen de NextProgram" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Elegir imagen/GIF de NextProgram"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="13sp"
+            android:fontFamily="@font/dk_font" />
+    </LinearLayout>
+
     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" android:layout_marginTop="16dp" />
 
 </LinearLayout>

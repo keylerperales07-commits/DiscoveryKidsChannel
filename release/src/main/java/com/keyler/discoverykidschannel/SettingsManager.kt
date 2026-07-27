@@ -98,6 +98,23 @@ object SettingsManager {
     private const val KEY_INTRO_URI_PREFIX = "intro_uri_"
     private const val KEY_CREDITOS_ENABLED_PREFIX = "creditos_enabled_"
     private const val KEY_CREDITOS_URI_PREFIX = "creditos_uri_"
+    // Release 5.5.0 — NextProgram personalizado por programa. Mismo criterio
+    // que Intro/Créditos: activado + Uri por separado (sin "personalizado"),
+    // porque si el usuario lo activa sin elegir imagen no hay nada que
+    // mostrar — LiveDiscoveryKids sigue con el nextprogramN.gif de fábrica
+    // si no está activado (ver LiveDiscoveryKids.resolveNextProgramResource()).
+    private const val KEY_NEXTPROGRAM_CUSTOM_PREFIX = "nextprogram_custom_"
+    private const val KEY_NEXTPROGRAM_URI_PREFIX = "nextprogram_uri_"
+
+    // Release 5.5.0 — activar/desactivar cada ScreenBug de evento (global,
+    // no por programa) desde Configuración de Programa. Navidad ya existía
+    // desde la 2010.5.3.0 sin esta opción (auto-activaba por fecha
+    // siempre); default=true para no cambiar el comportamiento de nadie
+    // que ya la tenía funcionando.
+    private const val KEY_EVENT_NAVIDAD_ENABLED = "event_navidad_enabled"
+    private const val KEY_EVENT_ANIONUEVO_ENABLED = "event_anionuevo_enabled"
+    private const val KEY_EVENT_PASCUA_ENABLED = "event_pascua_enabled"
+    private const val KEY_EVENT_TIERRA_ENABLED = "event_tierra_enabled"
 
     // ── Valores por defecto ─────────────────────────────────────────────────
     const val DEFAULT_BG_MUSIC_ENABLED = true
@@ -116,6 +133,11 @@ object SettingsManager {
     const val DEFAULT_CONTINUAMOS_CUSTOM = false
     const val DEFAULT_INTRO_ENABLED = false      // Release 5.4.0
     const val DEFAULT_CREDITOS_ENABLED = false   // Release 5.4.0
+    const val DEFAULT_NEXTPROGRAM_CUSTOM = false // Release 5.5.0
+    const val DEFAULT_EVENT_NAVIDAD_ENABLED = true    // Release 5.5.0 — ya existía sin toggle, default true = mismo comportamiento previo
+    const val DEFAULT_EVENT_ANIONUEVO_ENABLED = true  // Release 5.5.0
+    const val DEFAULT_EVENT_PASCUA_ENABLED = true      // Release 5.5.0
+    const val DEFAULT_EVENT_TIERRA_ENABLED = true      // Release 5.5.0
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -294,5 +316,53 @@ object SettingsManager {
 
     fun setCreditosUri(context: Context, index: Int, uri: String?) {
         prefs(context).edit().putString(KEY_CREDITOS_URI_PREFIX + index, uri).apply()
+    }
+
+    // ── NextProgram personalizado por programa (Release 5.5.0) ──────────────
+    // A diferencia de Intro/Créditos, acá SÍ hay un valor por defecto de
+    // fábrica (nextprogram1..4.gif, ver LiveDiscoveryKids.NEXTPROGRAMS) — por
+    // eso sigue el patrón "personalizado" de ya_regresa/continuamos
+    // (isXCustom) en vez del patrón "activado" de Intro/Créditos.
+    fun isNextProgramCustom(context: Context, index: Int): Boolean =
+        prefs(context).getBoolean(KEY_NEXTPROGRAM_CUSTOM_PREFIX + index, DEFAULT_NEXTPROGRAM_CUSTOM)
+
+    fun setNextProgramCustom(context: Context, index: Int, custom: Boolean) {
+        prefs(context).edit().putBoolean(KEY_NEXTPROGRAM_CUSTOM_PREFIX + index, custom).apply()
+    }
+
+    fun getNextProgramUri(context: Context, index: Int): String? =
+        prefs(context).getString(KEY_NEXTPROGRAM_URI_PREFIX + index, null)
+
+    fun setNextProgramUri(context: Context, index: Int, uri: String?) {
+        prefs(context).edit().putString(KEY_NEXTPROGRAM_URI_PREFIX + index, uri).apply()
+    }
+
+    // ── ScreenBugs de evento (Release 5.5.0) — activar/desactivar, global ───
+    fun isNavidadScreenBugEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_EVENT_NAVIDAD_ENABLED, DEFAULT_EVENT_NAVIDAD_ENABLED)
+
+    fun setNavidadScreenBugEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_EVENT_NAVIDAD_ENABLED, enabled).apply()
+    }
+
+    fun isAnoNuevoScreenBugEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_EVENT_ANIONUEVO_ENABLED, DEFAULT_EVENT_ANIONUEVO_ENABLED)
+
+    fun setAnoNuevoScreenBugEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_EVENT_ANIONUEVO_ENABLED, enabled).apply()
+    }
+
+    fun isPascuaScreenBugEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_EVENT_PASCUA_ENABLED, DEFAULT_EVENT_PASCUA_ENABLED)
+
+    fun setPascuaScreenBugEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_EVENT_PASCUA_ENABLED, enabled).apply()
+    }
+
+    fun isDiaTierraScreenBugEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_EVENT_TIERRA_ENABLED, DEFAULT_EVENT_TIERRA_ENABLED)
+
+    fun setDiaTierraScreenBugEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_EVENT_TIERRA_ENABLED, enabled).apply()
     }
 }
