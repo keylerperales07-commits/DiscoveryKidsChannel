@@ -7,7 +7,10 @@ package com.keyler.discoverykidschannel
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.text.InputType
 import android.util.Log
@@ -21,6 +24,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.google.android.material.button.MaterialButton
+import java.io.File
 
 /**
  * DiscoveryKidsLauncherActivity — Release 2009.5.0.0 ("Parque Imaginario")
@@ -62,20 +66,10 @@ import com.google.android.material.button.MaterialButton
  */
 class DiscoveryKidsLauncherActivity : AppCompatActivity() {
 
-    private enum class PickTarget { PROGRAM, YA_REGRESA, CONTINUAMOS }
-
-    private var pendingPickIndex = -1
-    private var pendingPickTarget: PickTarget? = null
-
-    private lateinit var containerPrograms: LinearLayout
-    private lateinit var txtProgramCountValue: TextView
-
-    /** SAF: selector de archivos del sistema para elegir un video (programa, ya_regresa o continuamos). */
-    private val pickVideoLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) handlePickedVideo(uri)
-        pendingPickIndex = -1
-        pendingPickTarget = null
-    }
+    // Release 5.5.0: PickTarget, pendingPickIndex/pendingPickTarget, containerPrograms,
+    // txtProgramCountValue y pickVideoLauncher se mudaron a
+    // ProgramConfigActivity junto con el resto de "Programas" — ver esa
+    // clase.
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,8 +82,17 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
             return
         }
 
-        setTheme(R.style.LauncherTheme)
         setContentView(R.layout.activity_launcher)
+
+        // Release 5.5.0 — BUG FIX ("la ActionBar tapa el layout"): acá había
+        // un setTheme(R.style.LauncherTheme) redundante ANTES de
+        // setContentView() — el manifiesto (AndroidManifest.xml) ya declara
+        // android:theme="@style/LauncherTheme" para esta Activity. Reaplicar
+        // el tema en runtime, después de que la ventana ya se creó con el
+        // tema del manifiesto, puede alterar cómo AppCompat calcula el
+        // inset de contenido bajo la ActionBar (un problema conocido de
+        // AppCompat con setTheme() tardío) — es la causa más probable del
+        // solapamiento. Se saca por completo: el manifiesto ya alcanza.
 
         // Release 2009.5.1.0: ActionBar ORIGINAL de Android (Theme.Material3.
         // DayNight, ver themes.xml) en vez del MenuBar custom hecho a mano.
@@ -105,15 +108,17 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         }
 
         findViewById<MaterialButton>(R.id.btnStartChannel).setOnClickListener {
-            startActivity(Intent(this, LiveDiscoveryKids::class.java))
+            val problems = validateChannelSetup()
+            if (problems.isEmpty()) {
+                startActivity(Intent(this, LiveDiscoveryKids::class.java))
+            } else {
+                showSetupProblemsDialog(problems)
+            }
         }
 
-        containerPrograms = findViewById(R.id.containerPrograms)
-        txtProgramCountValue = findViewById(R.id.txtProgramCountValue)
-        findViewById<LinearLayout>(R.id.itemProgramCount).setOnClickListener { showProgramCountDialog() }
-
-        refreshProgramCountLabel()
-        rebuildProgramList()
+        findViewById<MaterialButton>(R.id.btnProgramConfig).setOnClickListener {
+            startActivity(Intent(this, ProgramConfigActivity::class.java))
+        }
     }
 
     override fun onResume() {
@@ -140,144 +145,87 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    // ── Cantidad de programas (1–24) ─────────────────────────────────────────
+    // Release 5.5.0: cantidad de programas, filas por programa (bindProgramRow),
+    // el selector de archivos (pickVideoLauncher/handlePickedVideo) y
+    // displayNameFor() se mudaron a ProgramConfigActivity. Acá solo queda la
+    // validación previa a "Iniciar canal" (validateChannelSetup) — sigue
+    // teniendo sentido acá porque es sobre ESTE botón, no sobre la pantalla
+    // de configuración en sí.
 
-    private fun refreshProgramCountLabel() {
+    /**
+     * Release 5.4.0 — chequeo previo a "Iniciar canal": evita que
+     * LiveDiscoveryKids arranque un ciclo con clips activados (Intro,
+     * Créditos, ya_regresa/continuamos personalizados, o Programas) que en
+     * realidad no tienen un video asociado — antes esto se saltaba en
+     * silencio dentro del canal (advance() sin más), lo cual el usuario
+     * podía no notar hasta ver el hueco en la programación.
+     *
+     * No reimplica la resolución completa de resolveProgram() (que vive
+     * como función de extensión de LiveDiscoveryKids, otra Activity) —
+     * hace el mismo chequeo de archivo/MediaStore en forma liviana, acá
+     * mismo, solo para el caso "no eligió Uri propia".
+     *
+     * @return lista de problemas legibles para el usuario; vacía si todo OK.
+     */
+    private fun validateChannelSetup(): List<String> {
+        val problems = mutableListOf<String>()
         val count = SettingsManager.getProgramCount(this)
-        txtProgramCountValue.text =
-            "$count de ${SettingsManager.MAX_PROGRAM_COUNT} programas (Predeterminado: ${SettingsManager.DEFAULT_PROGRAM_COUNT})"
+
+        for (index in 0 until count) {
+            val programUri = SettingsManager.getProgramUri(this, index)
+            if (programUri.isNullOrBlank() && !classicProgramFileExists(index)) {
+                problems += "Programa ${index + 1}: no elegiste un video y no se encontró pro${index + 1}.mp4 en Videos"
+            }
+            if (SettingsManager.isIntroEnabled(this, index) && SettingsManager.getIntroUri(this, index).isNullOrBlank()) {
+                problems += "Programa ${index + 1}: activaste Intro pero no elegiste el video"
+            }
+            if (SettingsManager.isCreditosEnabled(this, index) && SettingsManager.getCreditosUri(this, index).isNullOrBlank()) {
+                problems += "Programa ${index + 1}: activaste Créditos pero no elegiste el video"
+            }
+            if (SettingsManager.isYaRegresaCustom(this, index) && SettingsManager.getYaRegresaUri(this, index).isNullOrBlank()) {
+                problems += "Programa ${index + 1}: activaste \"ya_regresa\" personalizado pero no elegiste el video"
+            }
+            if (SettingsManager.isContinuamosCustom(this, index) && SettingsManager.getContinuamosUri(this, index).isNullOrBlank()) {
+                problems += "Programa ${index + 1}: activaste \"continuamos\" personalizado pero no elegiste el video"
+            }
+            if (SettingsManager.isNextProgramCustom(this, index) && SettingsManager.getNextProgramUri(this, index).isNullOrBlank()) {
+                problems += "Programa ${index + 1}: activaste NextProgram personalizado pero no elegiste la imagen/GIF"
+            }
+        }
+        return problems
     }
 
-    private fun showProgramCountDialog() {
-        val input = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
-            setText(SettingsManager.getProgramCount(this@DiscoveryKidsLauncherActivity).toString())
-            setSelection(text.length)
+    /** Mismo chequeo liviano de archivo/MediaStore que resolveProgram() en LiveDiscoveryKids.kt, para pro{N}.mp4. */
+    private fun classicProgramFileExists(index: Int): Boolean {
+        val fileName = "pro${index + 1}.mp4"
+        val moviesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)
+        if (File(moviesDir, fileName).exists()) return true
+        return try {
+            val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+            else
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            contentResolver.query(
+                collection,
+                arrayOf(MediaStore.Video.Media._ID),
+                "${MediaStore.Video.Media.DISPLAY_NAME} = ?",
+                arrayOf(fileName),
+                null
+            )?.use { it.moveToFirst() } ?: false
+        } catch (e: Exception) {
+            Log.w("DKLauncher", "No se pudo chequear $fileName vía MediaStore", e)
+            true   // ante la duda, no bloquear el arranque por un error de nuestro chequeo
         }
-        val pad = (16 * resources.displayMetrics.density).toInt()
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, 0, pad, 0)
-            addView(input)
-        }
+    }
 
+    private fun showSetupProblemsDialog(problems: List<String>) {
+        val message = "Antes de iniciar el canal, revisá esto en Configuración de Programa:\n\n• " +
+            problems.joinToString("\n• ")
         AlertDialog.Builder(this)
-            .setTitle("Cantidad de programas")
-            .setMessage("¿Cuántos programas (videos) querés que arme la programación? (${SettingsManager.MIN_PROGRAM_COUNT}–${SettingsManager.MAX_PROGRAM_COUNT}, Predeterminado: ${SettingsManager.DEFAULT_PROGRAM_COUNT})")
-            .setView(container)
-            .setPositiveButton("Guardar") { _, _ ->
-                val count = input.text.toString().toIntOrNull() ?: SettingsManager.DEFAULT_PROGRAM_COUNT
-                SettingsManager.setProgramCount(this, count)
-                refreshProgramCountLabel()
-                rebuildProgramList()
-            }
-            .setNegativeButton("Cancelar", null)
+            .setTitle("Faltan videos por elegir")
+            .setMessage(message)
+            .setPositiveButton("Entendido", null)
             .show()
     }
 
-    // ── Filas de programas ───────────────────────────────────────────────────
-
-    /**
-     * Reconstruye desde cero la lista de filas (Programa 1..N). Se llama al
-     * entrar, al cambiar la cantidad de programas, y después de elegir
-     * cualquier video — es más simple y menos propenso a errores que tratar
-     * de actualizar una sola fila a mano.
-     */
-    private fun rebuildProgramList() {
-        containerPrograms.removeAllViews()
-        val count = SettingsManager.getProgramCount(this)
-        val inflater = LayoutInflater.from(this)
-        for (index in 0 until count) {
-            val row = inflater.inflate(R.layout.item_program_config, containerPrograms, false)
-            bindProgramRow(row, index)
-            containerPrograms.addView(row)
-        }
-    }
-
-    private fun bindProgramRow(row: View, index: Int) {
-        val txtTitle = row.findViewById<TextView>(R.id.txtProgramTitle)
-        val txtVideoStatus = row.findViewById<TextView>(R.id.txtProgramVideoStatus)
-        val btnPickVideo = row.findViewById<LinearLayout>(R.id.btnPickProgramVideo)
-        val switchYaRegresa = row.findViewById<SwitchCompat>(R.id.switchYaRegresaCustom)
-        val btnPickYaRegresa = row.findViewById<LinearLayout>(R.id.btnPickYaRegresaVideo)
-        val switchContinuamos = row.findViewById<SwitchCompat>(R.id.switchContinuamosCustom)
-        val btnPickContinuamos = row.findViewById<LinearLayout>(R.id.btnPickContinuamosVideo)
-
-        txtTitle.text = "Programa ${index + 1}"
-
-        val savedUri = SettingsManager.getProgramUri(this, index)
-        txtVideoStatus.text = if (savedUri.isNullOrBlank()) {
-            "Sin video elegido — usa pro${index + 1}.mp4 en Videos"
-        } else {
-            "Video elegido: ${displayNameFor(Uri.parse(savedUri))}"
-        }
-
-        btnPickVideo.setOnClickListener {
-            pendingPickIndex = index
-            pendingPickTarget = PickTarget.PROGRAM
-            pickVideoLauncher.launch(arrayOf("video/*"))
-        }
-
-        switchYaRegresa.isChecked = SettingsManager.isYaRegresaCustom(this, index)
-        btnPickYaRegresa.visibility = if (switchYaRegresa.isChecked) View.VISIBLE else View.GONE
-        switchYaRegresa.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setYaRegresaCustom(this, index, checked)
-            btnPickYaRegresa.visibility = if (checked) View.VISIBLE else View.GONE
-        }
-        btnPickYaRegresa.setOnClickListener {
-            pendingPickIndex = index
-            pendingPickTarget = PickTarget.YA_REGRESA
-            pickVideoLauncher.launch(arrayOf("video/*"))
-        }
-
-        switchContinuamos.isChecked = SettingsManager.isContinuamosCustom(this, index)
-        btnPickContinuamos.visibility = if (switchContinuamos.isChecked) View.VISIBLE else View.GONE
-        switchContinuamos.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setContinuamosCustom(this, index, checked)
-            btnPickContinuamos.visibility = if (checked) View.VISIBLE else View.GONE
-        }
-        btnPickContinuamos.setOnClickListener {
-            pendingPickIndex = index
-            pendingPickTarget = PickTarget.CONTINUAMOS
-            pickVideoLauncher.launch(arrayOf("video/*"))
-        }
-    }
-
-    /**
-     * Se llama cuando el usuario eligió un archivo en el selector del
-     * sistema. Persiste el permiso de lectura (para que la Uri no expire al
-     * cerrar la app) y lo guarda en SettingsManager según qué botón lo
-     * disparó (pendingPickTarget/pendingPickIndex, fijados justo antes de
-     * lanzar el selector).
-     */
-    private fun handlePickedVideo(uri: Uri) {
-        try {
-            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        } catch (e: Exception) {
-            Log.w("DKLauncher", "No se pudo persistir el permiso de lectura de $uri", e)
-        }
-
-        val index = pendingPickIndex
-        if (index < 0) return
-
-        when (pendingPickTarget) {
-            PickTarget.PROGRAM -> SettingsManager.setProgramUri(this, index, uri.toString())
-            PickTarget.YA_REGRESA -> SettingsManager.setYaRegresaUri(this, index, uri.toString())
-            PickTarget.CONTINUAMOS -> SettingsManager.setContinuamosUri(this, index, uri.toString())
-            null -> return
-        }
-
-        rebuildProgramList()
-    }
-
-    /** Nombre legible del archivo elegido (vía SAF), con fallback al último segmento de la Uri. */
-    private fun displayNameFor(uri: Uri): String {
-        return try {
-            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) cursor.getString(0) else null
-            } ?: uri.lastPathSegment ?: "video"
-        } catch (e: Exception) {
-            uri.lastPathSegment ?: "video"
-        }
-    }
 }

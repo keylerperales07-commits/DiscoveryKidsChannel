@@ -53,6 +53,18 @@
             android:theme="@style/SettingsTheme"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout" />
 
+        <!-- Release 5.5.0: extraída de DiscoveryKidsLauncherActivity — antes
+             la sección "Programas" vivía inline ahí. Accesible desde un
+             botón en el Launcher (nunca directamente, exported=false).
+             LauncherTheme, mismo criterio visual M3 que ya usaba esa
+             sección. -->
+        <activity
+            android:name=".ProgramConfigActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/LauncherTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout" />
+
         <!-- Release 2009.5.0.0: Discovery Kids Launcher pasa a ser la Activity
              de inicio REAL de la app (intent-filter MAIN/LAUNCHER movido acá
              desde LiveDiscoveryKids). Con Experimental desactivado (default),

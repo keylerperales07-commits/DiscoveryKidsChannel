@@ -14,8 +14,8 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v5.3.0-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Era-2010-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v5.5.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Era-2011-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/Fase-4-orange?style=flat-square"/>
 </p>
 
@@ -177,6 +177,12 @@ Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de version
 - 🐛 **ScreenBug repitiéndose entre Intro/Programa/Créditos** — ya no se re-muestra la animación de aparición si ya se mostró en la Intro; la fase intermedia se restaura en vez de ocultarse al pasar a Créditos.
 - 🐛 **NextProgram sin efecto CRT** — el marco vive en un contenedor aparte del video; se le agregó su propia instancia de `CrtOverlayView`.
 - 🎯 **Ajuste fino del recuadro** — posición remedida sobre una imagen de referencia más precisa.
+
+### 🧪 Build de Preview — `2011.5.6.0.60-preview`
+> *2 bug fixes de investigación a fondo sobre NextProgram: un solo CrtOverlayView compartido (antes había dos animaciones corriendo en paralelo, afectando el rendimiento de VideoView) y el ancho real del recuadro corregido (se derivaba forzando 4:3, pero el recuadro no es 4:3 — el video quedaba ~22px más angosto de lo debido).*
+
+- 🐛 **Un solo CrtOverlayView, compartido.** Antes había dos instancias animadas en paralelo (una para el video, otra exclusiva de NextProgram desde la 5.5.0) — cada una con su propio loop de dibujo por cuadro, el doble de carga innecesaria. Ahora una sola cubre ambos, en un contenedor 4:3 hermano dibujado por encima de todo.
+- 🐛 **Posición del video en el recuadro NextProgram — el ancho estaba mal.** `AspectRatioFrameLayout` forzaba 4:3 siempre, incluso al achicarse dentro del recuadro — pero el recuadro real no es 4:3 (mide ≈1.4:1). El video quedaba consistentemente ~22px más angosto de lo que debía. Remedido con precisión de píxel sobre una imagen de referencia; `AspectRatioFrameLayout` ahora puede desactivar el forzado cuando hace falta.
 
 ---
 

@@ -68,84 +68,25 @@
             app:icon="@drawable/ic_play"
             app:iconGravity="textStart" />
 
-        <!-- ══ Sección: Programas ══ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Programas"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:fontFamily="@font/dk_font"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Elegí el video de cada programa (ya no hace falta renombrarlo ni copiarlo a Videos) y, si querés, personalizá su ya_regresa y su continuamos."
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="13sp"
-            android:fontFamily="@font/dk_font"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="12dp" />
-
-        <!-- Item: Cantidad de programas (valor, abre diálogo 1–24) -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Release 5.5.0 — la sección "Programas" (cantidad + una fila por
+             programa, ya_regresa/continuamos/Intro/Créditos/NextProgram
+             personalizados) se extrajo a su propia Activity
+             (ProgramConfigActivity) — acá solo queda el botón que la abre. -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnProgramConfig"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="20dp"
             android:layout_marginEnd="20dp"
-            android:layout_marginBottom="12dp"
-            app:cardElevation="1dp"
-            app:cardCornerRadius="12dp"
-            app:strokeWidth="0dp"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant">
-
-            <LinearLayout
-                android:id="@+id/itemProgramCount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:clickable="true"
-                android:focusable="true"
-                android:background="?attr/selectableItemBackground"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="14dp"
-                android:paddingBottom="14dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Cantidad de programas"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="17sp"
-                    android:fontFamily="@font/dk_font" />
-
-                <TextView
-                    android:id="@+id/txtProgramCountValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="4 de 24 programas (Predeterminado: 4)"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="13sp"
-                    android:fontFamily="@font/dk_font"
-                    android:layout_marginTop="2dp"
-                    android:alpha="0.8" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Filas de programas: se agregan acá en código, una por programa
-             (item_program_config.xml), ver rebuildProgramList(). -->
-        <LinearLayout
-            android:id="@+id/containerPrograms"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:layout_marginBottom="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:text="Configuración de Programa"
+            android:textSize="16sp"
+            android:fontFamily="@font/dk_font"
+            app:icon="@drawable/ic_video_pick"
+            app:iconGravity="textStart" />
 
     </LinearLayout>
 </ScrollView>

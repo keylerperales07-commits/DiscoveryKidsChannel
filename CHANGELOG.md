@@ -6,6 +6,32 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2011.5.6.0.60-preview] — 🧪 Preview · Era Doki 1.0 · Era 2011 · "Parque Imaginario" — 2026-07-28
+
+> *2 bug fixes de investigación a fondo sobre NextProgram: un solo CrtOverlayView compartido (antes había dos animaciones corriendo en paralelo, afectando el rendimiento de VideoView) y el ancho real del recuadro corregido con precisión de píxel (se derivaba forzando 4:3, pero el recuadro no es 4:3). Auditoría de la configuración por programa: confirmada correctamente independiente entre programas, sin cambios de código.*
+
+### 🐛 BUG FIX — CrtOverlayView duplicado ("otro CRT... afecta a VideoView")
+
+Desde la 5.5.0 había **dos** instancias de `CrtOverlayView` corriendo en paralelo — una sobre el video (`crtOverlay`, dentro de `videoContainer`) y otra exclusiva para el marco de NextProgram (`nextProgramCrtOverlay`, agregada porque el marco vive en un contenedor hermano que la primera no cubría). Cada instancia tiene su propio loop de dibujo por cuadro (`postInvalidateOnAnimation()`), así que tener dos corriendo a la vez duplicaba la carga de renderizado sin necesidad — en hardware limitado (boxes de Android TV con poca RAM), esto podía degradar el rendimiento del propio VideoView.
+
+Se eliminaron ambas instancias nesteadas y se agregó una **única** `CrtOverlayView`, en su propio `AspectRatioFrameLayout` hermano — geométricamente idéntico (mismo criterio 4:3 centrado) a `videoContainer` y al marco de NextProgram — dibujado por encima de los dos. Mismo efecto visual, una sola animación.
+
+### 🐛 BUG FIX — Posición del video en el recuadro NextProgram (causa raíz real)
+
+`showVideoInBox()` (la función que achica y reposiciona `videoContainer` para que el video quede dentro del recuadro decorativo de NextProgram) calculaba el ancho del recuadro forzando una proporción 4:3 sobre su altura — pero `AspectRatioFrameLayout.onMeasure()` ya fuerza 4:3 SIEMPRE, sin importar el `layoutParams` que se le asigne, así que el ancho real que terminaba usando el video **ignoraba por completo** cualquier intento de ajustarlo. El recuadro real del marco NextProgram no es 4:3 — mide aproximadamente 1.4:1, medido con precisión de píxel sobre una imagen de referencia — así que el video quedaba consistentemente ~22px más angosto de lo que debía, corrido de posición respecto al borde amarillo real.
+
+Se agregó `AspectRatioFrameLayout.forceAspectRatio` (desactivable), y `showVideoInBox()` ahora calcula el ancho real del recuadro a partir de una fracción `RIGHT` medida explícitamente (antes no existía — el ancho se derivaba, nunca se medía), en vez de forzar 4:3 sobre la altura.
+
+### ✅ Auditoría — Configuración por programa
+
+Se revisó a fondo `ProgramConfigActivity.kt` y `SettingsManager.kt`: todas las configuraciones por programa (video, ya_regresa, continuamos, Intro, Créditos, NextProgram personalizado) están correctamente indexadas por programa (`KEY_*_PREFIX + index` en cada clave de `SharedPreferences`) — cambiar la configuración de un programa no afecta a los demás. No se encontró ningún caso de estado compartido entre programas; no se modificó código en esta área.
+
+### ⚠️ Alcance
+
+> Cambios de código en `activity_main.xml` (CrtOverlayView único, compartido), `AspectRatioFrameLayout.kt` (`forceAspectRatio` desactivable), `LiveDiscoveryKids.kt` (`showVideoInBox()`/`restoreVideoFullScreen()` con ancho real medido, referencias a `nextProgramCrtOverlay` eliminadas). `build.gradle`: `versionName` a `2011.5.6.0.60-preview`.
+
+---
+
 ## [2011.5.5.0] — 🚀 Release · Era Doki 1.0 · Era 2011 · "Parque Imaginario" — 2026-07-27
 
 > *Cambio de Era (2010→2011). Nueva Activity Configuración de Programa (extraída del Launcher), NextProgram personalizado, 4 ScreenBugs de eventos (Navidad ahora también configurable, + Año Nuevo, Pascua, Día de la Tierra), y 4 correcciones: ActionBar tapando contenido, ScreenBug repitiéndose entre Intro/Programa/Créditos, CRT ausente en NextProgram, y el ajuste fino de la posición del recuadro.*
@@ -1991,6 +2017,10 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2011.5.6.0.60-preview | 2026-07-28 | 🧪 Preview | 2 bug fixes de NextProgram: CrtOverlayView único y compartido (antes había dos animaciones en paralelo, afectando el rendimiento de VideoView), ancho real del recuadro corregido con precisión de píxel (se derivaba forzando 4:3, el recuadro no es 4:3); auditoría de configuración por programa (confirmada correctamente independiente, sin cambios) |
+| 2011.5.5.0           | 2026-07-27 | 🚀 Release | Cambio de Era (2010→2011); nueva Activity Configuración de Programa (extraída del Launcher); NextProgram personalizado por programa; 3 ScreenBugs de eventos nuevos (Año Nuevo, Pascua, Día de la Tierra) + Navidad ahora configurable; BUG FIX: ActionBar tapando el layout, ScreenBug repitiéndose entre Intro/Programa/Créditos, NextProgram sin efecto CRT, ajuste fino de posición del recuadro |
+| 2010.5.4.1           | 2026-07-25 | 🐛 Bug Fix | BUG FIX (causa raíz real): ScreenBug no aparecía en Intro ni Créditos (el cálculo de 20s/46s daba negativo en clips cortos, nunca se agendaba nada — clamp a la duración real del clip); corrección de diseño en NextProgram: el recuadro muestra el VideoView del programa en curso, no otro GIF |
+| 2010.5.4.0           | 2026-07-24 | 🚀 Release | Consolida la Preview 2010.5.4.0.40 (NextProgram, ScreenBug final a 46s); BUG FIX: ANR al abrir la app (decode de GIFs sincrónico en el hilo principal, movido a hilo aparte), NextProgram no se ubicaba en el recuadro, cantidad de programas no se actualizaba al volver por Recientes; eliminación de StandaloneCommercial; Intro/Créditos personalizados por programa |
 | 2010.5.3.0           | 2026-07-20 | 🚀 Release | Cambio de Era (2009→2010); BUG FIX definitivo del fadeOut/fadeIn de programas (el fix de la 2009.5.2.1 no restaba el punto de reanudación al calcular el timer, se rompía tras cualquier corte comercial); nuevo ScreenBug de Navidad (1–24 de diciembre), mismo comportamiento de 3 fases que el normal |
 | 2009.5.2.1           | 2026-07-18 | 🐛 Bug Fix | TextureView eliminado por completo (motor, switch "Recortar 4:3", AlertDialog 720p+); BUG FIX (causa raíz real): contenedor de video vuelve a estar siempre en 4:3 (antes cambiaba a 16:9 con el switch desactivado), programa ahora hace fadeOut real al terminar (antes cortaba en seco y rompía el fadeIn del siguiente clip); Configuración usa ActionBar real (sin header hecho a mano); logo del Launcher fuera de la ActionBar, en el cuerpo |
 | 2009.5.2.0           | 2026-07-17 | 🚀 Release | BUG FIX (causa raíz encontrada): ScreenBug "reiniciándose" al reanudar, y video estirado a 16:9 con "Forzar 4:3" desactivado (DkVideoView reescrito, fit de aspecto real compartido); ActionBar del Launcher: Configuración pasa al menú de overflow original; "Usar TextureView" renombrado a "Recortar 4:3", deshabilitado cuando "Forzar 4:3" está activo; nuevo Screenbug Julio 2009–2011 |

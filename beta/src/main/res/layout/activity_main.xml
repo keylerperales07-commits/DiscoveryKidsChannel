@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout
      xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
      android:layout_height="match_parent"
      android:layout_width="match_parent"
      android:background="#000000">
@@ -15,7 +16,12 @@
              reemplaza en tiempo de ejecución por un DkVideoView (Release
              2009.5.2.1: envoltorio simple de VideoView clásico, el motor
              alternativo TextureView se eliminó) dentro de este mismo
-             placeholder — ver LiveDiscoveryKids.onCreate(). -->
+             placeholder — ver LiveDiscoveryKids.onCreate().
+             Release 5.4.1: este es el ÚNICO elemento que se achica y
+             reposiciona dentro del recuadro de NextProgram — ver
+             LiveDiscoveryKids.showVideoInBox(). El logo/marco (nextProgramBug,
+             más abajo) vive en un AspectRatioFrameLayout APARTE que nunca se
+             toca, para que no se achique junto con el video. -->
         <FrameLayout
              android:layout_height="match_parent"
              android:layout_width="wrap_content"
@@ -30,19 +36,60 @@
              android:alpha="0"
              android:id="@+id/screenBug" />
 
-        <!-- Preview 2010.5.4.0.40: overlay "nextprogram" (GIF), reemplaza al
-             enseguida post-programa. Full-frame como screenBug — el GIF trae
-             compuesto todo lo necesario (recuadro de vista previa + texto).
-             Va ARRIBA de screenBug en z-order porque ambos pueden estar
-             visibles a la vez (screenbug_end aparece 46s antes del final,
-             nextprogram 15s después, a los 31s antes del final). -->
+        <!-- Release 5.6.0 — BUG FIX ("el CRT de NextProgram afecta a VideoView"):
+             antes había una SEGUNDA instancia de CrtOverlayView acá adentro
+             (nextProgramCrtOverlay, agregada en la 5.5.0) — dos overlays
+             animados corriendo en paralelo, cada uno con su propio loop de
+             postInvalidateOnAnimation() por cuadro, el doble de carga de
+             dibujo innecesaria en hardware limitado. Esa instancia (y la que
+             vivía acá dentro de videoContainer) se eliminaron — ahora hay
+             UNA sola, compartida, más abajo (ver el AspectRatioFrameLayout
+             final de este archivo), dibujada por ENCIMA de todo (video +
+             marco de NextProgram), en vez de duplicada. -->
+
+    </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
+
+    <!-- Preview 2010.5.4.0.40: overlay "nextprogram" (GIF), reemplaza al
+         enseguida post-programa.
+         Release 5.4.1 — CORRECCIÓN (2 partes):
+         1) Este GIF es el MARCO decorativo (logo, texto, el borde amarillo
+            del recuadro) con el recuadro en sí TRANSPARENTE/vacío en el
+            arte — lo que va DENTRO es el VIDEO del programa mismo, sin
+            estirar (ver videoContainer arriba y
+            LiveDiscoveryKids.showVideoInBox()/restoreVideoFullScreen()).
+         2) Por eso NO puede vivir dentro de videoContainer (se achicaría
+            junto con el video cuando este se reposiciona en el recuadro,
+            arruinando el logo/texto que debe quedarse a tamaño completo).
+            Va en su PROPIO AspectRatioFrameLayout, hermano de videoContainer
+            — mismo criterio de altura → ancho×4/3 centrado, así queda
+            siempre perfectamente alineado con el marco 4:3 del video
+            (esté achicado o no), sin importar la proporción real de la
+            pantalla del dispositivo. -->
+    <com.keyler.discoverykidschannel.AspectRatioFrameLayout
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:layout_gravity="center">
+
         <ImageView
              android:layout_height="match_parent"
              android:layout_width="match_parent"
              android:src="@drawable/nextprogram1"
-             android:contentDescription="Next program preview"
+             android:contentDescription="Next program frame"
              android:alpha="0"
              android:id="@+id/nextProgramBug" />
+
+    </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
+
+    <!-- Release 5.6.0 — CrtOverlayView ÚNICA y compartida (ver comentario
+         arriba). Hermana de videoContainer y del marco NextProgram, mismo
+         AspectRatioFrameLayout 4:3 centrado que ambos — así el efecto CRT
+         (scanlines, vignette, borde) queda perfectamente alineado tanto
+         sobre el video como sobre el marco de NextProgram, sea cual sea el
+         que esté visible en cada momento, con una sola animación. -->
+    <com.keyler.discoverykidschannel.AspectRatioFrameLayout
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:layout_gravity="center">
 
         <com.keyler.discoverykidschannel.CrtOverlayView
              android:layout_height="match_parent"
@@ -57,7 +104,7 @@
          android:layout_height="wrap_content"
          android:layout_width="wrap_content"
          android:gravity="center"
-         android:alpha="1"
+         android:alpha="0"
          android:fontFamily="@font/googlesans"
          android:textColor="#FFFFFF"
          android:id="@+id/debugInfo"
