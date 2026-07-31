@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v5.5.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v5.6.0-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era-2011-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/Fase-4-orange?style=flat-square"/>
 </p>
@@ -39,15 +39,15 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 
 - 📺 **Reproducción Lineal Continua** — Los programas se reproducen automáticamente en secuencia, igual que un canal de TV real
 - 🎬 **Bumpers** — Clips de identidad del canal entre programas, ahora en resolución mejorada
-- 📣 **Comerciales Dinámicos** — Bloques de publicidad que rotan con intervalos aleatorios entre 3 y 9 minutos, incluyendo contenido de la era Y2K. Desde la Release 5.4.0 aparecen ÚNICAMENTE interrumpiendo Programas (se eliminó el StandaloneCommercial, el bloque de comercial suelto entre Bumper y Programa)
-- 🎬 **Intro y Créditos personalizados** *(Release 5.4.0)* — Opcionales, por programa, configurables en Discovery Kids Launcher → Configuración de Programa. La Intro aparece después del Bumper y antes del Programa; los Créditos, al terminar el Programa. Ninguno tiene un video predeterminado — si se activan sin elegir un archivo, el Launcher bloquea "Iniciar canal" y avisa qué falta
-- ⏭️ **NextProgram** — Marco decorativo animado (GIF, uno por programa) con el video del programa EN CURSO mostrado en vivo dentro de su recuadro (sin estirar ni deformar — Release 5.4.1), que anticipa qué sigue en el canal 31 segundos antes del final REAL del bloque (Créditos si están activos, si no el Programa). Reemplaza a los "enseguidas" post-programa (clip aparte, eliminado)
+- 📣 **Comerciales Dinámicos** — Bloques de publicidad que rotan con intervalos aleatorios entre 3 y 9 minutos, incluyendo contenido de la era Y2K. Desde la Release 5.4.0 aparecen ÚNICAMENTE interrumpiendo Programas (se eliminó el StandaloneCommercial, el bloque de comercial suelto entre Bumper y Programa). Se pueden desactivar por programa puntual con "Activar comerciales" en su ⚙️ Opciones (Release 5.6.0, Predeterminado: activado)
+- 🎬 **Intro y Créditos personalizados** *(Release 5.4.0)* — Opcionales, por programa, configurables en Discovery Kids Launcher → fila del programa → ⚙️ Opciones. La Intro aparece después del Bumper y antes del Programa; los Créditos, al terminar el Programa. Ninguno tiene un video predeterminado — si se activan sin elegir un archivo, el Launcher bloquea "Iniciar canal" y avisa qué falta
+- ⏭️ **A continuación** *(antes "NextProgram")* — Marco decorativo animado (GIF, uno por programa) con el video del programa EN CURSO mostrado en vivo dentro de su recuadro (sin estirar ni deformar — Release 5.4.1), que anticipa qué sigue en el canal 31 segundos antes del final REAL del bloque (Créditos si están activos, si no el Programa). Reemplaza a los "enseguidas" post-programa (clip aparte, eliminado)
 - 🎵 **Música de Fondo** — Música ambiente durante la reproducción de programas (volumen al 8%)
 - 🖥️ **Modo Pantalla Completa Inmersivo** — Sin distracciones de interfaz, experiencia TV pura
 - 📡 **Overlay Visual CRT** — Efectos de scanlines y pantalla para esa sensación retro de televisor
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
 - 🆕 **ScreenBug de 3 fases** — Marca de agua animada con el logo del canal: aparición (GIF), estático (PNG) y salida (GIF, a partir de 46 segundos antes del final del bloque). Desde la Release 5.4.0, si el programa tiene Intro/Créditos activados, la aparición ocurre en la Intro y la salida en los Créditos — la cuenta de tiempo no se reinicia al cambiar de clip, "suma" la duración real de cada uno. Los GIF se reproducen con `GifMovieDrawable`, basado en la API nativa `android.graphics.Movie` (sin librerías externas — Release 2009.5.1.0). Nuevo contenido de Mayo–Julio 2009 (Release 2009.5.1.0), Julio 2009–2011 (Release 2009.5.2.0)
-- 🎄 **ScreenBugs de eventos** — Navidad (1-24 dic, 3 fases completas, Release 2010.5.3.0), Año Nuevo (25 dic-7 ene), Pascua (Domingo de Pascua) y Día de la Tierra (22 de abril) — estos 3 últimos reemplazan solo el logo estático del medio (Release 5.5.0). Los 4 se activan/desactivan individualmente en Configuración de Programa
+- 🎄 **ScreenBugs de eventos** — Navidad (1-24 dic, 3 fases completas, Release 2010.5.3.0), Año Nuevo (25 dic-7 ene), Pascua (Domingo de Pascua) y Día de la Tierra (22 de abril) — estos 3 últimos reemplazan solo el logo estático del medio (Release 5.5.0). Los 4 se activan/desactivan individualmente en Discovery Kids Launcher (son globales, no de un programa en particular)
 - ⏸ **Pantalla "Ya Volvemos"** — Pantalla intersticial auténtica de "Volvemos en un momento"
 - 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
 - ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Bumper → [Intro] → Programa), igual que cambiar de canal en TV real
@@ -167,22 +167,24 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v5.5.0` *(Release · Era Doki 1.0 · Era 2011 · "Parque Imaginario")*
-> *Cambio de Era (2010→2011). Nueva Activity Configuración de Programa (extraída del Launcher), NextProgram personalizado, 4 ScreenBugs de eventos (Navidad, Año Nuevo, Pascua, Día de la Tierra — todos configurables), y 4 correcciones: ActionBar tapando contenido, ScreenBug repitiéndose entre Intro/Programa/Créditos, CRT ausente en NextProgram, y ajuste fino de la posición del recuadro.*
-
-- 🆕 **Nueva Activity: Configuración de Programa** — la sección "Programas" del Launcher (cantidad, videos, personalizaciones) pasa a tener su propia pantalla.
-- 🎬 **NextProgram personalizado por programa** — imagen o GIF propio en vez del de fábrica.
-- 🎄 **3 ScreenBugs de eventos nuevos** — Año Nuevo, Pascua (fechas 2026-2030), Día de la Tierra — más Navidad, ahora también configurable. Los 4 se pueden activar/desactivar individualmente.
-- 🐛 **ActionBar tapando el layout** — un `setTheme()` redundante en tiempo de ejecución interfería con el cálculo del inset de contenido; eliminado.
-- 🐛 **ScreenBug repitiéndose entre Intro/Programa/Créditos** — ya no se re-muestra la animación de aparición si ya se mostró en la Intro; la fase intermedia se restaura en vez de ocultarse al pasar a Créditos.
-- 🐛 **NextProgram sin efecto CRT** — el marco vive en un contenedor aparte del video; se le agregó su propia instancia de `CrtOverlayView`.
-- 🎯 **Ajuste fino del recuadro** — posición remedida sobre una imagen de referencia más precisa.
-
-### 🧪 Build de Preview — `2011.5.6.0.60-preview`
-> *2 bug fixes de investigación a fondo sobre NextProgram: un solo CrtOverlayView compartido (antes había dos animaciones corriendo en paralelo, afectando el rendimiento de VideoView) y el ancho real del recuadro corregido (se derivaba forzando 4:3, pero el recuadro no es 4:3 — el video quedaba ~22px más angosto de lo debido).*
+### 🚀 Última versión estable — `v5.6.0` *(Release · Era Doki 1.0 · Era 2011 · "Parque Imaginario")*
+> *2 bug fixes de investigación a fondo sobre NextProgram: un solo CrtOverlayView compartido y el ancho real del recuadro corregido con precisión de píxel. BUG FIX de arquitectura: "los programas" y los ScreenBugs de eventos vuelven al Launcher — Configuración de Programa pasa a ser solo las opciones de UN programa puntual. "NextProgram" renombrado a "A continuación". Nuevo: "Activar comerciales" por programa.*
 
 - 🐛 **Un solo CrtOverlayView, compartido.** Antes había dos instancias animadas en paralelo (una para el video, otra exclusiva de NextProgram desde la 5.5.0) — cada una con su propio loop de dibujo por cuadro, el doble de carga innecesaria. Ahora una sola cubre ambos, en un contenedor 4:3 hermano dibujado por encima de todo.
 - 🐛 **Posición del video en el recuadro NextProgram — el ancho estaba mal.** `AspectRatioFrameLayout` forzaba 4:3 siempre, incluso al achicarse dentro del recuadro — pero el recuadro real no es 4:3 (mide ≈1.4:1). El video quedaba consistentemente ~22px más angosto de lo que debía. Remedido con precisión de píxel sobre una imagen de referencia; `AspectRatioFrameLayout` ahora puede desactivar el forzado cuando hace falta.
+- 🐛 **"Los programas" y los ScreenBugs de eventos vuelven al Launcher.** La 5.5.0 había movido ENTERA la sección "Programas" (cantidad + video de cada uno) y los ScreenBugs de eventos (globales) a Configuración de Programa — un malentendido. Ahora: el Launcher tiene los programas en sí y los ScreenBugs de eventos; Configuración de Programa (un botón "⚙️ Opciones" por fila) muestra solo las opciones de ESE programa puntual — completamente independientes entre programas.
+- 🏷️ **"NextProgram" renombrado a "A continuación"** en toda la UI — coincide con lo que se ve en pantalla.
+- ➕ **Nuevo: "Activar comerciales" por programa** (Predeterminado: activado) — desactivado, ese programa se reproduce de punta a punta sin cortes.
+
+<details>
+<summary>📜 Versiones estables anteriores</summary>
+
+**`v5.5.0`** *(Era Doki 1.0 · Era 2011 · "Parque Imaginario")* — Cambio de Era (2010→2011). Nueva Activity Configuración de Programa (extraída del Launcher), NextProgram personalizado, 4 ScreenBugs de eventos (Navidad, Año Nuevo, Pascua, Día de la Tierra — todos configurables), y 4 correcciones: ActionBar tapando contenido, ScreenBug repitiéndose entre Intro/Programa/Créditos, CRT ausente en NextProgram, y ajuste fino de la posición del recuadro.
+- 🆕 **Nueva Activity: Configuración de Programa** — la sección "Programas" del Launcher (cantidad, videos, personalizaciones) pasa a tener su propia pantalla.
+- 🎬 **NextProgram personalizado por programa** — imagen o GIF propio en vez del de fábrica.
+- 🎄 **3 ScreenBugs de eventos nuevos** — Año Nuevo, Pascua (fechas 2026-2030), Día de la Tierra — más Navidad, ahora también configurable. Los 4 se pueden activar/desactivar individualmente.
+
+</details>
 
 ---
 

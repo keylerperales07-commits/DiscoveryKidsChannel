@@ -121,10 +121,11 @@ class LiveDiscoveryKids : AppCompatActivity() {
     internal lateinit var nextButton: ImageButton
     internal lateinit var settingsButton: ImageButton  // Preview 2006.4.1.0.11
     // Overlay CRT: scanlines + phosphor mask + vignette + flicker (Canvas puro)
+    // Release 5.6.0 — BUG FIX ("el CRT de NextProgram afecta a VideoView"):
+    // esta ÚNICA instancia ahora cubre tanto el video como el marco de
+    // NextProgram (ver activity_main.xml) — antes había una segunda
+    // instancia duplicada (nextProgramCrtOverlay, Release 5.5.0), eliminada.
     internal lateinit var crtOverlay: CrtOverlayView
-    // Release 5.5.0 — ver comentario en activity_main.xml: segunda instancia
-    // de CRT, exclusiva del marco NextProgram (que vive fuera de videoContainer).
-    internal lateinit var nextProgramCrtOverlay: CrtOverlayView
 
     // ── Configuración (Preview 2006.4.1.0.12) ───────────────────────────────────
     // Antes eran `const val` en companion object; ahora son configurables desde
@@ -363,7 +364,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // a los enseguida post-programa. Se superpone sobre el programa mismo
         // (no es un clip aparte) y SOLO se programa en el último segmento del
         // programa (sin cortes comerciales pendientes) — ver scheduleNextProgramBug().
-        internal const val NEXTPROGRAM_SHOW_BEFORE_MS = 31_000L   // Aparece 31s antes del final real del programa
+        internal const val NEXTPROGRAM_SHOW_BEFORE_MS = 30_700L   // Aparece 31s antes del final real del programa
         internal const val NEXTPROGRAM_ANIM_MS = 500L              // Duración del fade-in (imagen de referencia enviada por Keyler)
 
         /** No commercial break is scheduled within this many ms of the program end. */
@@ -510,7 +511,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
         nextButton = findViewById(R.id.btnNext)
         settingsButton = findViewById(R.id.btnSettings)  // Preview 2006.4.1.0.11
         crtOverlay = findViewById(R.id.crtOverlay)
-        nextProgramCrtOverlay = findViewById(R.id.nextProgramCrtOverlay)
 
         // Botones ocultos al inicio; aparecen al tocar la pantalla
         prevButton.visibility = View.GONE
@@ -1269,7 +1269,16 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
         programDuration = mp.duration
 
         if (isFirstPlay) {
-            breakQueue = calcBreaks(programDuration).toMutableList()
+            // BUG FIX/NUEVO (Release 5.6.0) — "Activar comerciales" por
+            // programa (Configuración de Programa, Predeterminado:
+            // activado). Desactivado, este programa no agenda NINGÚN corte
+            // — breakQueue vacía, se reproduce de punta a punta sin
+            // interrupciones.
+            breakQueue = if (SettingsManager.isCommercialsEnabled(this, currentProgramIndex)) {
+                calcBreaks(programDuration).toMutableList()
+            } else {
+                mutableListOf()
+            }
         }
 
         if (startOffsetMs > 0) videoView.seekTo(startOffsetMs)
@@ -3037,18 +3046,24 @@ internal fun LiveDiscoveryKids.setNextProgramBugAlpha(alpha: Float) {
 // rectángulo más chico caiga exactamente en el recuadro de la imagen de
 // referencia — el ancho lo calcula solo, siempre en proporción 4:3 real.
 //
-// Los % de la imagen de referencia (recuadro ≈46%–94% horizontal, ≈9%–53%
-// vertical del marco) fueron los mismos que se habían calculado para
-// posicionar el ImageView en la Release 5.4.0 — ver ese CHANGELOG.
-
 // Release 5.5.0 — ajuste fino ("le falta poco para ubicarse"): remedidas
 // sobre la nueva imagen de referencia (12160.jpg, con el video YA
 // mostrándose adentro) en vez de la estimación original a ojo. Marco 4:3
 // detectado en x:[325,1269] / y:[0,720]; borde amarillo del recuadro en
 // x:[765,1210] / y:[60,378] → fracciones sobre el marco: left=0.466,
 // top=0.083, bottom=0.525.
-private const val NEXTPROGRAM_BOX_LEFT_FRACTION = 0.466f
-private const val NEXTPROGRAM_BOX_TOP_FRACTION = 0.083f
+//
+// Release 5.6.0 — BUG FIX ("cambiar la posición del VideoView en el
+// NextProgram"): remedido con precisión de píxel sobre 12397.jpg. LEFT/TOP/
+// BOTTOM ya estaban bien calibrados (coinciden con el nuevo margen de
+// error). Lo que faltaba: el ANCHO nunca se midió — se derivaba forzando
+// 4:3 sobre boxHeightPx, pero el recuadro real NO es 4:3 (mide ≈1.4:1),
+// así que el video quedaba consistentemente ~22px más angosto de lo que
+// debía. Ahora hay una fracción RIGHT explícita, medida directamente sobre
+// el borde amarillo real (x:764→774, no derivada de la altura).
+private const val NEXTPROGRAM_BOX_LEFT_FRACTION = 0.4625f
+private const val NEXTPROGRAM_BOX_RIGHT_FRACTION = 0.9271f
+private const val NEXTPROGRAM_BOX_TOP_FRACTION = 0.0833f
 private const val NEXTPROGRAM_BOX_BOTTOM_FRACTION = 0.525f
 
 /**
@@ -3083,10 +3098,18 @@ internal fun LiveDiscoveryKids.showVideoInBox() {
     val frameLeftInRoot = (rootWidth - frameWidth) / 2
 
     val boxHeightPx = ((NEXTPROGRAM_BOX_BOTTOM_FRACTION - NEXTPROGRAM_BOX_TOP_FRACTION) * frameHeight).toInt()
+    // BUG FIX (5.6.0): ancho real del recuadro (NO height×4/3 — el recuadro
+    // no es 4:3), medido con la fracción RIGHT explícita.
+    val boxWidthPx = ((NEXTPROGRAM_BOX_RIGHT_FRACTION - NEXTPROGRAM_BOX_LEFT_FRACTION) * frameWidth).toInt()
     val boxTopPx = (NEXTPROGRAM_BOX_TOP_FRACTION * frameHeight).toInt()
     val boxLeftPx = frameLeftInRoot + (NEXTPROGRAM_BOX_LEFT_FRACTION * frameWidth).toInt()
 
-    val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, boxHeightPx)
+    // BUG FIX (5.6.0): videoContainer es un AspectRatioFrameLayout — su
+    // onMeasure() por defecto IGNORA el ancho de layoutParams y siempre
+    // recalcula width=height×4/3. Hay que desactivar ese forzado acá
+    // (el recuadro real no es 4:3) para que respete boxWidthPx tal cual.
+    videoContainer.forceAspectRatio = false
+    val lp = FrameLayout.LayoutParams(boxWidthPx, boxHeightPx)
     lp.gravity = Gravity.TOP or Gravity.START
     lp.leftMargin = boxLeftPx
     lp.topMargin = boxTopPx
@@ -3099,6 +3122,9 @@ internal fun LiveDiscoveryKids.restoreVideoFullScreen() {
     if (current.width == FrameLayout.LayoutParams.MATCH_PARENT && current.height == FrameLayout.LayoutParams.MATCH_PARENT) {
         return   // ya está a pantalla completa, no reasignar layoutParams sin necesidad (evita un re-layout de más)
     }
+    // BUG FIX (5.6.0): reactivar el forzado de 4:3 al volver a pantalla
+    // completa (showVideoInBox() lo había desactivado).
+    videoContainer.forceAspectRatio = true
     val lp = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
     lp.gravity = Gravity.CENTER
     videoContainer.layoutParams = lp
@@ -3220,7 +3246,6 @@ internal fun LiveDiscoveryKids.goFullscreen() {
  */
 internal fun LiveDiscoveryKids.applySettings() {
     crtOverlay.effectEnabled = SettingsManager.isCrtEffectEnabled(this)
-    nextProgramCrtOverlay.effectEnabled = SettingsManager.isCrtEffectEnabled(this)
     bugShowDelayMs = SettingsManager.getScreenbugDelaySec(this) * 1_000L
     breakIntervalMinMs = SettingsManager.getCommercialMinMinutes(this) * 60 * 1_000L
     breakIntervalMaxMs = SettingsManager.getCommercialMaxMinutes(this) * 60 * 1_000L

@@ -106,6 +106,12 @@ object SettingsManager {
     private const val KEY_NEXTPROGRAM_CUSTOM_PREFIX = "nextprogram_custom_"
     private const val KEY_NEXTPROGRAM_URI_PREFIX = "nextprogram_uri_"
 
+    // Release 5.6.0 — "Activar comerciales", por programa (Predeterminado:
+    // activado). A diferencia de casi todo lo demás en esta pantalla, este
+    // es un toggle simple sin Uri asociada — desactivado, ese programa
+    // nunca agenda cortes comerciales (ver LiveDiscoveryKids.beginProgramSegment()).
+    private const val KEY_COMMERCIALS_ENABLED_PREFIX = "commercials_enabled_"
+
     // Release 5.5.0 — activar/desactivar cada ScreenBug de evento (global,
     // no por programa) desde Configuración de Programa. Navidad ya existía
     // desde la 2010.5.3.0 sin esta opción (auto-activaba por fecha
@@ -134,6 +140,7 @@ object SettingsManager {
     const val DEFAULT_INTRO_ENABLED = false      // Release 5.4.0
     const val DEFAULT_CREDITOS_ENABLED = false   // Release 5.4.0
     const val DEFAULT_NEXTPROGRAM_CUSTOM = false // Release 5.5.0
+    const val DEFAULT_COMMERCIALS_ENABLED = true  // Release 5.6.0
     const val DEFAULT_EVENT_NAVIDAD_ENABLED = true    // Release 5.5.0 — ya existía sin toggle, default true = mismo comportamiento previo
     const val DEFAULT_EVENT_ANIONUEVO_ENABLED = true  // Release 5.5.0
     const val DEFAULT_EVENT_PASCUA_ENABLED = true      // Release 5.5.0
@@ -335,6 +342,14 @@ object SettingsManager {
 
     fun setNextProgramUri(context: Context, index: Int, uri: String?) {
         prefs(context).edit().putString(KEY_NEXTPROGRAM_URI_PREFIX + index, uri).apply()
+    }
+
+    // ── Activar comerciales, por programa (Release 5.6.0) ───────────────────
+    fun isCommercialsEnabled(context: Context, index: Int): Boolean =
+        prefs(context).getBoolean(KEY_COMMERCIALS_ENABLED_PREFIX + index, DEFAULT_COMMERCIALS_ENABLED)
+
+    fun setCommercialsEnabled(context: Context, index: Int, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_COMMERCIALS_ENABLED_PREFIX + index, enabled).apply()
     }
 
     // ── ScreenBugs de evento (Release 5.5.0) — activar/desactivar, global ───

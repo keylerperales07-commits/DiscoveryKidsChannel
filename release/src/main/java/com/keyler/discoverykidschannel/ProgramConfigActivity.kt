@@ -9,33 +9,39 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
-import android.text.InputType
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 
 /**
- * ProgramConfigActivity — Release 5.5.0
+ * ProgramConfigActivity — Release 5.5.0, reescrita en la 5.6.0
  *
- * Extraída de DiscoveryKidsLauncherActivity: antes toda esta pantalla
- * ("Programas": cantidad, video de cada uno, ya_regresa/continuamos/Intro/
- * Créditos/NextProgram personalizados) vivía inline en activity_launcher.xml.
- * Pasa a ser su propia Activity, accesible desde un botón en el Launcher —
- * el resto del comportamiento (SAF, persistencia de permisos de lectura,
- * etc.) es exactamente el mismo, solo movido de archivo.
+ * BUG FIX (malentendido de arquitectura, revertido): la 5.5.0 había
+ * convertido esta pantalla en una lista de TODOS los programas (cantidad +
+ * video de cada uno) más los ScreenBugs de eventos (global) — equivocado.
+ * "Los programas" (cantidad, video de cada uno) viven en el Launcher
+ * (DiscoveryKidsLauncherActivity) — siempre vivieron ahí, no correspondía
+ * moverlos. Los ScreenBugs de eventos (globales, no de un programa en
+ * particular) también se movieron de vuelta al Launcher.
  *
- * NUEVO en esta Release:
- *   - NextProgram personalizado por programa (imagen/GIF propio en vez del
- *     nextprogramN.gif de fábrica).
- *   - Sección "ScreenBugs de eventos": activar/desactivar Navidad, Año
- *     Nuevo, Pascua y Día de la Tierra (global, no por programa).
+ * Ahora esta Activity es SOLO las OPCIONES de UN programa puntual —
+ * recibe [EXTRA_PROGRAM_INDEX] por Intent (obligatorio; si falta, se cierra
+ * sola) desde el botón "⚙️ Opciones" de la fila de ESE programa en el
+ * Launcher. Cada programa tiene su propia configuración, completamente
+ * independiente de la de los demás — todo acá abajo se lee/guarda con el
+ * MISMO [programIndex] en SettingsManager, así que cambiar algo para el
+ * Programa 1 nunca toca la configuración del Programa 2 ni de ningún otro.
+ *
+ * Contenido:
+ *   - Activar comerciales (Release 5.6.0, NUEVO — Predeterminado: activado).
+ *   - ya_regresa / continuamos personalizados.
+ *   - Intro / Créditos (sin default de fábrica).
+ *   - A continuación personalizado (antes "NextProgram personalizado" —
+ *     renombrado en la 5.6.0).
  *
  * Igual que el resto de la configuración "experimental", esta Activity
  * asume que ya se llegó acá desde un lugar que confirmó
@@ -45,169 +51,86 @@ import androidx.appcompat.widget.SwitchCompat
  */
 class ProgramConfigActivity : AppCompatActivity() {
 
-    private enum class PickTarget { PROGRAM, YA_REGRESA, CONTINUAMOS, INTRO, CREDITOS, NEXTPROGRAM }
+    companion object {
+        const val EXTRA_PROGRAM_INDEX = "program_index"
+    }
 
-    private var pendingPickIndex = -1
+    private enum class PickTarget { YA_REGRESA, CONTINUAMOS, INTRO, CREDITOS, NEXTPROGRAM }
+
+    private var programIndex = -1
     private var pendingPickTarget: PickTarget? = null
-
-    private lateinit var containerPrograms: LinearLayout
-    private lateinit var txtProgramCountValue: TextView
 
     /**
      * SAF: selector de archivos del sistema. El tipo MIME varía según qué
-     * botón lo disparó — video para Programa/ya_regresa/continuamos/Intro/
-     * Créditos, image para NextProgram (imagen o GIF, ver
-     * PickTarget.NEXTPROGRAM más abajo, en el setOnClickListener que lanza esto).
+     * botón lo disparó — video para ya_regresa/continuamos/Intro/Créditos,
+     * image para A continuación (imagen o GIF, ver PickTarget.NEXTPROGRAM
+     * más abajo, en el setOnClickListener que lanza esto).
      */
     private val pickVideoLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) handlePickedVideo(uri)
-        pendingPickIndex = -1
         pendingPickTarget = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        programIndex = intent.getIntExtra(EXTRA_PROGRAM_INDEX, -1)
+        if (programIndex < 0) {
+            // No debería pasar nunca (siempre se llega acá desde la fila de
+            // un programa puntual en el Launcher, que siempre manda el
+            // índice) — pero ante la duda, no mostrar una pantalla de
+            // "opciones de ningún programa" sin sentido.
+            Log.e("ProgramConfig", "Falta EXTRA_PROGRAM_INDEX, cerrando")
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_program_config)
 
         supportActionBar?.apply {
-            title = "Configuración de Programa"
+            title = "Programa ${programIndex + 1} — Opciones"
         }
 
-        containerPrograms = findViewById(R.id.containerPrograms)
-        txtProgramCountValue = findViewById(R.id.txtProgramCountValue)
-        findViewById<LinearLayout>(R.id.itemProgramCount).setOnClickListener { showProgramCountDialog() }
-
-        bindEventSwitches()
-        refreshProgramCountLabel()
-        rebuildProgramList()
+        bindCommercialsSwitch()
+        bindProgramOptions()
     }
 
-    // ── ScreenBugs de eventos (Release 5.5.0) — global, no por programa ──────
+    // ── Activar comerciales (Release 5.6.0, NUEVO) ───────────────────────────
 
-    private fun bindEventSwitches() {
-        val switchNavidad = findViewById<SwitchCompat>(R.id.switchEventNavidad)
-        switchNavidad.isChecked = SettingsManager.isNavidadScreenBugEnabled(this)
-        switchNavidad.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setNavidadScreenBugEnabled(this, checked)
-        }
-
-        val switchAnioNuevo = findViewById<SwitchCompat>(R.id.switchEventAnioNuevo)
-        switchAnioNuevo.isChecked = SettingsManager.isAnoNuevoScreenBugEnabled(this)
-        switchAnioNuevo.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setAnoNuevoScreenBugEnabled(this, checked)
-        }
-
-        val switchPascua = findViewById<SwitchCompat>(R.id.switchEventPascua)
-        switchPascua.isChecked = SettingsManager.isPascuaScreenBugEnabled(this)
-        switchPascua.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setPascuaScreenBugEnabled(this, checked)
-        }
-
-        val switchTierra = findViewById<SwitchCompat>(R.id.switchEventTierra)
-        switchTierra.isChecked = SettingsManager.isDiaTierraScreenBugEnabled(this)
-        switchTierra.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setDiaTierraScreenBugEnabled(this, checked)
+    private fun bindCommercialsSwitch() {
+        val switchCommercials = findViewById<SwitchCompat>(R.id.switchCommercialsEnabled)
+        switchCommercials.isChecked = SettingsManager.isCommercialsEnabled(this, programIndex)
+        switchCommercials.setOnCheckedChangeListener { _, checked ->
+            SettingsManager.setCommercialsEnabled(this, programIndex, checked)
         }
     }
 
-    // ── Cantidad de programas (1–24) ─────────────────────────────────────────
+    // ── Opciones del programa (ya_regresa, continuamos, Intro, Créditos, A continuación) ──
 
-    private fun refreshProgramCountLabel() {
-        val count = SettingsManager.getProgramCount(this)
-        txtProgramCountValue.text =
-            "$count de ${SettingsManager.MAX_PROGRAM_COUNT} programas (Predeterminado: ${SettingsManager.DEFAULT_PROGRAM_COUNT})"
-    }
+    private fun bindProgramOptions() {
+        val switchYaRegresa = findViewById<SwitchCompat>(R.id.switchYaRegresaCustom)
+        val btnPickYaRegresa = findViewById<LinearLayout>(R.id.btnPickYaRegresaVideo)
+        val switchContinuamos = findViewById<SwitchCompat>(R.id.switchContinuamosCustom)
+        val btnPickContinuamos = findViewById<LinearLayout>(R.id.btnPickContinuamosVideo)
 
-    private fun showProgramCountDialog() {
-        val input = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
-            setText(SettingsManager.getProgramCount(this@ProgramConfigActivity).toString())
-            setSelection(text.length)
-        }
-        val pad = (16 * resources.displayMetrics.density).toInt()
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, 0, pad, 0)
-            addView(input)
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle("Cantidad de programas")
-            .setMessage("¿Cuántos programas (videos) querés que arme la programación? (${SettingsManager.MIN_PROGRAM_COUNT}–${SettingsManager.MAX_PROGRAM_COUNT}, Predeterminado: ${SettingsManager.DEFAULT_PROGRAM_COUNT})")
-            .setView(container)
-            .setPositiveButton("Guardar") { _, _ ->
-                val count = input.text.toString().toIntOrNull() ?: SettingsManager.DEFAULT_PROGRAM_COUNT
-                SettingsManager.setProgramCount(this, count)
-                refreshProgramCountLabel()
-                rebuildProgramList()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
-    // ── Filas de programas ───────────────────────────────────────────────────
-
-    /**
-     * Reconstruye desde cero la lista de filas (Programa 1..N). Se llama al
-     * entrar, al cambiar la cantidad de programas, y después de elegir
-     * cualquier video — es más simple y menos propenso a errores que tratar
-     * de actualizar una sola fila a mano.
-     */
-    private fun rebuildProgramList() {
-        containerPrograms.removeAllViews()
-        val count = SettingsManager.getProgramCount(this)
-        val inflater = LayoutInflater.from(this)
-        for (index in 0 until count) {
-            val row = inflater.inflate(R.layout.item_program_config, containerPrograms, false)
-            bindProgramRow(row, index)
-            containerPrograms.addView(row)
-        }
-    }
-
-    private fun bindProgramRow(row: View, index: Int) {
-        val txtTitle = row.findViewById<TextView>(R.id.txtProgramTitle)
-        val txtVideoStatus = row.findViewById<TextView>(R.id.txtProgramVideoStatus)
-        val btnPickVideo = row.findViewById<LinearLayout>(R.id.btnPickProgramVideo)
-        val switchYaRegresa = row.findViewById<SwitchCompat>(R.id.switchYaRegresaCustom)
-        val btnPickYaRegresa = row.findViewById<LinearLayout>(R.id.btnPickYaRegresaVideo)
-        val switchContinuamos = row.findViewById<SwitchCompat>(R.id.switchContinuamosCustom)
-        val btnPickContinuamos = row.findViewById<LinearLayout>(R.id.btnPickContinuamosVideo)
-
-        txtTitle.text = "Programa ${index + 1}"
-
-        val savedUri = SettingsManager.getProgramUri(this, index)
-        txtVideoStatus.text = if (savedUri.isNullOrBlank()) {
-            "Sin video elegido — usa pro${index + 1}.mp4 en Videos"
-        } else {
-            "Video elegido: ${displayNameFor(Uri.parse(savedUri))}"
-        }
-
-        btnPickVideo.setOnClickListener {
-            pendingPickIndex = index
-            pendingPickTarget = PickTarget.PROGRAM
-            pickVideoLauncher.launch(arrayOf("video/*"))
-        }
-
-        switchYaRegresa.isChecked = SettingsManager.isYaRegresaCustom(this, index)
+        switchYaRegresa.isChecked = SettingsManager.isYaRegresaCustom(this, programIndex)
         btnPickYaRegresa.visibility = if (switchYaRegresa.isChecked) View.VISIBLE else View.GONE
         switchYaRegresa.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setYaRegresaCustom(this, index, checked)
+            SettingsManager.setYaRegresaCustom(this, programIndex, checked)
             btnPickYaRegresa.visibility = if (checked) View.VISIBLE else View.GONE
         }
         btnPickYaRegresa.setOnClickListener {
-            pendingPickIndex = index
             pendingPickTarget = PickTarget.YA_REGRESA
             pickVideoLauncher.launch(arrayOf("video/*"))
         }
 
-        switchContinuamos.isChecked = SettingsManager.isContinuamosCustom(this, index)
+        switchContinuamos.isChecked = SettingsManager.isContinuamosCustom(this, programIndex)
         btnPickContinuamos.visibility = if (switchContinuamos.isChecked) View.VISIBLE else View.GONE
         switchContinuamos.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setContinuamosCustom(this, index, checked)
+            SettingsManager.setContinuamosCustom(this, programIndex, checked)
             btnPickContinuamos.visibility = if (checked) View.VISIBLE else View.GONE
         }
         btnPickContinuamos.setOnClickListener {
-            pendingPickIndex = index
             pendingPickTarget = PickTarget.CONTINUAMOS
             pickVideoLauncher.launch(arrayOf("video/*"))
         }
@@ -217,69 +140,67 @@ class ProgramConfigActivity : AppCompatActivity() {
         // mientras esté activado (a diferencia de ya_regresa/continuamos, acá
         // SÍ importa que el usuario vea claramente si ya eligió un video o
         // no, porque si no elige uno el clip simplemente no aparece).
-        val txtIntroStatus = row.findViewById<TextView>(R.id.txtIntroVideoStatus)
-        val switchIntro = row.findViewById<SwitchCompat>(R.id.switchIntroEnabled)
-        val btnPickIntro = row.findViewById<LinearLayout>(R.id.btnPickIntroVideo)
+        val txtIntroStatus = findViewById<TextView>(R.id.txtIntroVideoStatus)
+        val switchIntro = findViewById<SwitchCompat>(R.id.switchIntroEnabled)
+        val btnPickIntro = findViewById<LinearLayout>(R.id.btnPickIntroVideo)
 
         fun refreshIntroStatus() {
-            val uri = SettingsManager.getIntroUri(this, index)
+            val uri = SettingsManager.getIntroUri(this, programIndex)
             txtIntroStatus.text = if (uri.isNullOrBlank()) "Sin video elegido" else "Video elegido: ${displayNameFor(Uri.parse(uri))}"
         }
-        switchIntro.isChecked = SettingsManager.isIntroEnabled(this, index)
+        switchIntro.isChecked = SettingsManager.isIntroEnabled(this, programIndex)
         txtIntroStatus.visibility = if (switchIntro.isChecked) View.VISIBLE else View.GONE
         btnPickIntro.visibility = if (switchIntro.isChecked) View.VISIBLE else View.GONE
         refreshIntroStatus()
         switchIntro.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setIntroEnabled(this, index, checked)
+            SettingsManager.setIntroEnabled(this, programIndex, checked)
             txtIntroStatus.visibility = if (checked) View.VISIBLE else View.GONE
             btnPickIntro.visibility = if (checked) View.VISIBLE else View.GONE
         }
         btnPickIntro.setOnClickListener {
-            pendingPickIndex = index
             pendingPickTarget = PickTarget.INTRO
             pickVideoLauncher.launch(arrayOf("video/*"))
         }
 
-        val txtCreditosStatus = row.findViewById<TextView>(R.id.txtCreditosVideoStatus)
-        val switchCreditos = row.findViewById<SwitchCompat>(R.id.switchCreditosEnabled)
-        val btnPickCreditos = row.findViewById<LinearLayout>(R.id.btnPickCreditosVideo)
+        val txtCreditosStatus = findViewById<TextView>(R.id.txtCreditosVideoStatus)
+        val switchCreditos = findViewById<SwitchCompat>(R.id.switchCreditosEnabled)
+        val btnPickCreditos = findViewById<LinearLayout>(R.id.btnPickCreditosVideo)
 
         fun refreshCreditosStatus() {
-            val uri = SettingsManager.getCreditosUri(this, index)
+            val uri = SettingsManager.getCreditosUri(this, programIndex)
             txtCreditosStatus.text = if (uri.isNullOrBlank()) "Sin video elegido" else "Video elegido: ${displayNameFor(Uri.parse(uri))}"
         }
-        switchCreditos.isChecked = SettingsManager.isCreditosEnabled(this, index)
+        switchCreditos.isChecked = SettingsManager.isCreditosEnabled(this, programIndex)
         txtCreditosStatus.visibility = if (switchCreditos.isChecked) View.VISIBLE else View.GONE
         btnPickCreditos.visibility = if (switchCreditos.isChecked) View.VISIBLE else View.GONE
         refreshCreditosStatus()
         switchCreditos.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setCreditosEnabled(this, index, checked)
+            SettingsManager.setCreditosEnabled(this, programIndex, checked)
             txtCreditosStatus.visibility = if (checked) View.VISIBLE else View.GONE
             btnPickCreditos.visibility = if (checked) View.VISIBLE else View.GONE
         }
         btnPickCreditos.setOnClickListener {
-            pendingPickIndex = index
             pendingPickTarget = PickTarget.CREDITOS
             pickVideoLauncher.launch(arrayOf("video/*"))
         }
 
-        // ── NextProgram personalizado (Release 5.5.0) — SÍ tiene default de
+        // ── A continuación personalizado (Release 5.5.0, renombrado en la
+        // 5.6.0 — antes "NextProgram personalizado") — SÍ tiene default de
         // fábrica (nextprogramN.gif), por eso sigue el patrón "personalizado"
         // de ya_regresa/continuamos en vez del de Intro/Créditos.
-        val switchNextProgram = row.findViewById<SwitchCompat>(R.id.switchNextProgramCustom)
-        val btnPickNextProgram = row.findViewById<LinearLayout>(R.id.btnPickNextProgramImage)
+        val switchNextProgram = findViewById<SwitchCompat>(R.id.switchNextProgramCustom)
+        val btnPickNextProgram = findViewById<LinearLayout>(R.id.btnPickNextProgramImage)
 
-        switchNextProgram.isChecked = SettingsManager.isNextProgramCustom(this, index)
+        switchNextProgram.isChecked = SettingsManager.isNextProgramCustom(this, programIndex)
         btnPickNextProgram.visibility = if (switchNextProgram.isChecked) View.VISIBLE else View.GONE
         switchNextProgram.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setNextProgramCustom(this, index, checked)
+            SettingsManager.setNextProgramCustom(this, programIndex, checked)
             btnPickNextProgram.visibility = if (checked) View.VISIBLE else View.GONE
         }
         btnPickNextProgram.setOnClickListener {
-            pendingPickIndex = index
             pendingPickTarget = PickTarget.NEXTPROGRAM
             // image/* — a diferencia de todo lo demás en esta pantalla (que
-            // son videos), NextProgram personalizado es una imagen o GIF.
+            // son videos), A continuación personalizado es una imagen o GIF.
             pickVideoLauncher.launch(arrayOf("image/*"))
         }
     }
@@ -288,8 +209,8 @@ class ProgramConfigActivity : AppCompatActivity() {
      * Se llama cuando el usuario eligió un archivo en el selector del
      * sistema. Persiste el permiso de lectura (para que la Uri no expire al
      * cerrar la app) y lo guarda en SettingsManager según qué botón lo
-     * disparó (pendingPickTarget/pendingPickIndex, fijados justo antes de
-     * lanzar el selector).
+     * disparó (pendingPickTarget, fijado justo antes de lanzar el selector)
+     * — siempre con [programIndex], el programa de ESTA pantalla.
      */
     private fun handlePickedVideo(uri: Uri) {
         try {
@@ -298,20 +219,18 @@ class ProgramConfigActivity : AppCompatActivity() {
             Log.w("ProgramConfig", "No se pudo persistir el permiso de lectura de $uri", e)
         }
 
-        val index = pendingPickIndex
-        if (index < 0) return
-
         when (pendingPickTarget) {
-            PickTarget.PROGRAM -> SettingsManager.setProgramUri(this, index, uri.toString())
-            PickTarget.YA_REGRESA -> SettingsManager.setYaRegresaUri(this, index, uri.toString())
-            PickTarget.CONTINUAMOS -> SettingsManager.setContinuamosUri(this, index, uri.toString())
-            PickTarget.INTRO -> SettingsManager.setIntroUri(this, index, uri.toString())
-            PickTarget.CREDITOS -> SettingsManager.setCreditosUri(this, index, uri.toString())
-            PickTarget.NEXTPROGRAM -> SettingsManager.setNextProgramUri(this, index, uri.toString())
+            PickTarget.YA_REGRESA -> SettingsManager.setYaRegresaUri(this, programIndex, uri.toString())
+            PickTarget.CONTINUAMOS -> SettingsManager.setContinuamosUri(this, programIndex, uri.toString())
+            PickTarget.INTRO -> SettingsManager.setIntroUri(this, programIndex, uri.toString())
+            PickTarget.CREDITOS -> SettingsManager.setCreditosUri(this, programIndex, uri.toString())
+            PickTarget.NEXTPROGRAM -> SettingsManager.setNextProgramUri(this, programIndex, uri.toString())
             null -> return
         }
 
-        rebuildProgramList()
+        // Recrear es más simple y menos propenso a errores que actualizar a
+        // mano los textos de estado de cada sección.
+        recreate()
     }
 
     /** Nombre legible del archivo elegido (vía SAF), con fallback al último segmento de la Uri. */

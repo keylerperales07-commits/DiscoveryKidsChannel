@@ -36,12 +36,16 @@
              android:alpha="0"
              android:id="@+id/screenBug" />
 
-        <com.keyler.discoverykidschannel.CrtOverlayView
-             android:layout_height="match_parent"
-             android:layout_width="match_parent"
-             android:clickable="false"
-             android:focusable="false"
-             android:id="@+id/crtOverlay" />
+        <!-- Release 5.6.0 — BUG FIX ("el CRT de NextProgram afecta a VideoView"):
+             antes había una SEGUNDA instancia de CrtOverlayView acá adentro
+             (nextProgramCrtOverlay, agregada en la 5.5.0) — dos overlays
+             animados corriendo en paralelo, cada uno con su propio loop de
+             postInvalidateOnAnimation() por cuadro, el doble de carga de
+             dibujo innecesaria en hardware limitado. Esa instancia (y la que
+             vivía acá dentro de videoContainer) se eliminaron — ahora hay
+             UNA sola, compartida, más abajo (ver el AspectRatioFrameLayout
+             final de este archivo), dibujada por ENCIMA de todo (video +
+             marco de NextProgram), en vez de duplicada. -->
 
     </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
 
@@ -74,19 +78,25 @@
              android:alpha="0"
              android:id="@+id/nextProgramBug" />
 
-        <!-- Release 5.5.0 — BUG FIX ("el nextprogram no aparece con el crt"):
-             el CrtOverlayView original vive DENTRO de videoContainer, así que
-             nunca cubría este marco (que es un AspectRatioFrameLayout
-             HERMANO, fuera de videoContainer). Se agrega una segunda
-             instancia acá, con los mismos parámetros (ver
-             LiveDiscoveryKids.applySettings(): nextProgramCrtOverlay.effectEnabled
-             se configura junto con crtOverlay). -->
+    </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
+
+    <!-- Release 5.6.0 — CrtOverlayView ÚNICA y compartida (ver comentario
+         arriba). Hermana de videoContainer y del marco NextProgram, mismo
+         AspectRatioFrameLayout 4:3 centrado que ambos — así el efecto CRT
+         (scanlines, vignette, borde) queda perfectamente alineado tanto
+         sobre el video como sobre el marco de NextProgram, sea cual sea el
+         que esté visible en cada momento, con una sola animación. -->
+    <com.keyler.discoverykidschannel.AspectRatioFrameLayout
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:layout_gravity="center">
+
         <com.keyler.discoverykidschannel.CrtOverlayView
              android:layout_height="match_parent"
              android:layout_width="match_parent"
              android:clickable="false"
              android:focusable="false"
-             android:id="@+id/nextProgramCrtOverlay" />
+             android:id="@+id/crtOverlay" />
 
     </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
 
