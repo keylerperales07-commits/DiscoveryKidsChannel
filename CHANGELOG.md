@@ -6,9 +6,30 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2011.5.6.0] — 🚀 Release · Era Doki 1.0 · Era 2011 · "Parque Imaginario" — 2026-07-29
+## [2012.5.7.0] — 🚀 Release · Era Doki 1.0 · Era 2012 · "Parque Imaginario" — 2026-07-30
 
-> *2 bug fixes de investigación a fondo sobre NextProgram: un solo CrtOverlayView compartido (antes había dos animaciones corriendo en paralelo, afectando el rendimiento de VideoView) y el ancho real del recuadro corregido con precisión de píxel (se derivaba forzando 4:3, pero el recuadro no es 4:3). BUG FIX de arquitectura: "los programas" (cantidad + video) y los ScreenBugs de eventos vuelven al Launcher — Configuración de Programa pasa a ser solo las opciones de UN programa puntual. "NextProgram" renombrado a "A continuación". Nuevo: "Activar comerciales" por programa.*
+> *Cambio de Era (2011→2012). Consolida la Preview 2011.5.6.0.60 (CrtOverlayView único y compartido, ancho real del recuadro de NextProgram) como Release estable. Nuevo contenido: cambio de comerciales para la Era 2012.*
+
+### 🎨 Cambio de Era
+
+> Era 2011 → Era 2012. Nuevos comerciales correspondientes a la Era 2012.
+
+### ✅ Consolidación de la Preview 2011.5.6.0.60
+
+Todo lo de la Preview pasa a ser parte de esta Release estable, sin cambios adicionales:
+- **Un solo CrtOverlayView, compartido** entre el video y el recuadro de NextProgram (antes había dos instancias animadas en paralelo).
+- **Ancho real del recuadro de NextProgram corregido** — se derivaba forzando 4:3, pero el recuadro no es 4:3; el video quedaba ~22px más angosto de lo debido.
+- **Configuración por programa auditada** — confirmada correctamente independiente entre programas.
+
+### ⚠️ Alcance
+
+> Sin cambios de código respecto a la Preview 2011.5.6.0.60 — solo contenido (comerciales de la Era 2012) y documentación. `build.gradle`: `versionName` a `2012.5.7.0`.
+
+---
+
+## [2011.5.6.0.60-preview] — 🧪 Preview · Era Doki 1.0 · Era 2011 · "Parque Imaginario" — 2026-07-28
+
+> *2 bug fixes de investigación a fondo sobre NextProgram: un solo CrtOverlayView compartido (antes había dos animaciones corriendo en paralelo, afectando el rendimiento de VideoView) y el ancho real del recuadro corregido con precisión de píxel (se derivaba forzando 4:3, pero el recuadro no es 4:3). Auditoría de la configuración por programa: confirmada correctamente independiente entre programas, sin cambios de código.*
 
 ### 🐛 BUG FIX — CrtOverlayView duplicado ("otro CRT... afecta a VideoView")
 
@@ -22,24 +43,13 @@ Se eliminaron ambas instancias nesteadas y se agregó una **única** `CrtOverlay
 
 Se agregó `AspectRatioFrameLayout.forceAspectRatio` (desactivable), y `showVideoInBox()` ahora calcula el ancho real del recuadro a partir de una fracción `RIGHT` medida explícitamente (antes no existía — el ancho se derivaba, nunca se medía), en vez de forzar 4:3 sobre la altura.
 
-### 🐛 BUG FIX (arquitectura) — "Los programas" y los ScreenBugs de eventos vuelven al Launcher
+### ✅ Auditoría — Configuración por programa
 
-La 5.5.0 había movido ENTERA la sección "Programas" (cantidad + video de cada uno) y los ScreenBugs de eventos (globales) a `ProgramConfigActivity`, junto con las opciones de cada programa — un malentendido. La separación correcta:
-
-- **Launcher** (`DiscoveryKidsLauncherActivity`): los **programas** en sí (cantidad, y qué video es cada uno) y los **ScreenBugs de eventos** (Navidad, Año Nuevo, Pascua, Día de la Tierra — globales, no pertenecen a un programa en particular).
-- **Configuración de Programa** (`ProgramConfigActivity`): ahora recibe un `programIndex` por Intent y muestra **solo las opciones de ESE programa puntual** — ya_regresa, continuamos, Intro, Créditos, A continuación personalizado, activar comerciales. Se abre con un botón "⚙️ Opciones" en la fila de cada programa, dentro del Launcher. Cada programa guarda su configuración de forma completamente independiente — cambiarla para el Programa 1 nunca afecta al Programa 2 ni a ningún otro.
-
-### 🏷️ Renombrado — "NextProgram" → "A continuación"
-
-El nombre visible en la UI (switch "NextProgram personalizado", selector de imagen/GIF, mensajes de validación) pasa a decir "A continuación" — coincide con lo que efectivamente se ve en pantalla durante la transmisión. Los identificadores internos del código (nombres de función, de variable, claves de `SharedPreferences`) no se tocaron — es un cambio de rótulo visible, no un refactor de nombres internos.
-
-### ➕ Nuevo — Activar comerciales, por programa
-
-Switch nuevo en Configuración de Programa (Predeterminado: activado). Desactivado, ese programa puntual se reproduce de punta a punta sin ningún corte comercial — el resto de los programas no se ve afectado.
+Se revisó a fondo `ProgramConfigActivity.kt` y `SettingsManager.kt`: todas las configuraciones por programa (video, ya_regresa, continuamos, Intro, Créditos, NextProgram personalizado) están correctamente indexadas por programa (`KEY_*_PREFIX + index` en cada clave de `SharedPreferences`) — cambiar la configuración de un programa no afecta a los demás. No se encontró ningún caso de estado compartido entre programas; no se modificó código en esta área.
 
 ### ⚠️ Alcance
 
-> Cambios de código en `activity_main.xml` (CrtOverlayView único, compartido), `AspectRatioFrameLayout.kt` (`forceAspectRatio` desactivable), `LiveDiscoveryKids.kt` (`showVideoInBox()`/`restoreVideoFullScreen()` con ancho real medido, `breakQueue` condicionada a "Activar comerciales"), `SettingsManager.kt` (nuevo `KEY_COMMERCIALS_ENABLED_PREFIX`), `DiscoveryKidsLauncherActivity.kt` (reescrita — Programas + ScreenBugs de eventos de vuelta acá), `ProgramConfigActivity.kt` (reescrita — un solo programa por pantalla, vía `EXTRA_PROGRAM_INDEX`), `activity_launcher.xml`, `activity_program_config.xml`, nuevo `item_program_row.xml` (reemplaza a `item_program_config.xml`). `build.gradle`: `versionName` a `2011.5.6.0` (promovida de Preview a Release).
+> Cambios de código en `activity_main.xml` (CrtOverlayView único, compartido), `AspectRatioFrameLayout.kt` (`forceAspectRatio` desactivable), `LiveDiscoveryKids.kt` (`showVideoInBox()`/`restoreVideoFullScreen()` con ancho real medido, referencias a `nextProgramCrtOverlay` eliminadas). `build.gradle`: `versionName` a `2011.5.6.0.60-preview`.
 
 ---
 
@@ -2028,7 +2038,8 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
-| 2011.5.6.0           | 2026-07-29 | 🚀 Release | 2 bug fixes de NextProgram: CrtOverlayView único y compartido, ancho real del recuadro corregido con precisión de píxel; BUG FIX de arquitectura: "los programas" y ScreenBugs de eventos vuelven al Launcher, Configuración de Programa pasa a ser solo opciones de un programa puntual; "NextProgram" renombrado a "A continuación"; nuevo "Activar comerciales" por programa |
+| 2012.5.7.0           | 2026-07-30 | 🚀 Release | Cambio de Era (2011→2012); nuevos comerciales de la Era 2012; consolida la Preview 2011.5.6.0.60 como Release estable (CrtOverlayView único y compartido entre video y NextProgram, ancho real del recuadro de NextProgram corregido) |
+| 2011.5.6.0.60-preview | 2026-07-28 | 🧪 Preview | 2 bug fixes de NextProgram: CrtOverlayView único y compartido (antes había dos animaciones en paralelo, afectando el rendimiento de VideoView), ancho real del recuadro corregido con precisión de píxel (se derivaba forzando 4:3, el recuadro no es 4:3); auditoría de configuración por programa (confirmada correctamente independiente, sin cambios) |
 | 2011.5.5.0           | 2026-07-27 | 🚀 Release | Cambio de Era (2010→2011); nueva Activity Configuración de Programa (extraída del Launcher); NextProgram personalizado por programa; 3 ScreenBugs de eventos nuevos (Año Nuevo, Pascua, Día de la Tierra) + Navidad ahora configurable; BUG FIX: ActionBar tapando el layout, ScreenBug repitiéndose entre Intro/Programa/Créditos, NextProgram sin efecto CRT, ajuste fino de posición del recuadro |
 | 2010.5.4.1           | 2026-07-25 | 🐛 Bug Fix | BUG FIX (causa raíz real): ScreenBug no aparecía en Intro ni Créditos (el cálculo de 20s/46s daba negativo en clips cortos, nunca se agendaba nada — clamp a la duración real del clip); corrección de diseño en NextProgram: el recuadro muestra el VideoView del programa en curso, no otro GIF |
 | 2010.5.4.0           | 2026-07-24 | 🚀 Release | Consolida la Preview 2010.5.4.0.40 (NextProgram, ScreenBug final a 46s); BUG FIX: ANR al abrir la app (decode de GIFs sincrónico en el hilo principal, movido a hilo aparte), NextProgram no se ubicaba en el recuadro, cantidad de programas no se actualizaba al volver por Recientes; eliminación de StandaloneCommercial; Intro/Créditos personalizados por programa |
