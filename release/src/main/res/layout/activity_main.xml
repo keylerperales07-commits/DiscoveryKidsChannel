@@ -36,6 +36,20 @@
              android:alpha="0"
              android:id="@+id/screenBug" />
 
+        <!-- Release 5.8.0 — Banner de clasificación (clasif_banner.gif),
+             se muestra brevemente al arrancar un programa nuevo — ver
+             LiveDiscoveryKids.showClasifBanner()/playProgram(). Tamaño y
+             posición típicos de un "rating bug" de TV: chico, esquina
+             inferior izquierda. -->
+        <ImageView
+             android:layout_height="72dp"
+             android:layout_width="72dp"
+             android:layout_gravity="bottom|start"
+             android:layout_margin="16dp"
+             android:contentDescription="Clasificación"
+             android:alpha="0"
+             android:id="@+id/clasifBanner" />
+
         <!-- Release 5.6.0 — BUG FIX ("el CRT de NextProgram afecta a VideoView"):
              antes había una SEGUNDA instancia de CrtOverlayView acá adentro
              (nextProgramCrtOverlay, agregada en la 5.5.0) — dos overlays

@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v5.7.0-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v5.8.0-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Era-2012-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/Fase-4-orange?style=flat-square"/>
 </p>
@@ -47,14 +47,15 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 📡 **Overlay Visual CRT** — Efectos de scanlines y pantalla para esa sensación retro de televisor
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
 - 🆕 **ScreenBug de 3 fases** — Marca de agua animada con el logo del canal: aparición (GIF), estático (PNG) y salida (GIF, a partir de 46 segundos antes del final del bloque). Desde la Release 5.4.0, si el programa tiene Intro/Créditos activados, la aparición ocurre en la Intro y la salida en los Créditos — la cuenta de tiempo no se reinicia al cambiar de clip, "suma" la duración real de cada uno. Los GIF se reproducen con `GifMovieDrawable`, basado en la API nativa `android.graphics.Movie` (sin librerías externas — Release 2009.5.1.0). Nuevo contenido de Mayo–Julio 2009 (Release 2009.5.1.0), Julio 2009–2011 (Release 2009.5.2.0)
-- 🎄 **ScreenBugs de eventos** — Navidad (1-24 dic, 3 fases completas, Release 2010.5.3.0), Año Nuevo (25 dic-7 ene), Pascua (Domingo de Pascua) y Día de la Tierra (22 de abril) — estos 3 últimos reemplazan solo el logo estático del medio (Release 5.5.0). Los 4 se activan/desactivan individualmente en Configuración de Programa
+- 🎄 **ScreenBugs de eventos** — Navidad (1-24 dic, 3 fases completas, Release 2010.5.3.0), Año Nuevo (25 dic-7 ene), Pascua (Domingo de Pascua) y Día de la Tierra (22 de abril) — estos 3 últimos reemplazan solo el logo estático del medio (Release 5.5.0). Desde Configuración: switch maestro "Activar eventos" + selector para forzar manualmente un evento puntual o dejar que la app decida sola por fecha ("Normal") — Release 5.8.0
 - ⏸ **Pantalla "Ya Volvemos"** — Pantalla intersticial auténtica de "Volvemos en un momento"
 - 🎞️ **Transiciones Profesionales FadeIn / FadeOut** — Cada cambio de video aplica un **FadeOut de 500 ms** y un **FadeIn de 1 segundo**, cubriendo bumpers, comerciales, transiciones ya_regresa/continuamos y arranque/retoma de programas
 - ⏭️ **Navegación Prev / Next por bloque completo** — Los botones de canal navegan al bloque completo del programa (Bumper → [Intro] → Programa), igual que cambiar de canal en TV real
 - ⚙️ **Pantalla de Configuración** — Accesible desde el botón de ajustes, con lista simple estilo Android Settings. Permite alternar música de fondo, efecto CRT y Forzar 4:3, y ajustar la duración del Screenbug y el intervalo entre comerciales — cada opción muestra su valor predeterminado
 - 🔄 **Actualizador integrado** — Desde Configuración, "Buscar actualizaciones" consulta el último release de GitHub; si hay una versión más nueva, descarga el `.apk` con OkHttp (mostrando progreso y tamaño en vivo) y abre el instalador del sistema. Un switch "Habilitar versiones Preview" (desactivado por defecto) permite que también instale releases Preview, no solo estables. La pantalla del Actualizador calca el diseño nativo de "Actualización del sistema" de Android
 - 🔔 **Aviso de actualización al abrir la app** — Además de "Buscar actualizaciones" en Configuración, la app consulta en silencio al entrar y muestra un AlertDialog propio si hay una versión nueva (Release 2009.5.0.0)
-- 🧪 **Discovery Kids Launcher (Experimental)** — Con "Habilitar funciones experimentales" activado en Configuración, la app abre en una pantalla nueva, rediseñada a **Material Design 3 puro** (esquema de color claro/oscuro automático, ActionBar original de Android — Release 2009.5.1.0) desde donde elegís el video de cada programa con el selector de archivos del sistema (sin renombrar ni copiar nada a Videos), cuántos programas querés (hasta 24) y, si querés, un ya_regresa/continuamos propio para cada uno. Desactivado, la app sigue abriendo directo al canal con los 4 programas clásicos (Release 2009.5.0.0)
+- 🧪 **Discovery Kids Launcher (Experimental)** — Con "Habilitar funciones experimentales" activado en Configuración, la app abre en una pantalla nueva, rediseñada a **Material Design 3 puro** (esquema de color claro/oscuro automático, ActionBar original de Android — Release 2009.5.1.0) desde donde elegís cuántos programas querés (hasta 24). Para cada uno, entrás a "⚙️ Opciones" para elegir sus Episodios (uno o más videos, Release 5.8.0), ya_regresa/continuamos, Intro, Créditos y más. Desactivado, la app sigue abriendo directo al canal con los 4 programas clásicos (Release 2009.5.0.0)
+- 🎬 **Episodios de Programa** — Un programa puede tener varios videos en vez de uno solo. Entre episodios se muestran los comerciales de siempre; al terminar el último, salen los Créditos (si están configurados). Cada video debe durar al menos 1 minuto (Release 5.8.0)
 - 📺 **Contenedor de video en 4:3, siempre** — El contenedor donde vive el video (junto con el ScreenBug y el efecto CRT) está siempre en proporción 4:3, sin excepción (Release 2009.5.2.1). "Forzar 4:3" (Configuración) decide qué pasa con el video *dentro* de esa caja: activado, se estira para llenarla exacto; desactivado, se ajusta preservando su proporción real sin estirarse — un video 16:9, por ejemplo, encaja con franjas arriba/abajo en vez de deformarse.
 
 ---
@@ -167,15 +168,23 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-### 🚀 Última versión estable — `v5.7.0` *(Release · Era Doki 1.0 · Era 2012 · "Parque Imaginario")*
-> *Cambio de Era (2011→2012). Consolida la Preview 2011.5.6.0.60 (CrtOverlayView único y compartido, ancho real del recuadro de NextProgram) como Release estable. Nuevo contenido: comerciales de la Era 2012.*
+### 🚀 Última versión estable — `v5.8.0` *(Release · Era Doki 1.0 · Era 2012 · "Parque Imaginario")*
+> *Episodios de Programa (varios videos por programa, comerciales entre ellos, créditos al final), sistema de Eventos rediseñado (switch maestro + selector manual, movido a Configuración), banner de clasificación al iniciar un programa, restricción de duración mínima, y 4 correcciones: video corrido en Nextprogram2, ActionBar tapando contenido (edge-to-edge), y líneas de texto pegadas.*
 
-- 🎨 **Cambio de Era 2011 → 2012** — nuevos comerciales correspondientes.
-- 🐛 **Un solo CrtOverlayView, compartido** entre el video y el recuadro de NextProgram (antes había dos instancias animadas en paralelo).
-- 🐛 **Ancho real del recuadro de NextProgram corregido** — el video ya no queda ~22px más angosto de lo debido.
+- 🆕 **Episodios de Programa** — un programa puede tener varios videos en vez de uno solo; entre episodios se muestran comerciales, al terminar el último salen los Créditos.
+- 🆕 **Sistema de Eventos rediseñado** — switch maestro "Activar eventos" + selector manual de evento (Normal/Navidad/Año Nuevo/Pascua/Día de la Tierra), movido a Configuración.
+- 🆕 **Banner de clasificación** — `clasif_banner.gif` al arrancar cada programa, visible 17s.
+- ⚙️ **Duración mínima de 1 minuto** para cualquier episodio.
+- 🐛 **Video corrido con Nextprogram2** en Créditos — corregido con un ajuste de posición específico.
+- 🐛 **ActionBar tapando contenido** (edge-to-edge de `targetSdk 36`) — corregido con manejo explícito de insets en las 3 pantallas con ActionBar.
+- 🐛 **Líneas de texto pegadas** — agregado espaciado entre líneas en los textos multilínea afectados.
 
 <details>
 <summary>📜 Versiones estables anteriores</summary>
+
+**`v5.7.0`** *(Era Doki 1.0 · Era 2012 · "Parque Imaginario")* — Cambio de Era (2011→2012). Consolida la Preview 2011.5.6.0.60 (CrtOverlayView único y compartido, ancho real del recuadro de NextProgram) como Release estable. Nuevo contenido: comerciales de la Era 2012.
+- 🎨 **Cambio de Era 2011 → 2012** — nuevos comerciales correspondientes.
+- 🐛 **Un solo CrtOverlayView, compartido** entre el video y el recuadro de NextProgram (antes había dos instancias animadas en paralelo).
 
 **`v5.5.0`** *(Era Doki 1.0 · Era 2011 · "Parque Imaginario")* — Cambio de Era (2010→2011). Nueva Activity Configuración de Programa (extraída del Launcher), NextProgram personalizado, 4 ScreenBugs de eventos (Navidad, Año Nuevo, Pascua, Día de la Tierra — todos configurables), y 4 correcciones: ActionBar tapando contenido, ScreenBug repitiéndose entre Intro/Programa/Créditos, CRT ausente en NextProgram, y ajuste fino de la posición del recuadro.
 - 🆕 **Nueva Activity: Configuración de Programa** — la sección "Programas" del Launcher (cantidad, videos, personalizaciones) pasa a tener su propia pantalla.

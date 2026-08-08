@@ -6,6 +6,47 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2012.5.8.0] — 🚀 Release · Era Doki 1.0 · Era 2012 · "Parque Imaginario" — 2026-08-03
+
+> *Episodios de Programa (varios videos por programa, con comerciales entre ellos y créditos al final), sistema de Eventos rediseñado (switch maestro + selector manual, movido a Configuración), banner de clasificación al iniciar un programa, restricción de duración mínima, y 4 correcciones: video corrido en Nextprogram2, ActionBar tapando contenido (edge-to-edge), y líneas de texto pegadas.*
+
+### 🆕 Episodios de Programa
+
+Un programa puede tener **varios videos (episodios)** en vez de uno solo — configurable desde Configuración de Programa, sección "Episodios". Al terminar un episodio que no es el último, se muestra el corte comercial de siempre (ya_regresa → comercial → continuamos) y arranca el siguiente episodio desde cero. Al terminar el **último** episodio, sigue el flujo normal (Créditos, si están configurados para ese programa).
+
+- El episodio 0 (el primero) reutiliza el mismo storage de siempre — un programa que ya tenía un solo video elegido sigue funcionando exactamente igual, como "1 episodio", sin ninguna migración.
+- Cada video se valida contra la restricción de duración mínima (ver más abajo) antes de aceptarse como episodio.
+- `ProgramConfigActivity.onProgramSegmentFinished()`/`resumeProgramAfterCommercial()` (nuevas, en `LiveDiscoveryKids.kt`) deciden, al terminar cada episodio, si hay que encadenar el siguiente o seguir el flujo normal.
+
+### 🆕 Sistema de Eventos rediseñado
+
+Los 4 switches individuales por evento (Navidad, Año Nuevo, Pascua, Día de la Tierra), que vivían en Discovery Kids Launcher, se reemplazan por:
+
+- **"Activar eventos"** (switch maestro, Predeterminado: activado) — en Configuración.
+- **"Evento actual"** (selector de una sola opción: Normal / Navidad / Día de la Tierra / Año Nuevo / Huevo de Pascua) — permite forzar manualmente un evento sin importar la fecha real (para previsualizar/probar), o dejar que la app decida sola por fecha ("Normal", el comportamiento de siempre). Se deshabilita mientras el switch maestro esté desactivado.
+
+### 🆕 Banner de clasificación
+
+Se agregó un banner de clasificación (`clasif_banner.gif`) que aparece al arrancar cada programa nuevo — esquina inferior izquierda, visible 17 segundos (la duración real del GIF) y luego se esfuma solo. Se muestra una vez por programa, no por episodio.
+
+### 🗑️ Eliminado
+
+- El activador de eventos (los 4 switches) se sacó de Discovery Kids Launcher por completo — ver "Sistema de Eventos rediseñado" arriba.
+- "Elegir video del programa" se eliminó de la fila de cada programa en el Launcher — reemplazado por "Episodios" en Configuración de Programa, que permite elegir varios videos en vez de uno solo.
+
+### ⚙️ Cambios
+
+- **Restricción de duración mínima**: un video no se acepta como episodio si dura menos de 1 minuto (validado con `MediaMetadataRetriever` al elegirlo, antes de guardarlo).
+- **BUG FIX — video corrido cuando los Créditos usan Nextprogram2**: el recuadro de `nextprogram2.gif` no está exactamente en la misma posición que el de `nextprogram1.gif` — el video quedaba corrido a la izquierda respecto al recuadro real. Se agregó un corrimiento hacia la derecha específico para ese caso (`showVideoInBox()`), aplicado solo con el GIF de fábrica (no con un NextProgram personalizado).
+- **BUG FIX — el ActionBar se comía parte del layout**: con `targetSdk 36`, Android fuerza edge-to-edge — el contenido podía dibujarse detrás de la barra de estado/ActionBar si nadie reservaba ese espacio explícitamente. Se aplica el inset de barras del sistema como padding del contenido en las 3 pantallas con ActionBar (Launcher, Configuración, Configuración de Programa).
+- **BUG FIX — líneas de texto pegadas**: los párrafos descriptivos multilínea no tenían separación entre líneas al hacer wrap; se agregó `lineSpacingExtra` a los textos afectados.
+
+### ⚠️ Alcance
+
+> Cambios de código en `LiveDiscoveryKids.kt` (Episodios, sistema de Eventos, banner de clasificación, corrimiento de Nextprogram2), `SettingsManager.kt` (storage de episodios y eventos), `SettingsActivity.kt`/`activity_settings.xml` (sección Eventos), `ProgramConfigActivity.kt`/`activity_program_config.xml` (sección Episodios), `DiscoveryKidsLauncherActivity.kt`/`activity_launcher.xml` (eventos y picker eliminados), `item_program_row.xml`, nuevo `item_episode_row.xml`, `activity_main.xml` (ImageView del banner), insets en las 3 Activities con ActionBar. `build.gradle`: `versionName` a `2012.5.8.0`.
+
+---
+
 ## [2012.5.7.0] — 🚀 Release · Era Doki 1.0 · Era 2012 · "Parque Imaginario" — 2026-07-30
 
 > *Cambio de Era (2011→2012). Consolida la Preview 2011.5.6.0.60 (CrtOverlayView único y compartido, ancho real del recuadro de NextProgram) como Release estable. Nuevo contenido: cambio de comerciales para la Era 2012.*
@@ -2038,6 +2079,7 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
+| 2012.5.8.0           | 2026-08-03 | 🚀 Release | Episodios de Programa (varios videos por programa, comerciales entre ellos, créditos al final); sistema de Eventos rediseñado (switch maestro + selector manual, movido a Configuración); banner de clasificación al iniciar un programa (17s); restricción de duración mínima (1 min); BUG FIX: video corrido con Nextprogram2, ActionBar tapando contenido (edge-to-edge), líneas de texto pegadas |
 | 2012.5.7.0           | 2026-07-30 | 🚀 Release | Cambio de Era (2011→2012); nuevos comerciales de la Era 2012; consolida la Preview 2011.5.6.0.60 como Release estable (CrtOverlayView único y compartido entre video y NextProgram, ancho real del recuadro de NextProgram corregido) |
 | 2011.5.6.0.60-preview | 2026-07-28 | 🧪 Preview | 2 bug fixes de NextProgram: CrtOverlayView único y compartido (antes había dos animaciones en paralelo, afectando el rendimiento de VideoView), ancho real del recuadro corregido con precisión de píxel (se derivaba forzando 4:3, el recuadro no es 4:3); auditoría de configuración por programa (confirmada correctamente independiente, sin cambios) |
 | 2011.5.5.0           | 2026-07-27 | 🚀 Release | Cambio de Era (2010→2011); nueva Activity Configuración de Programa (extraída del Launcher); NextProgram personalizado por programa; 3 ScreenBugs de eventos nuevos (Año Nuevo, Pascua, Día de la Tierra) + Navidad ahora configurable; BUG FIX: ActionBar tapando el layout, ScreenBug repitiéndose entre Intro/Programa/Créditos, NextProgram sin efecto CRT, ajuste fino de posición del recuadro |

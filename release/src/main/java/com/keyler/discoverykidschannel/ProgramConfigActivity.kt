@@ -55,10 +55,13 @@ class ProgramConfigActivity : AppCompatActivity() {
         const val EXTRA_PROGRAM_INDEX = "program_index"
     }
 
-    private enum class PickTarget { YA_REGRESA, CONTINUAMOS, INTRO, CREDITOS, NEXTPROGRAM }
+    private enum class PickTarget { YA_REGRESA, CONTINUAMOS, INTRO, CREDITOS, NEXTPROGRAM, EPISODE }
 
     private var programIndex = -1
     private var pendingPickTarget: PickTarget? = null
+    // Release 5.8.0 — qué episodio (0-based) se está por elegir/reemplazar,
+    // solo válido cuando pendingPickTarget == PickTarget.EPISODE.
+    private var pendingEpisodeIndex = -1
 
     /**
      * SAF: selector de archivos del sistema. El tipo MIME varía según qué
@@ -91,8 +94,110 @@ class ProgramConfigActivity : AppCompatActivity() {
             title = "Programa ${programIndex + 1} — Opciones"
         }
 
+        // Release 5.8.0 — BUG FIX ("el ActionBar se come una parte del
+        // Layout"), ver mismo comentario en DiscoveryKidsLauncherActivity.onCreate().
+        val programConfigRoot = findViewById<View>(R.id.programConfigRoot)
+        val rootPaddingLeft = programConfigRoot.paddingLeft
+        val rootPaddingRight = programConfigRoot.paddingRight
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(programConfigRoot) { view, insets ->
+            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            view.setPadding(rootPaddingLeft, bars.top, rootPaddingRight, bars.bottom)
+            insets
+        }
+
+        bindEpisodes()
         bindCommercialsSwitch()
         bindProgramOptions()
+    }
+
+    // ── Episodios (Release 5.8.0, NUEVO) ─────────────────────────────────────
+    // Un programa puede tener varios videos (episodios) en vez de uno solo.
+    // El episodio 0 usa el MISMO storage de siempre (SettingsManager.
+    // getProgramUri/setProgramUri) — un programa clásico de un solo video
+    // sigue funcionando exactamente igual, como "1 episodio". Los episodios
+    // 1+ son un concepto nuevo, sin equivalente en la Era clásica.
+
+    private fun bindEpisodes() {
+        val container = findViewById<LinearLayout>(R.id.containerEpisodes)
+        val btnAdd = findViewById<TextView>(R.id.btnAddEpisode)
+
+        renderEpisodeRows(container)
+
+        btnAdd.setOnClickListener {
+            val count = SettingsManager.getEpisodeCount(this, programIndex)
+            SettingsManager.setEpisodeCount(this, programIndex, count + 1)
+            renderEpisodeRows(container)
+        }
+    }
+
+    private fun renderEpisodeRows(container: LinearLayout) {
+        container.removeAllViews()
+        val count = SettingsManager.getEpisodeCount(this, programIndex)
+        val inflater = layoutInflater
+        for (episodeIndex in 0 until count) {
+            val row = inflater.inflate(R.layout.item_episode_row, container, false)
+            val txtLabel = row.findViewById<TextView>(R.id.txtEpisodeLabel)
+            val txtStatus = row.findViewById<TextView>(R.id.txtEpisodeStatus)
+            val btnRemove = row.findViewById<TextView>(R.id.btnRemoveEpisode)
+
+            txtLabel.text = "Episodio ${episodeIndex + 1}"
+            val uri = SettingsManager.getEpisodeUri(this, programIndex, episodeIndex)
+            txtStatus.text = if (uri.isNullOrBlank()) {
+                if (episodeIndex == 0) "pro${programIndex + 1}.mp4 (o elegí uno)" else "Sin video elegido"
+            } else {
+                displayNameFor(Uri.parse(uri))
+            }
+
+            row.setOnClickListener {
+                pendingPickTarget = PickTarget.EPISODE
+                pendingEpisodeIndex = episodeIndex
+                pickVideoLauncher.launch(arrayOf("video/*"))
+            }
+
+            // El episodio 0 siempre existe — un programa nunca queda con 0
+            // episodios. Los demás se pueden quitar.
+            if (episodeIndex == 0) {
+                btnRemove.visibility = View.GONE
+            } else {
+                btnRemove.visibility = View.VISIBLE
+                btnRemove.setOnClickListener {
+                    // Recorre los episodios de ESTE en adelante, corriendo
+                    // cada Uri un lugar hacia atrás, para no dejar un
+                    // "hueco" en el medio de la lista.
+                    val currentCount = SettingsManager.getEpisodeCount(this, programIndex)
+                    for (i in episodeIndex until currentCount - 1) {
+                        val nextUri = SettingsManager.getEpisodeUri(this, programIndex, i + 1)
+                        SettingsManager.setEpisodeUri(this, programIndex, i, nextUri)
+                    }
+                    SettingsManager.removeEpisodeUri(this, programIndex, currentCount - 1)
+                    SettingsManager.setEpisodeCount(this, programIndex, (currentCount - 1).coerceAtLeast(1))
+                    renderEpisodeRows(container)
+                }
+            }
+
+            container.addView(row)
+        }
+    }
+
+    /**
+     * BUG FIX/NUEVO (Release 5.8.0) — "el programa tiene que ser mínimo 1
+     * minuto": valida la duración real del video ANTES de aceptarlo como
+     * episodio, usando MediaMetadataRetriever. Si dura menos de 1 minuto,
+     * se rechaza con un aviso claro — el episodio se queda con lo que tenía
+     * antes (o vacío, si era nuevo).
+     */
+    private fun isVideoAtLeastOneMinute(uri: Uri): Boolean {
+        val retriever = android.media.MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(this, uri)
+            val durationMs = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+            durationMs >= 60_000L
+        } catch (e: Exception) {
+            Log.w("ProgramConfig", "No se pudo leer la duración de $uri, se deja pasar", e)
+            true   // si no se puede determinar la duración, no bloqueamos al usuario por las dudas
+        } finally {
+            try { retriever.release() } catch (e: Exception) { /* no-op */ }
+        }
     }
 
     // ── Activar comerciales (Release 5.6.0, NUEVO) ───────────────────────────
@@ -225,6 +330,20 @@ class ProgramConfigActivity : AppCompatActivity() {
             PickTarget.INTRO -> SettingsManager.setIntroUri(this, programIndex, uri.toString())
             PickTarget.CREDITOS -> SettingsManager.setCreditosUri(this, programIndex, uri.toString())
             PickTarget.NEXTPROGRAM -> SettingsManager.setNextProgramUri(this, programIndex, uri.toString())
+            PickTarget.EPISODE -> {
+                if (!isVideoAtLeastOneMinute(uri)) {
+                    androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Video muy corto")
+                        .setMessage("Este programa tiene que durar al menos 1 minuto. Elegí otro video.")
+                        .setPositiveButton("Entendido", null)
+                        .show()
+                    pendingPickTarget = null
+                    pendingEpisodeIndex = -1
+                    return
+                }
+                SettingsManager.setEpisodeUri(this, programIndex, pendingEpisodeIndex, uri.toString())
+                pendingEpisodeIndex = -1
+            }
             null -> return
         }
 

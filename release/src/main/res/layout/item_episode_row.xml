@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ ESTO TIENE LICENCIA GNU LICENSE APACHE
+
+ NO ELIMINAR NINGUN COMENTARIO AGREGADO
+-->
+<!--
+    item_episode_row.xml — Release 5.8.0
+
+    Fila de UN episodio dentro de "Episodios" (ProgramConfigActivity). Se
+    infla dinámicamente una vez por episodio — ver
+    ProgramConfigActivity.bindEpisodes(). El episodio 0 (el primero) no
+    tiene botón de eliminar — un programa siempre tiene al menos 1 episodio.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="?attr/selectableItemBackground"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
+
+    <TextView
+        android:id="@+id/txtEpisodeLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Episodio 1"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="15sp"
+        android:fontFamily="@font/dk_font" />
+
+    <TextView
+        android:id="@+id/txtEpisodeStatus"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Sin video elegido"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="12sp"
+        android:fontFamily="@font/dk_font"
+        android:maxLines="2"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/btnRemoveEpisode"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:gravity="center"
+        android:text="✕"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="18sp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:contentDescription="Quitar episodio" />
+
+</LinearLayout>

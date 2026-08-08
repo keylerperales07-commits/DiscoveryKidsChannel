@@ -34,6 +34,7 @@
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/programConfigRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
@@ -58,6 +59,66 @@
             android:paddingStart="20dp"
             android:paddingEnd="20dp"
             android:paddingBottom="16dp" />
+
+        <!-- ── Episodios (Release 5.8.0, NUEVO) ──────────────────────────────
+             Un programa puede tener varios videos (episodios) en vez de uno
+             solo. Al terminar un episodio que no es el último, se muestra un
+             corte comercial (igual que entre programas) y arranca el
+             siguiente episodio desde cero. Al terminar el ÚLTIMO episodio,
+             sigue el flujo normal (Créditos, si están configurados). Ver
+             ProgramConfigActivity.bindEpisodes() / LiveDiscoveryKids.
+             onProgramSegmentFinished()/resumeProgramAfterCommercial(). -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Episodios"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/dk_font"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Elegí uno o más videos para este programa. Entre episodios se muestran los comerciales; al terminar el último, los Créditos. Cada video debe durar al menos 1 minuto."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="13sp"
+            android:fontFamily="@font/dk_font"
+            android:lineSpacingExtra="3dp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="12dp" />
+
+        <!-- Filas de episodios: se agregan acá en código, una por episodio
+             (item_episode_row.xml) — ver ProgramConfigActivity.bindEpisodes(). -->
+        <LinearLayout
+            android:id="@+id/containerEpisodes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp" />
+
+        <TextView
+            android:id="@+id/btnAddEpisode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+ Agregar episodio"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/dk_font"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="20dp" />
 
         <!-- ── Activar comerciales (Release 5.6.0, NUEVO) ── -->
         <com.google.android.material.card.MaterialCardView

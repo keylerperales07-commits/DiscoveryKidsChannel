@@ -28,17 +28,26 @@
     cada uno) de acá y la había metido dentro de ProgramConfigActivity junto
     con las opciones de cada programa y los ScreenBugs de eventos —
     equivocado. La separación real es:
-      - LAUNCHER (acá): los PROGRAMAS en sí — cantidad y qué video es cada
-        uno — y los ScreenBugs de eventos (Navidad, etc., son GLOBALES, no
-        de un programa en particular).
+      - LAUNCHER (acá): los PROGRAMAS en sí — cantidad de programas.
       - Configuración de Programa (ProgramConfigActivity, un botón "⚙️ Opciones"
-        por fila acá abajo): solo las OPCIONES de CADA programa (ya_regresa,
-        continuamos, Intro, Créditos, A continuación personalizado, activar
-        comerciales) — independientes entre sí, un programa no afecta a otro.
+        por fila acá abajo): las OPCIONES de CADA programa (Episodios/videos,
+        ya_regresa, continuamos, Intro, Créditos, A continuación
+        personalizado, activar comerciales) — independientes entre sí, un
+        programa no afecta a otro.
+
+    Release 5.8.0 — BUG FIX (diseño):
+      - Los ScreenBugs de eventos (Navidad, Año Nuevo, Pascua, Día de la
+        Tierra) se sacaron de acá por completo — el switch maestro "Activar
+        eventos" + el selector de evento actual ahora viven en Configuración
+        (SettingsActivity), no acá.
+      - "Elegir video del programa" se eliminó de la fila de cada programa
+        — reemplazado por "Episodios" dentro de Configuración de Programa,
+        que permite elegir VARIOS videos por programa en vez de uno solo.
 -->
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/launcherRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
@@ -79,153 +88,6 @@
             app:icon="@drawable/ic_play"
             app:iconGravity="textStart" />
 
-        <!-- ══ Sección: ScreenBugs de eventos (Release 5.5.0, movida acá en
-             la 5.6.0 — global, no es una opción de un programa en particular) ══ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ScreenBugs de eventos"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:fontFamily="@font/dk_font"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Reemplazan el ScreenBug normal automáticamente en su fecha, si están activados."
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="13sp"
-            android:fontFamily="@font/dk_font"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="8dp" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginEnd="20dp"
-            android:layout_marginBottom="12dp"
-            app:cardElevation="1dp"
-            app:cardCornerRadius="12dp"
-            app:strokeWidth="0dp"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Navidad (1 al 24 de diciembre)"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="15sp"
-                        android:fontFamily="@font/dk_font" />
-
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/switchEventNavidad"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Año Nuevo (25 de diciembre al 7 de enero)"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="15sp"
-                        android:fontFamily="@font/dk_font" />
-
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/switchEventAnioNuevo"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Pascua (Domingo de Pascua)"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="15sp"
-                        android:fontFamily="@font/dk_font" />
-
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/switchEventPascua"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Día de la Tierra (22 de abril)"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="15sp"
-                        android:fontFamily="@font/dk_font" />
-
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/switchEventTierra"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
         <!-- ══ Sección: Programas (Release 5.6.0 — de vuelta acá, ver
              comentario de arriba) ══ -->
         <TextView
@@ -244,10 +106,11 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Elegí el video de cada programa (ya no hace falta renombrarlo ni copiarlo a Videos). Para personalizar ya_regresa, continuamos, Intro, Créditos, A continuación o desactivar comerciales de un programa puntual, entrá a su ⚙️ Opciones."
+            android:text="Elegí cuántos programas querés. Para elegir sus videos (episodios), personalizar ya_regresa, continuamos, Intro, Créditos, A continuación o desactivar comerciales, entrá a su ⚙️ Opciones."
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="13sp"
             android:fontFamily="@font/dk_font"
+            android:lineSpacingExtra="3dp"
             android:paddingStart="20dp"
             android:paddingEnd="20dp"
             android:paddingBottom="12dp" />

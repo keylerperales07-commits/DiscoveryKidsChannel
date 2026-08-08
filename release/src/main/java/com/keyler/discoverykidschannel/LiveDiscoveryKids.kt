@@ -115,6 +115,10 @@ class LiveDiscoveryKids : AppCompatActivity() {
     internal lateinit var videoView: DkVideoView
     internal lateinit var videoContainer: AspectRatioFrameLayout
     internal lateinit var screenBug: ImageView
+    // Release 5.8.0 — banner de clasificación (clasif_banner.gif), se
+    // muestra brevemente al arrancar un programa nuevo.
+    internal lateinit var clasifBanner: ImageView
+    internal var clasifBannerGif: GifMovieDrawable? = null
     internal lateinit var versionInfo: TextView
     internal lateinit var debugTextView: TextView
     internal lateinit var prevButton: ImageButton
@@ -280,6 +284,12 @@ class LiveDiscoveryKids : AppCompatActivity() {
 
     internal var playlistIndex = 0
     internal var currentProgramIndex = 0
+    // Release 5.8.0 — Episodios de Programa: qué episodio (0-based) del
+    // programa actual se está reproduciendo. Se resetea a 0 cada vez que
+    // arranca un PROGRAMA nuevo (playProgram()) — NO al pasar de un
+    // episodio al siguiente del mismo programa (eso lo maneja
+    // resumeProgramAfterCommercial(), incrementándolo él mismo).
+    internal var currentEpisodeIndex = 0
 
     // Release 4.3.1 — BUG FIX: Prev/Next saltaba al programa equivocado si se
     // tocaba ANTES de que cualquier programa hubiera arrancado en la sesión
@@ -378,6 +388,16 @@ class LiveDiscoveryKids : AppCompatActivity() {
 
         /** FadeOut duration for video transitions (ms). Applied before every video change. Release 3.3.0: unified to 500 ms for all clip types. */
         internal const val TRANSITION_FADE_OUT_MS = 500L
+        // Release 5.8.0 — banner de clasificación: cuánto queda visible
+        // (a pantalla completa, antes de empezar el fade out) al arrancar un
+        // programa. clasif_banner.gif dura 17s — se deja el banner puesto
+        // ese tiempo exacto para que la animación se vea completa.
+        internal const val CLASIF_BANNER_VISIBLE_MS = 17_000L
+        // Release 5.8.0 — cuánto correr el video a la derecha cuando el
+        // recuadro activo es nextprogram2.gif (ver showVideoInBox()). Valor
+        // de partida razonable — si no queda perfectamente alineado con el
+        // recuadro real, ajustar este número.
+        internal const val NEXTPROGRAM2_VIDEO_SHIFT_RIGHT_DP = 12
 
         /** FadeIn duration for video transitions (ms). Applied when the new video starts. */
         internal const val TRANSITION_FADE_IN_MS = 500L
@@ -504,6 +524,9 @@ class LiveDiscoveryKids : AppCompatActivity() {
         screenBug = findViewById(R.id.screenBug)
         screenBug.alpha = 0f
         preloadScreenBugAssets()  // PERF FIX: precarga los GIFs para que se muestren sin lag
+        clasifBanner = findViewById(R.id.clasifBanner)
+        clasifBanner.alpha = 0f
+        preloadClasifBannerGif()
         nextProgramBug = findViewById(R.id.nextProgramBug)
         nextProgramBug.alpha = 0f
         preloadNextProgramGifs()  // Preview 2010.5.4.0.40: mismo motivo que preloadScreenBugAssets()
@@ -1203,6 +1226,11 @@ internal fun LiveDiscoveryKids.findAvailableProgramIndex(startIndex: Int, direct
 
 internal fun LiveDiscoveryKids.playProgram(idx: Int, restartFromBeginning: Boolean = true) {
     currentProgramIndex = idx
+    // Release 5.8.0 — Episodios de Programa: un programa NUEVO siempre
+    // arranca en su episodio 0 (el primero). currentEpisodeIndex solo
+    // avanza más adelante, dentro del mismo programa, vía
+    // resumeProgramAfterCommercial() — nunca acá.
+    currentEpisodeIndex = 0
     // Release 4.3.1 — a partir de acá currentProgramIndex ya refleja un programa
     // real que empezó a salir al aire; ver comentario en goToAdjacentProgram().
     hasPlayedAnyProgram = true
@@ -1218,7 +1246,7 @@ internal fun LiveDiscoveryKids.playProgram(idx: Int, restartFromBeginning: Boole
         return
     }
 
-    val uri = resolveProgram(idx)
+    val uri = resolveProgramEpisode(idx, 0)
     if (uri == null) {
         Log.w(LiveDiscoveryKids.TAG, "pro${idx + 1}.mp4 not found – skipping")
         playlistIndex++
@@ -1237,6 +1265,9 @@ internal fun LiveDiscoveryKids.playProgram(idx: Int, restartFromBeginning: Boole
 
     val startPos = if (restartFromBeginning) 0 else videoView.currentPosition
     beginProgramSegment(uri, startOffsetMs = startPos, isFirstPlay = restartFromBeginning)
+    // Release 5.8.0 — banner de clasificación: una vez por programa (no por
+    // episodio ni al resumir desde una posición guardada).
+    if (restartFromBeginning) showClasifBanner()
 }
 
 /**
@@ -1331,8 +1362,7 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
                         stopPositionTracker()
                         pausedPositionMs = 0
                         stopBgMusic()
-                        playlistIndex++
-                        advance()
+                        onProgramSegmentFinished()
                     }
                     .start()
             }
@@ -1353,11 +1383,35 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
                 stopPositionTracker()
                 pausedPositionMs = 0
                 stopBgMusic()
-                playlistIndex++
-                advance()
+                onProgramSegmentFinished()
             }
         }
     }
+}
+
+/**
+ * Release 5.8.0 — Episodios de Programa: se llama cada vez que un episodio
+ * (o un programa clásico de 1 solo episodio, el caso de siempre) termina.
+ * Si quedan más episodios para este programa (SettingsManager.getEpisodeCount()),
+ * dispara el corte comercial de siempre (mismo look&feel: ya_regresa →
+ * comercial → continuamos — ver playCommercial()) y, al terminar ese
+ * corte, arranca el SIGUIENTE episodio desde cero — NO retoma el mismo
+ * video (ver resumeProgramAfterCommercial()). Si este era el último
+ * episodio, sigue el flujo normal de siempre: Créditos si están
+ * configurados para este programa, si no el próximo ítem del playlist.
+ */
+internal fun LiveDiscoveryKids.onProgramSegmentFinished() {
+    val episodeCount = SettingsManager.getEpisodeCount(this, currentProgramIndex)
+    if (currentEpisodeIndex + 1 < episodeCount) {
+        Log.d(LiveDiscoveryKids.TAG, "Episodio ${currentEpisodeIndex + 1}/$episodeCount de programa $currentProgramIndex terminado — corte comercial antes del próximo episodio")
+        // El 0 acá es un valor "dummy": resumeProgramAfterCommercial() (el
+        // que se llama al final del corte) detecta que quedan episodios y
+        // arranca el siguiente desde cero, ignorando este valor.
+        playCommercial(0)
+        return
+    }
+    playlistIndex++
+    advance()
 }
 
 /**
@@ -1550,15 +1604,24 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
 
 /**
  * Release 2010.5.3.0 — true entre el 1 y el 24 de diciembre (inclusive),
- * cualquier año, SI el usuario no lo desactivó en Configuración de
- * Programa (Release 5.5.0: SettingsManager.isNavidadScreenBugEnabled(),
- * default activado — mantiene el comportamiento previo a esta Release).
- * Decide si scheduleMultipleScreenbugs() usa el set de ScreenBug de
- * Navidad (screenbug_start_navidad.gif / screenbug_navidad.png /
- * screenbug_end_navidad.gif) en vez del normal.
+ * cualquier año. Decide si scheduleMultipleScreenbugs() usa el set de
+ * ScreenBug de Navidad (screenbug_start_navidad.gif / screenbug_navidad.png
+ * / screenbug_end_navidad.gif) en vez del normal.
+ *
+ * Release 5.8.0 — BUG FIX (diseño): antes tenía su propio switch de
+ * activar/desactivar (isNavidadScreenBugEnabled()). Ahora usa el sistema
+ * unificado de Configuración: SettingsManager.isEventsEnabled() (switch
+ * maestro "Activar eventos") + SettingsManager.getSelectedEvent(). Si el
+ * usuario forzó manualmente "Navidad" en el selector, es true sin importar
+ * la fecha real (para poder previsualizar/probar). Si el selector está en
+ * "Normal", decide sola por fecha (comportamiento de siempre). Si el
+ * maestro está desactivado, siempre false.
  */
 internal fun LiveDiscoveryKids.isChristmasScreenBugActive(): Boolean {
-    if (!SettingsManager.isNavidadScreenBugEnabled(this)) return false
+    if (!SettingsManager.isEventsEnabled(this)) return false
+    val selected = SettingsManager.getSelectedEvent(this)
+    if (selected == SettingsManager.EVENT_NAVIDAD) return true
+    if (selected != SettingsManager.EVENT_NORMAL) return false
     val cal = java.util.Calendar.getInstance()
     val month = cal.get(java.util.Calendar.MONTH)  // 0-indexado: Calendar.DECEMBER == 11
     val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
@@ -1567,14 +1630,18 @@ internal fun LiveDiscoveryKids.isChristmasScreenBugActive(): Boolean {
 
 /**
  * Release 5.5.0 — true del 25 de diciembre al 7 de enero (inclusive),
- * cualquier año, si el usuario lo activó. A diferencia de Navidad, Año
- * Nuevo/Pascua/Día de la Tierra solo reemplazan la fase 2 (screenbug.png,
- * el PNG estático) — las fases 1/3 (screenbug_start/end) siguen siendo
- * siempre las normales, tal como pidió Keyler ("remplaza screenbug.png por
- * screenbug_year.png").
+ * cualquier año. A diferencia de Navidad, Año Nuevo/Pascua/Día de la
+ * Tierra solo reemplazan la fase 2 (screenbug.png, el PNG estático) — las
+ * fases 1/3 (screenbug_start/end) siguen siendo siempre las normales, tal
+ * como pidió Keyler ("remplaza screenbug.png por screenbug_year.png").
+ *
+ * Release 5.8.0 — mismo sistema unificado que isChristmasScreenBugActive() (ver ese comentario).
  */
 internal fun LiveDiscoveryKids.isAnoNuevoScreenBugActive(): Boolean {
-    if (!SettingsManager.isAnoNuevoScreenBugEnabled(this)) return false
+    if (!SettingsManager.isEventsEnabled(this)) return false
+    val selected = SettingsManager.getSelectedEvent(this)
+    if (selected == SettingsManager.EVENT_ANIO_NUEVO) return true
+    if (selected != SettingsManager.EVENT_NORMAL) return false
     val cal = java.util.Calendar.getInstance()
     val month = cal.get(java.util.Calendar.MONTH)
     val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
@@ -1596,9 +1663,17 @@ private val PASCUA_MES_DIA_POR_ANIO: Map<Int, Pair<Int, Int>> = mapOf(
     2030 to (4 to 21)
 )
 
-/** Release 5.5.0 — true el Domingo de Pascua del año en curso (ver PASCUA_MES_DIA_POR_ANIO), si el usuario lo activó. */
+/**
+ * Release 5.5.0 — true el Domingo de Pascua del año en curso (ver
+ * PASCUA_MES_DIA_POR_ANIO). Release 5.8.0 — mismo sistema unificado que
+ * isChristmasScreenBugActive() (ver ese comentario); forzado manual
+ * ("Huevo de Pascua") ignora el mapa de fechas.
+ */
 internal fun LiveDiscoveryKids.isPascuaScreenBugActive(): Boolean {
-    if (!SettingsManager.isPascuaScreenBugEnabled(this)) return false
+    if (!SettingsManager.isEventsEnabled(this)) return false
+    val selected = SettingsManager.getSelectedEvent(this)
+    if (selected == SettingsManager.EVENT_PASCUA) return true
+    if (selected != SettingsManager.EVENT_NORMAL) return false
     val cal = java.util.Calendar.getInstance()
     val year = cal.get(java.util.Calendar.YEAR)
     val month = cal.get(java.util.Calendar.MONTH) + 1   // 1-indexado, para comparar directo contra el mapa
@@ -1607,9 +1682,15 @@ internal fun LiveDiscoveryKids.isPascuaScreenBugActive(): Boolean {
     return month == target.first && day == target.second
 }
 
-/** Release 5.5.0 — true el 22 de abril (Día de la Tierra), cualquier año, si el usuario lo activó. */
+/**
+ * Release 5.5.0 — true el 22 de abril (Día de la Tierra), cualquier año.
+ * Release 5.8.0 — mismo sistema unificado que isChristmasScreenBugActive() (ver ese comentario).
+ */
 internal fun LiveDiscoveryKids.isDiaTierraScreenBugActive(): Boolean {
-    if (!SettingsManager.isDiaTierraScreenBugEnabled(this)) return false
+    if (!SettingsManager.isEventsEnabled(this)) return false
+    val selected = SettingsManager.getSelectedEvent(this)
+    if (selected == SettingsManager.EVENT_DIA_TIERRA) return true
+    if (selected != SettingsManager.EVENT_NORMAL) return false
     val cal = java.util.Calendar.getInstance()
     val month = cal.get(java.util.Calendar.MONTH)
     val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
@@ -1929,20 +2010,47 @@ internal fun LiveDiscoveryKids.playCommercialStepPreComercial(
 
             // Paso 3: continuamos (FadeOut 500 ms / FadeIn 1 s)
             playUriWithTransition(chosenYaVolvemos) {
-                val uri = currentProgramUri ?: run {
-                    Log.e(LiveDiscoveryKids.TAG, "No currentProgramUri – advancing")
-                    playlistIndex++
-                    advance()
-                    return@playUriWithTransition
-                }
                 Log.d(LiveDiscoveryKids.TAG, "Ya volvemos done – resuming program at ${resumeProgramAtMs}ms")
                 isInCommercialBlock = false
-                beginProgramSegment(uri, startOffsetMs = resumeProgramAtMs, isFirstPlay = false)
+                resumeProgramAfterCommercial(resumeProgramAtMs)
             }
         }
     }
     videoView.setVideoURI(chosenPreComercial)
     videoView.requestFocus()
+}
+
+/**
+ * Release 5.8.0 — Episodios de Programa: se llama al final de CUALQUIER
+ * corte comercial (arranque normal en playCommercialStepPreComercial(), o
+ * reanudado tras pasar a segundo plano en resumeCommercialBlock()) para
+ * decidir qué sigue. Si el programa actual tiene más episodios pendientes
+ * (SettingsManager.getEpisodeCount()), arranca el SIGUIENTE episodio desde
+ * cero — [resumeAtMs] se ignora en ese caso, porque no tiene sentido
+ * "retomar" un video nuevo en una posición pensada para el anterior. Si no
+ * quedan más episodios (o el programa es de 1 solo, el caso de siempre),
+ * retoma el mismo video en [resumeAtMs], tal como siempre.
+ */
+internal fun LiveDiscoveryKids.resumeProgramAfterCommercial(resumeAtMs: Int) {
+    val episodeCount = SettingsManager.getEpisodeCount(this, currentProgramIndex)
+    if (currentEpisodeIndex + 1 < episodeCount) {
+        currentEpisodeIndex++
+        val nextUri = resolveProgramEpisode(currentProgramIndex, currentEpisodeIndex)
+        if (nextUri != null) {
+            Log.d(LiveDiscoveryKids.TAG, "▶ Próximo episodio ${currentEpisodeIndex + 1}/$episodeCount de programa $currentProgramIndex [uri=$nextUri]")
+            currentProgramUri = nextUri
+            beginProgramSegment(nextUri, startOffsetMs = 0, isFirstPlay = true, isNewSegment = true)
+            return
+        }
+        Log.w(LiveDiscoveryKids.TAG, "Episodio ${currentEpisodeIndex + 1} sin Uri resuelta — sigo con el flujo normal (Créditos/avanzar)")
+    }
+    val uri = currentProgramUri ?: run {
+        Log.e(LiveDiscoveryKids.TAG, "No currentProgramUri – advancing")
+        playlistIndex++
+        advance()
+        return
+    }
+    beginProgramSegment(uri, startOffsetMs = resumeAtMs, isFirstPlay = false)
 }
 
 /**
@@ -1978,28 +2086,16 @@ internal fun LiveDiscoveryKids.resumeCommercialBlock(startOffsetMs: Int) {
                 Log.d(LiveDiscoveryKids.TAG, "▶ YA VOLVEMOS post-comercial [uri=$yaVolvemosUri]")
                 commercialStep = LiveDiscoveryKids.CommercialStep.POST_COMERCIAL
                 playUriWithTransition(yaVolvemosUri) {
-                    val uri = currentProgramUri ?: run {
-                        Log.e(LiveDiscoveryKids.TAG, "No currentProgramUri – advancing")
-                        playlistIndex++
-                        advance()
-                        return@playUriWithTransition
-                    }
                     isInCommercialBlock = false
-                    beginProgramSegment(uri, startOffsetMs = commercialResumeMs, isFirstPlay = false)
+                    resumeProgramAfterCommercial(commercialResumeMs)
                 }
             }
         }
         LiveDiscoveryKids.CommercialStep.POST_COMERCIAL -> {
             Log.d(LiveDiscoveryKids.TAG, "onResume – reanudando continuamos en ${startOffsetMs}ms")
             resumeUriWithSeek(yaVolvemosUri, startOffsetMs) {
-                val uri = currentProgramUri ?: run {
-                    Log.e(LiveDiscoveryKids.TAG, "No currentProgramUri – advancing")
-                    playlistIndex++
-                    advance()
-                    return@resumeUriWithSeek
-                }
                 isInCommercialBlock = false
-                beginProgramSegment(uri, startOffsetMs = commercialResumeMs, isFirstPlay = false)
+                resumeProgramAfterCommercial(commercialResumeMs)
             }
         }
     }
@@ -2237,6 +2333,28 @@ internal fun LiveDiscoveryKids.resumeUriWithSeek(
 // ══════════════════════════════════════════════════════════════════════════
 // URI resolution – programs from Movies folder or MediaStore
 // ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Release 5.8.0 — Episodios de Programa: resuelve la Uri del episodio
+ * [episodeIndex] (0-based) del programa [programIndex]. El episodio 0 es
+ * EXACTAMENTE resolveProgram(programIndex) — mismo comportamiento de
+ * siempre (Uri elegida por el usuario, o pro{N}.mp4 clásico como fallback)
+ * — así que un programa de 1 solo episodio (el caso de siempre) no cambia
+ * en nada. Los episodios 1+ solo existen como Uri elegida por el usuario
+ * (SettingsManager.getEpisodeUri) — no tienen un fallback tipo "pro1_2.mp4"
+ * clásico, ya que son un concepto nuevo sin equivalente en la Era clásica.
+ */
+internal fun LiveDiscoveryKids.resolveProgramEpisode(programIndex: Int, episodeIndex: Int): Uri? {
+    if (episodeIndex <= 0) return resolveProgram(programIndex)
+    val customUri = SettingsManager.getEpisodeUri(this, programIndex, episodeIndex)
+    if (customUri.isNullOrBlank()) return null
+    return try {
+        Uri.parse(customUri)
+    } catch (e: Exception) {
+        Log.e(LiveDiscoveryKids.TAG, "Uri de episodio $episodeIndex de programa $programIndex inválida: $customUri", e)
+        null
+    }
+}
 
 internal fun LiveDiscoveryKids.resolveProgram(index: Int): Uri? {
     // Release 2009.5.0.0 — si Experimental está activado y el usuario eligió
@@ -2884,6 +3002,48 @@ internal fun LiveDiscoveryKids.preloadScreenBugAssets() {
     }, "preload-screenbug-gifs").start()
 }
 
+/**
+ * Release 5.8.0 — precarga clasif_banner.gif en un hilo aparte, mismo
+ * motivo/patrón que preloadScreenBugAssets() (evitar ANR — ver ese
+ * comentario para el detalle completo).
+ */
+@Suppress("DEPRECATION")
+internal fun LiveDiscoveryKids.preloadClasifBannerGif() {
+    Thread({
+        try {
+            val gif = resources.openRawResource(R.drawable.clasif_banner).use { stream ->
+                android.graphics.Movie.decodeStream(stream)?.let { GifMovieDrawable(it) }
+            }
+            runOnUiThread { clasifBannerGif = gif }
+        } catch (e: Exception) {
+            Log.e(LiveDiscoveryKids.TAG, "Error precargando clasif_banner.gif", e)
+        }
+    }, "preload-clasif-banner-gif").start()
+}
+
+/**
+ * Release 5.8.0 — "Añadir un banner de clasificación usando
+ * clasif_banner.gif y se ejecute al iniciar el programa": lo muestra
+ * (fade in) y lo oculta solo (fade out) pasados [CLASIF_BANNER_VISIBLE_MS].
+ * Se llama una vez por PROGRAMA (no por episodio — ver playProgram()), tal
+ * como un banner de clasificación real de TV, que aparece al arrancar el
+ * contenido y no se repite en cada corte.
+ */
+internal fun LiveDiscoveryKids.showClasifBanner() {
+    val gif = clasifBannerGif ?: return
+    gif.seekToStart()
+    gif.start()
+    clasifBanner.setImageDrawable(gif)
+    clasifBanner.animate().cancel()
+    clasifBanner.alpha = 1f
+    post(LiveDiscoveryKids.CLASIF_BANNER_VISIBLE_MS) {
+        clasifBanner.animate()
+            .alpha(0f)
+            .setDuration(LiveDiscoveryKids.TRANSITION_FADE_OUT_MS)
+            .start()
+    }
+}
+
 internal fun LiveDiscoveryKids.fadeOutBug() {
     Log.d(LiveDiscoveryKids.TAG, "ScreenBug HIDE")
     setBugAlpha(0f)
@@ -3102,7 +3262,21 @@ internal fun LiveDiscoveryKids.showVideoInBox() {
     // no es 4:3), medido con la fracción RIGHT explícita.
     val boxWidthPx = ((NEXTPROGRAM_BOX_RIGHT_FRACTION - NEXTPROGRAM_BOX_LEFT_FRACTION) * frameWidth).toInt()
     val boxTopPx = (NEXTPROGRAM_BOX_TOP_FRACTION * frameHeight).toInt()
-    val boxLeftPx = frameLeftInRoot + (NEXTPROGRAM_BOX_LEFT_FRACTION * frameWidth).toInt()
+    var boxLeftPx = frameLeftInRoot + (NEXTPROGRAM_BOX_LEFT_FRACTION * frameWidth).toInt()
+
+    // Release 5.8.0 — "Si los créditos son Nextprogram2, rodar un poco a la
+    // derecha el VideoView": el recuadro de nextprogram2.gif no está
+    // exactamente en la misma posición que el de nextprogram1.gif — el
+    // video queda corrido a la izquierda si se usan los mismos % de
+    // siempre. Se detecta por currentProgramIndex (mismo índice que usa
+    // showNextProgramResource() para elegir el GIF — ver NEXTPROGRAMS) y
+    // solo aplica al GIF de FÁBRICA, no a un NextProgram personalizado
+    // (ahí no hay forma de saber su alineación real).
+    val isFactoryNextProgram2 = !SettingsManager.isNextProgramCustom(this, currentProgramIndex) &&
+        (currentProgramIndex % LiveDiscoveryKids.NEXTPROGRAMS.size) == 1
+    if (isFactoryNextProgram2) {
+        boxLeftPx += (LiveDiscoveryKids.NEXTPROGRAM2_VIDEO_SHIFT_RIGHT_DP * resources.displayMetrics.density).toInt()
+    }
 
     // BUG FIX (5.6.0): videoContainer es un AspectRatioFrameLayout — su
     // onMeasure() por defecto IGNORA el ancho de layoutParams y siempre

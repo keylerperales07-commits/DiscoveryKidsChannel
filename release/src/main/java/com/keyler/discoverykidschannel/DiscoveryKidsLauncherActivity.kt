@@ -11,16 +11,13 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.provider.OpenableColumns
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
 import com.google.android.material.button.MaterialButton
 import java.io.File
 
@@ -68,13 +65,11 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
     private lateinit var containerPrograms: LinearLayout
     private lateinit var txtProgramCountValue: TextView
 
-    private var pendingPickIndex = -1
-
-    /** SAF: selector de archivos del sistema, solo para el video del programa (las opciones de cada programa viven en ProgramConfigActivity). */
-    private val pickVideoLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) handlePickedVideo(uri)
-        pendingPickIndex = -1
-    }
+    // Release 5.8.0 — BUG FIX (diseño): "elegir video" acá se eliminó — lo
+    // reemplaza "Episodios" dentro de Configuración de Programa
+    // (ProgramConfigActivity), que permite elegir VARIOS videos por
+    // programa en vez de uno solo. pendingPickIndex/pickVideoLauncher ya
+    // no hacen falta acá.
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,6 +97,21 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
             title = "Discovery Kids Launcher"
         }
 
+        // Release 5.8.0 — BUG FIX ("el ActionBar se come una parte del
+        // Layout"): con targetSdk 36, Android fuerza edge-to-edge — el
+        // contenido puede dibujarse detrás de la barra de estado/ActionBar
+        // si nadie reserva ese espacio explícitamente (antes lo hacía solo
+        // el sistema). Se aplica el inset de barras del sistema como padding
+        // superior/inferior del contenido, para que nunca quede tapado.
+        val launcherRoot = findViewById<View>(R.id.launcherRoot)
+        val rootPaddingLeft = launcherRoot.paddingLeft
+        val rootPaddingRight = launcherRoot.paddingRight
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(launcherRoot) { view, insets ->
+            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            view.setPadding(rootPaddingLeft, bars.top, rootPaddingRight, bars.bottom)
+            insets
+        }
+
         findViewById<MaterialButton>(R.id.btnStartChannel).setOnClickListener {
             val problems = validateChannelSetup()
             if (problems.isEmpty()) {
@@ -115,7 +125,6 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         txtProgramCountValue = findViewById(R.id.txtProgramCountValue)
         findViewById<LinearLayout>(R.id.itemProgramCount).setOnClickListener { showProgramCountDialog() }
 
-        bindEventSwitches()
         refreshProgramCountLabel()
         rebuildProgramList()
     }
@@ -152,35 +161,10 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    // ── ScreenBugs de eventos (Release 5.5.0, movidos acá en la 5.6.0) ───────
-    // Global — no son una opción de un programa en particular, así que no
-    // corresponden en ProgramConfigActivity.
-
-    private fun bindEventSwitches() {
-        val switchNavidad = findViewById<SwitchCompat>(R.id.switchEventNavidad)
-        switchNavidad.isChecked = SettingsManager.isNavidadScreenBugEnabled(this)
-        switchNavidad.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setNavidadScreenBugEnabled(this, checked)
-        }
-
-        val switchAnioNuevo = findViewById<SwitchCompat>(R.id.switchEventAnioNuevo)
-        switchAnioNuevo.isChecked = SettingsManager.isAnoNuevoScreenBugEnabled(this)
-        switchAnioNuevo.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setAnoNuevoScreenBugEnabled(this, checked)
-        }
-
-        val switchPascua = findViewById<SwitchCompat>(R.id.switchEventPascua)
-        switchPascua.isChecked = SettingsManager.isPascuaScreenBugEnabled(this)
-        switchPascua.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setPascuaScreenBugEnabled(this, checked)
-        }
-
-        val switchTierra = findViewById<SwitchCompat>(R.id.switchEventTierra)
-        switchTierra.isChecked = SettingsManager.isDiaTierraScreenBugEnabled(this)
-        switchTierra.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setDiaTierraScreenBugEnabled(this, checked)
-        }
-    }
+    // Release 5.8.0 — BUG FIX (diseño): los ScreenBugs de eventos
+    // (Navidad, Año Nuevo, Pascua, Día de la Tierra) se sacaron de acá —
+    // el switch maestro "Activar eventos" + el selector de evento actual
+    // ahora viven en Configuración (SettingsActivity).
 
     // ── Cantidad de programas (1–24) ─────────────────────────────────────────
 
@@ -239,60 +223,27 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
     private fun bindProgramRow(row: View, index: Int) {
         val txtTitle = row.findViewById<TextView>(R.id.txtProgramTitle)
         val txtVideoStatus = row.findViewById<TextView>(R.id.txtProgramVideoStatus)
-        val btnPickVideo = row.findViewById<LinearLayout>(R.id.btnPickProgramVideo)
         val btnOptions = row.findViewById<LinearLayout>(R.id.btnProgramOptions)
 
         txtTitle.text = "Programa ${index + 1}"
 
-        val savedUri = SettingsManager.getProgramUri(this, index)
-        txtVideoStatus.text = if (savedUri.isNullOrBlank()) {
-            "Sin video elegido — usa pro${index + 1}.mp4 en Videos"
+        // Release 5.8.0 — BUG FIX (diseño): ya no se elige un video acá
+        // directamente (ver Episodios en ProgramConfigActivity) — la fila
+        // solo resume cuántos episodios tiene configurados este programa.
+        val episodeCount = SettingsManager.getEpisodeCount(this, index)
+        txtVideoStatus.text = if (episodeCount <= 1) {
+            "1 episodio — Opciones → Episodios"
         } else {
-            "Video elegido: ${displayNameFor(Uri.parse(savedUri))}"
+            "$episodeCount episodios — Opciones → Episodios"
         }
 
-        btnPickVideo.setOnClickListener {
-            pendingPickIndex = index
-            pickVideoLauncher.launch(arrayOf("video/*"))
-        }
-
-        // Opciones de ESTE programa puntual (ya_regresa, continuamos, Intro,
-        // Créditos, A continuación personalizado, activar comerciales) —
-        // ver ProgramConfigActivity.
+        // Opciones de ESTE programa puntual (Episodios, ya_regresa,
+        // continuamos, Intro, Créditos, A continuación personalizado,
+        // activar comerciales) — ver ProgramConfigActivity.
         btnOptions.setOnClickListener {
             val intent = Intent(this, ProgramConfigActivity::class.java)
             intent.putExtra(ProgramConfigActivity.EXTRA_PROGRAM_INDEX, index)
             startActivity(intent)
-        }
-    }
-
-    /**
-     * Se llama cuando el usuario eligió un video de programa en el selector
-     * del sistema. Persiste el permiso de lectura (para que la Uri no expire
-     * al cerrar la app) y lo guarda en SettingsManager.
-     */
-    private fun handlePickedVideo(uri: Uri) {
-        try {
-            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        } catch (e: Exception) {
-            Log.w("DKLauncher", "No se pudo persistir el permiso de lectura de $uri", e)
-        }
-
-        val index = pendingPickIndex
-        if (index < 0) return
-
-        SettingsManager.setProgramUri(this, index, uri.toString())
-        rebuildProgramList()
-    }
-
-    /** Nombre legible del archivo elegido (vía SAF), con fallback al último segmento de la Uri. */
-    private fun displayNameFor(uri: Uri): String {
-        return try {
-            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) cursor.getString(0) else null
-            } ?: uri.lastPathSegment ?: "archivo"
-        } catch (e: Exception) {
-            uri.lastPathSegment ?: "archivo"
         }
     }
 
