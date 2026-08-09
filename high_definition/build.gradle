@@ -1,0 +1,83 @@
+
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+}
+
+android {
+    namespace 'com.keyler.discoverykidschannel'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.keyler.discoverykidschannel"
+        minSdk 23
+        targetSdk 36
+        versionCode 6000004
+        versionName "2013.6.0.0.01"
+        vectorDrawables { 
+            useSupportLibrary true
+        }
+    }
+    
+    signingConfigs {
+        release {
+            storeFile file("mi_clave.jks")
+            storePassword "29keyler07"
+            keyAlias "mi_alias"
+            keyPassword "29keyler07"
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            // Beta 3.4.0.40: R8 habilitado en debug para paridad con Release,
+            // manteniendo los Log activos mediante regla keep en proguard-debug.pro.
+            // Mismo applicationId y misma firma que release → el APK debug puede
+            // actualizar (y ser actualizado por) el APK release en el mismo dispositivo.
+            //
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'proguard-debug.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    buildFeatures {
+        viewBinding true
+        
+    }
+    
+    aaptOptions {
+        noCompress "mp4"
+    }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+  kotlinOptions {
+    jvmTarget = "11"
+  }
+}
+
+dependencies {
+
+
+    implementation("com.google.android.material:material:1.9.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.activity:activity-ktx:1.7.2")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+}
+// Nota: los GIFs del ScreenBug ahora se reproducen con GifMovieDrawable.kt
+// (android.graphics.Movie, nativo del SDK) — sin dependencias externas, para
+// evitar el crash de D8/R8 al procesar el jar de android-gif-drawable.

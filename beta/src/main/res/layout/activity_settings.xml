@@ -17,6 +17,7 @@
 -->
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/settingsRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/dk_bg"
@@ -280,6 +281,112 @@
                 android:textColor="@color/dk_text_secondary"
                 android:textSize="13sp"
                 android:fontFamily="@font/googlesans"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
+
+        <!-- ══ Sección: Eventos (Release 5.8.0, NUEVO) ══
+             Reemplaza a los 4 switches individuales por evento que vivían
+             en Discovery Kids Launcher (Navidad/Año Nuevo/Pascua/Día de la
+             Tierra). Ahora: un switch maestro + un selector de qué evento
+             usar en este momento (o "Normal", que deja que la app decida
+             sola según la fecha, comportamiento de siempre). -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Eventos"
+            android:textColor="@color/dk_text_secondary"
+            android:textSize="14sp"
+            android:fontFamily="@font/googlesans"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="4dp" />
+
+        <!-- Item: Activar eventos (switch, Predeterminado: activado) -->
+        <LinearLayout
+            android:id="@+id/itemEventsEnabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Activar eventos"
+                    android:textColor="@color/dk_text_primary"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/googlesans" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Permite activar/desactivar el ScreenBug de un evento incluso si está ocurriendo ahora mismo (Predeterminado: Activado)"
+                    android:textColor="@color/dk_text_secondary"
+                    android:textSize="13sp"
+                    android:fontFamily="@font/googlesans"
+                    android:lineSpacingExtra="2dp"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchEventsEnabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false" />
+        </LinearLayout>
+
+        <!-- Item: Evento actual (valor, abre diálogo de selección única).
+             Se deshabilita (grisado, no clickeable) cuando "Activar eventos"
+             está desactivado — ver SettingsActivity.updateEventSelectorEnabledState(). -->
+        <LinearLayout
+            android:id="@+id/itemSelectedEvent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <TextView
+                android:id="@+id/txtSelectedEventLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Evento actual"
+                android:textColor="@color/dk_text_primary"
+                android:textSize="17sp"
+                android:fontFamily="@font/googlesans" />
+
+            <TextView
+                android:id="@+id/txtSelectedEventValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Normal — la app decide sola según la fecha (Predeterminado)"
+                android:textColor="@color/dk_text_secondary"
+                android:textSize="13sp"
+                android:fontFamily="@font/googlesans"
+                android:lineSpacingExtra="2dp"
                 android:layout_marginTop="2dp" />
         </LinearLayout>
 

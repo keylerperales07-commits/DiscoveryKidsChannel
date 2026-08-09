@@ -96,6 +96,12 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var itemCheckUpdate: LinearLayout
     private lateinit var txtCheckUpdateValue: TextView
 
+    // Release 5.8.0 — Eventos: switch maestro + selector de evento actual.
+    private lateinit var switchEventsEnabled: SwitchCompat
+    private lateinit var itemSelectedEvent: LinearLayout
+    private lateinit var txtSelectedEventLabel: TextView
+    private lateinit var txtSelectedEventValue: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setTheme(R.style.SettingsTheme)
@@ -109,6 +115,17 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.apply {
             title = "Configuración"
             setDisplayHomeAsUpEnabled(true)
+        }
+
+        // Release 5.8.0 — BUG FIX ("el ActionBar se come una parte del
+        // Layout"), ver mismo comentario en DiscoveryKidsLauncherActivity.onCreate().
+        val settingsRoot = findViewById<View>(R.id.settingsRoot)
+        val rootPaddingLeft = settingsRoot.paddingLeft
+        val rootPaddingRight = settingsRoot.paddingRight
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(settingsRoot) { view, insets ->
+            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            view.setPadding(rootPaddingLeft, bars.top, rootPaddingRight, bars.bottom)
+            insets
         }
 
         bindViews()
@@ -139,6 +156,11 @@ class SettingsActivity : AppCompatActivity() {
         txtCheckUpdateValue = findViewById(R.id.txtCheckUpdateValue)
 
         switchExperimental = findViewById(R.id.switchExperimental)
+
+        switchEventsEnabled = findViewById(R.id.switchEventsEnabled)
+        itemSelectedEvent = findViewById(R.id.itemSelectedEvent)
+        txtSelectedEventLabel = findViewById(R.id.txtSelectedEventLabel)
+        txtSelectedEventValue = findViewById(R.id.txtSelectedEventValue)
     }
 
     /** Carga los valores guardados en SettingsManager y los refleja en cada control. */
@@ -148,10 +170,13 @@ class SettingsActivity : AppCompatActivity() {
         switchForceAspectRatio.isChecked = SettingsManager.isForceAspectRatioEnabled(this)
         switchPreviewUpdates.isChecked = SettingsManager.isPreviewUpdatesEnabled(this)
         switchExperimental.isChecked = SettingsManager.isExperimentalEnabled(this)
+        switchEventsEnabled.isChecked = SettingsManager.isEventsEnabled(this)
 
         refreshScreenbugDelayLabel()
         refreshCommercialIntervalLabel()
         refreshCheckUpdateLabel()
+        refreshSelectedEventLabel()
+        updateEventSelectorEnabledState()
     }
 
     private fun setupListeners() {
@@ -190,6 +215,18 @@ class SettingsActivity : AppCompatActivity() {
 
         itemCheckUpdate.setOnClickListener { checkForUpdate() }
 
+        // ── Eventos (Release 5.8.0) ──────────────────────────────────────────
+        findViewById<LinearLayout>(R.id.itemEventsEnabled).setOnClickListener {
+            switchEventsEnabled.isChecked = !switchEventsEnabled.isChecked
+        }
+        switchEventsEnabled.setOnCheckedChangeListener { _, checked ->
+            SettingsManager.setEventsEnabled(this, checked)
+            updateEventSelectorEnabledState()
+        }
+        itemSelectedEvent.setOnClickListener {
+            if (SettingsManager.isEventsEnabled(this)) showSelectedEventDialog()
+        }
+
         // ── Experimental (Release 2009.5.0.0) ───────────────────────────────
         findViewById<LinearLayout>(R.id.itemExperimental).setOnClickListener {
             switchExperimental.isChecked = !switchExperimental.isChecked
@@ -225,6 +262,56 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     // ── Diálogo: Duración del Screenbug ─────────────────────────────────────
+    // ── Diálogo: Evento actual (Release 5.8.0) ──────────────────────────────
+    private val eventLabels = listOf(
+        SettingsManager.EVENT_NORMAL to "Normal — la app decide sola según la fecha",
+        SettingsManager.EVENT_NAVIDAD to "Navidad",
+        SettingsManager.EVENT_DIA_TIERRA to "Día de la Tierra",
+        SettingsManager.EVENT_ANIO_NUEVO to "Año Nuevo",
+        SettingsManager.EVENT_PASCUA to "Huevo de Pascua"
+    )
+
+    private fun showSelectedEventDialog() {
+        val current = SettingsManager.getSelectedEvent(this)
+        val labels = eventLabels.map { it.second }.toTypedArray()
+        val currentIndex = eventLabels.indexOfFirst { it.first == current }.coerceAtLeast(0)
+
+        AlertDialog.Builder(this)
+            .setTitle("Evento actual")
+            .setSingleChoiceItems(labels, currentIndex) { dialog, which ->
+                SettingsManager.setSelectedEvent(this, eventLabels[which].first)
+                refreshSelectedEventLabel()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun refreshSelectedEventLabel() {
+        val current = SettingsManager.getSelectedEvent(this)
+        val label = eventLabels.firstOrNull { it.first == current }?.second ?: eventLabels[0].second
+        txtSelectedEventValue.text = if (current == SettingsManager.EVENT_NORMAL) {
+            "$label (Predeterminado)"
+        } else {
+            label
+        }
+    }
+
+    /**
+     * "Si el usuario desactivó esta opción el menú [de selección de evento]
+     * está deshabilitado" — grisa el item y le saca el click mientras
+     * "Activar eventos" esté desactivado.
+     */
+    private fun updateEventSelectorEnabledState() {
+        val enabled = switchEventsEnabled.isChecked
+        itemSelectedEvent.isEnabled = enabled
+        itemSelectedEvent.isClickable = enabled
+        itemSelectedEvent.isFocusable = enabled
+        val alpha = if (enabled) 1f else 0.4f
+        txtSelectedEventLabel.alpha = alpha
+        txtSelectedEventValue.alpha = alpha
+    }
+
     private fun showScreenbugDelayDialog() {
         val input = EditText(this).apply {
             inputType = android.text.InputType.TYPE_CLASS_NUMBER

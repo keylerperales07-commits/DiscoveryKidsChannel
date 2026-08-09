@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ ESTO TIENE LICENCIA GNU LICENSE APACHE
+
+ NO ELIMINAR NINGUN COMENTARIO AGREGADO
+-->
+<!--
+    item_program_config.xml — Release 2009.5.0.0
+
+    Fila de configuración de UN programa dentro de Discovery Kids Launcher
+    (Experimental). Se infla dinámicamente una vez por programa (hasta 24) —
+    ver DiscoveryKidsLauncherActivity.rebuildProgramList(). Video del
+    programa + ya_regresa personalizado (opcional) + continuamos
+    personalizado (opcional), todo vía selector de archivos del sistema
+    (Storage Access Framework), sin renombrar ni copiar nada a Videos.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp">
+
+    <TextView
+        android:id="@+id/txtProgramTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Programa 1"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="17sp"
+        android:fontFamily="@font/dk_font" />
+
+    <TextView
+        android:id="@+id/txtProgramVideoStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sin video elegido"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="13sp"
+        android:fontFamily="@font/dk_font"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="8dp" />
+
+    <LinearLayout
+        android:id="@+id/btnPickProgramVideo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_video_pick"
+            android:contentDescription="Elegir video" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Elegir video del programa"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="14sp"
+            android:fontFamily="@font/dk_font" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" android:layout_marginTop="12dp" android:layout_marginBottom="8dp" />
+
+    <!-- ── Ya regresa: Predeterminado / Personalizado ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Ya regresa personalizado"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:fontFamily="@font/dk_font" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchYaRegresaCustom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btnPickYaRegresaVideo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_video_pick"
+            android:contentDescription="Elegir ya_regresa" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Elegir video de ya_regresa"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="13sp"
+            android:fontFamily="@font/dk_font" />
+    </LinearLayout>
+
+    <!-- ── Continuamos: Predeterminado / Personalizado ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Continuamos personalizado"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:fontFamily="@font/dk_font" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchContinuamosCustom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btnPickContinuamosVideo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_video_pick"
+            android:contentDescription="Elegir continuamos" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Elegir video de continuamos"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="13sp"
+            android:fontFamily="@font/dk_font" />
+    </LinearLayout>
+
+    <!-- ── Intro: sin video predeterminado (Release 5.4.0) ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Intro (después del bumper, antes del programa)"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:fontFamily="@font/dk_font" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchIntroEnabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/txtIntroVideoStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sin video elegido"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="13sp"
+        android:fontFamily="@font/dk_font"
+        android:visibility="gone"
+        android:layout_marginTop="2dp" />
+
+    <LinearLayout
+        android:id="@+id/btnPickIntroVideo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_video_pick"
+            android:contentDescription="Elegir intro" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Elegir video de intro"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="13sp"
+            android:fontFamily="@font/dk_font" />
+    </LinearLayout>
+
+    <!-- ── Créditos: sin video predeterminado (Release 5.4.0) ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Créditos (al finalizar el programa)"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:fontFamily="@font/dk_font" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchCreditosEnabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/txtCreditosVideoStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sin video elegido"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="13sp"
+        android:fontFamily="@font/dk_font"
+        android:visibility="gone"
+        android:layout_marginTop="2dp" />
+
+    <LinearLayout
+        android:id="@+id/btnPickCreditosVideo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_video_pick"
+            android:contentDescription="Elegir créditos" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Elegir video de créditos"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="13sp"
+            android:fontFamily="@font/dk_font" />
+    </LinearLayout>
+
+    <!-- ── NextProgram personalizado (Release 5.5.0) — SÍ tiene default de fábrica ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="NextProgram personalizado"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:fontFamily="@font/dk_font" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchNextProgramCustom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btnPickNextProgramImage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_video_pick"
+            android:contentDescription="Elegir imagen de NextProgram" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Elegir imagen/GIF de NextProgram"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="13sp"
+            android:fontFamily="@font/dk_font" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" android:layout_marginTop="16dp" />
+
+</LinearLayout>

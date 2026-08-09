@@ -85,6 +85,15 @@ object SettingsManager {
     private const val KEY_EXPERIMENTAL_ENABLED = "experimental_enabled"
     private const val KEY_PROGRAM_COUNT = "program_count"
     private const val KEY_PROGRAM_URI_PREFIX = "program_uri_"
+    // Release 5.8.0 — Episodios de Programa: un programa puede tener VARIOS
+    // videos (episodios) en vez de uno solo. El episodio 0 sigue siendo
+    // KEY_PROGRAM_URI_PREFIX (el mismo de siempre — así los programas ya
+    // configurados con un solo video no pierden nada, quedan como "1
+    // episodio" automáticamente). Los episodios 1+ usan esta clave nueva.
+    // KEY_EPISODE_COUNT_PREFIX: cuántos episodios tiene el programa N
+    // (Predeterminado: 1 = el comportamiento clásico, un solo video).
+    private const val KEY_EPISODE_COUNT_PREFIX = "episode_count_"
+    private const val KEY_EPISODE_URI_PREFIX = "episode_uri_"   // + "{programIndex}_{episodeIndex}", episodeIndex >= 1
     private const val KEY_YAREGRESA_CUSTOM_PREFIX = "yaregresa_custom_"
     private const val KEY_YAREGRESA_URI_PREFIX = "yaregresa_uri_"
     private const val KEY_CONTINUAMOS_CUSTOM_PREFIX = "continuamos_custom_"
@@ -106,15 +115,27 @@ object SettingsManager {
     private const val KEY_NEXTPROGRAM_CUSTOM_PREFIX = "nextprogram_custom_"
     private const val KEY_NEXTPROGRAM_URI_PREFIX = "nextprogram_uri_"
 
-    // Release 5.5.0 — activar/desactivar cada ScreenBug de evento (global,
-    // no por programa) desde Configuración de Programa. Navidad ya existía
-    // desde la 2010.5.3.0 sin esta opción (auto-activaba por fecha
-    // siempre); default=true para no cambiar el comportamiento de nadie
-    // que ya la tenía funcionando.
-    private const val KEY_EVENT_NAVIDAD_ENABLED = "event_navidad_enabled"
-    private const val KEY_EVENT_ANIONUEVO_ENABLED = "event_anionuevo_enabled"
-    private const val KEY_EVENT_PASCUA_ENABLED = "event_pascua_enabled"
-    private const val KEY_EVENT_TIERRA_ENABLED = "event_tierra_enabled"
+    // Release 5.6.0 — "Activar comerciales", por programa (Predeterminado:
+    // activado). A diferencia de casi todo lo demás en esta pantalla, este
+    // es un toggle simple sin Uri asociada — desactivado, ese programa
+    // nunca agenda cortes comerciales (ver LiveDiscoveryKids.beginProgramSegment()).
+    private const val KEY_COMMERCIALS_ENABLED_PREFIX = "commercials_enabled_"
+
+    // Release 5.8.0 — BUG FIX (diseño simplificado): los 4 switches
+    // individuales por evento (Navidad/Año Nuevo/Pascua/Día de la Tierra),
+    // que vivían en Discovery Kids Launcher, se reemplazan por un único
+    // switch maestro "Activar eventos" (Predeterminado: activado) + un
+    // selector de "Evento actual" — ambos acá en Configuración. Con el
+    // maestro activado, el selector permite elegir "Normal" (la app decide
+    // sola según la fecha, comportamiento de siempre) o forzar un evento
+    // puntual manualmente, sin importar la fecha real (útil para
+    // previsualizar/probar, o simplemente para dejarlo fijo si alguien
+    // quiere). Con el maestro desactivado, el selector queda deshabilitado
+    // y ningún evento se activa nunca (siempre el ScreenBug normal) — ver
+    // LiveDiscoveryKids.isChristmasScreenBugActive() y las 3 funciones
+    // análogas (isAnoNuevoScreenBugActive(), etc.).
+    private const val KEY_EVENTS_ENABLED = "events_enabled"
+    private const val KEY_SELECTED_EVENT = "selected_event"   // "normal" | "navidad" | "anio_nuevo" | "pascua" | "dia_tierra"
 
     // ── Valores por defecto ─────────────────────────────────────────────────
     const val DEFAULT_BG_MUSIC_ENABLED = true
@@ -134,10 +155,9 @@ object SettingsManager {
     const val DEFAULT_INTRO_ENABLED = false      // Release 5.4.0
     const val DEFAULT_CREDITOS_ENABLED = false   // Release 5.4.0
     const val DEFAULT_NEXTPROGRAM_CUSTOM = false // Release 5.5.0
-    const val DEFAULT_EVENT_NAVIDAD_ENABLED = true    // Release 5.5.0 — ya existía sin toggle, default true = mismo comportamiento previo
-    const val DEFAULT_EVENT_ANIONUEVO_ENABLED = true  // Release 5.5.0
-    const val DEFAULT_EVENT_PASCUA_ENABLED = true      // Release 5.5.0
-    const val DEFAULT_EVENT_TIERRA_ENABLED = true      // Release 5.5.0
+    const val DEFAULT_COMMERCIALS_ENABLED = true  // Release 5.6.0
+    const val DEFAULT_EVENTS_ENABLED = true   // Release 5.8.0 — "Activar eventos" (pre: activado)
+    const val DEFAULT_SELECTED_EVENT = "normal"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -253,6 +273,47 @@ object SettingsManager {
         prefs(context).edit().putString(KEY_PROGRAM_URI_PREFIX + index, uri).apply()
     }
 
+    // ── Episodios de Programa (Release 5.8.0) ────────────────────────────────
+    const val DEFAULT_EPISODE_COUNT = 1
+
+    /** Cuántos episodios tiene el programa [index]. Predeterminado: 1 (un solo video, comportamiento clásico). */
+    fun getEpisodeCount(context: Context, index: Int): Int =
+        prefs(context).getInt(KEY_EPISODE_COUNT_PREFIX + index, DEFAULT_EPISODE_COUNT).coerceAtLeast(1)
+
+    fun setEpisodeCount(context: Context, index: Int, count: Int) {
+        prefs(context).edit().putInt(KEY_EPISODE_COUNT_PREFIX + index, count.coerceAtLeast(1)).apply()
+    }
+
+    /**
+     * Uri del episodio [episodeIndex] (0-based) del programa [programIndex].
+     * El episodio 0 es el mismo storage de siempre (getProgramUri/setProgramUri)
+     * — así un programa que ya tenía un solo video elegido sigue funcionando
+     * igual, como "1 episodio", sin ninguna migración explícita.
+     */
+    fun getEpisodeUri(context: Context, programIndex: Int, episodeIndex: Int): String? =
+        if (episodeIndex <= 0) {
+            getProgramUri(context, programIndex)
+        } else {
+            prefs(context).getString(KEY_EPISODE_URI_PREFIX + programIndex + "_" + episodeIndex, null)
+        }
+
+    fun setEpisodeUri(context: Context, programIndex: Int, episodeIndex: Int, uri: String?) {
+        if (episodeIndex <= 0) {
+            setProgramUri(context, programIndex, uri)
+        } else {
+            prefs(context).edit().putString(KEY_EPISODE_URI_PREFIX + programIndex + "_" + episodeIndex, uri).apply()
+        }
+    }
+
+    /** Borra el episodio [episodeIndex] (usado al achicar la cantidad de episodios de un programa). */
+    fun removeEpisodeUri(context: Context, programIndex: Int, episodeIndex: Int) {
+        if (episodeIndex <= 0) {
+            setProgramUri(context, programIndex, null)
+        } else {
+            prefs(context).edit().remove(KEY_EPISODE_URI_PREFIX + programIndex + "_" + episodeIndex).apply()
+        }
+    }
+
     // ── ya_regresa personalizado por programa ───────────────────────────────
     fun isYaRegresaCustom(context: Context, index: Int): Boolean =
         prefs(context).getBoolean(KEY_YAREGRESA_CUSTOM_PREFIX + index, DEFAULT_YAREGRESA_CUSTOM)
@@ -337,32 +398,33 @@ object SettingsManager {
         prefs(context).edit().putString(KEY_NEXTPROGRAM_URI_PREFIX + index, uri).apply()
     }
 
-    // ── ScreenBugs de evento (Release 5.5.0) — activar/desactivar, global ───
-    fun isNavidadScreenBugEnabled(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_EVENT_NAVIDAD_ENABLED, DEFAULT_EVENT_NAVIDAD_ENABLED)
+    // ── Activar comerciales, por programa (Release 5.6.0) ───────────────────
+    fun isCommercialsEnabled(context: Context, index: Int): Boolean =
+        prefs(context).getBoolean(KEY_COMMERCIALS_ENABLED_PREFIX + index, DEFAULT_COMMERCIALS_ENABLED)
 
-    fun setNavidadScreenBugEnabled(context: Context, enabled: Boolean) {
-        prefs(context).edit().putBoolean(KEY_EVENT_NAVIDAD_ENABLED, enabled).apply()
+    fun setCommercialsEnabled(context: Context, index: Int, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_COMMERCIALS_ENABLED_PREFIX + index, enabled).apply()
     }
 
-    fun isAnoNuevoScreenBugEnabled(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_EVENT_ANIONUEVO_ENABLED, DEFAULT_EVENT_ANIONUEVO_ENABLED)
+    // ── Eventos (Release 5.8.0) — switch maestro + selector de evento actual ──
+    fun isEventsEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_EVENTS_ENABLED, DEFAULT_EVENTS_ENABLED)
 
-    fun setAnoNuevoScreenBugEnabled(context: Context, enabled: Boolean) {
-        prefs(context).edit().putBoolean(KEY_EVENT_ANIONUEVO_ENABLED, enabled).apply()
+    fun setEventsEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_EVENTS_ENABLED, enabled).apply()
     }
 
-    fun isPascuaScreenBugEnabled(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_EVENT_PASCUA_ENABLED, DEFAULT_EVENT_PASCUA_ENABLED)
+    /** "normal" | "navidad" | "anio_nuevo" | "pascua" | "dia_tierra" — ver EVENT_* de acá abajo. */
+    fun getSelectedEvent(context: Context): String =
+        prefs(context).getString(KEY_SELECTED_EVENT, DEFAULT_SELECTED_EVENT) ?: DEFAULT_SELECTED_EVENT
 
-    fun setPascuaScreenBugEnabled(context: Context, enabled: Boolean) {
-        prefs(context).edit().putBoolean(KEY_EVENT_PASCUA_ENABLED, enabled).apply()
+    fun setSelectedEvent(context: Context, event: String) {
+        prefs(context).edit().putString(KEY_SELECTED_EVENT, event).apply()
     }
 
-    fun isDiaTierraScreenBugEnabled(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_EVENT_TIERRA_ENABLED, DEFAULT_EVENT_TIERRA_ENABLED)
-
-    fun setDiaTierraScreenBugEnabled(context: Context, enabled: Boolean) {
-        prefs(context).edit().putBoolean(KEY_EVENT_TIERRA_ENABLED, enabled).apply()
-    }
+    const val EVENT_NORMAL = "normal"
+    const val EVENT_NAVIDAD = "navidad"
+    const val EVENT_ANIO_NUEVO = "anio_nuevo"
+    const val EVENT_PASCUA = "pascua"
+    const val EVENT_DIA_TIERRA = "dia_tierra"
 }
