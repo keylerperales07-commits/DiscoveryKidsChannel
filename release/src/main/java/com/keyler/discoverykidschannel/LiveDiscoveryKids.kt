@@ -37,7 +37,7 @@ import androidx.core.content.ContextCompat
 import java.io.File
 
 /**
- * Preview 2006.4.1.0.21
+ * Preview 2013.5.8.1.02
  *
  * Discovery Kids - TV Simulator • Era Doki 1.0 (2005–2009) • Preview Era 2006
  *
@@ -434,6 +434,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
          * (Actualización La Era Doki / nuevo Discovery Kids).
          */
         internal val BUMPERS = listOf(
+            R.raw.bumper7,
             R.raw.bumper,
             R.raw.bumper2,
             R.raw.bumper3,

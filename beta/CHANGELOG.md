@@ -6,25 +6,6 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2013.5.8.1] — 🚀 Release · Era Doki 1.0 · Era 2013 · "La Era Planetaria" — 2026-08-11
-
-> *Cambio de Era (2012→2013) en la rama estable. Contenido: nuevo ScreenBug estático anunciando el estreno de la nueva serie Doki, y `bumper7.mp4` como promo de esa serie.*
-
-### 🎨 Cambio de Era
-
-> Era 2012 → Era 2013 (rama estable, en paralelo a la Preview 6.x, ya en Era 2013 desde la 2013.6.0.0.1).
-
-### 🆕 Contenido
-
-- **`screenbug.png` actualizado** — el ScreenBug estático (fase 2 de 3 del sistema de ScreenBug — aparición GIF, estático PNG, salida GIF) ahora anuncia el estreno de la nueva serie Doki.
-- **`bumper7.mp4` agregado** — nuevo bumper, promo de la nueva serie Doki.
-
-### ⚠️ Alcance
-
-> Solo contenido (`screenbug.png`, `bumper7.mp4`) y documentación. `build.gradle`: `versionName` a `2013.5.8.1`.
-
----
-
 ## [2013.6.0.0.2] — 🧪 Preview · Era Doki 1.0 · Era 2013 · "La Era Planetaria" — 2026-08-10
 
 > *Preview para el 10 de agosto de 2026. Continuamos con horario (mañanera/tardía, según la hora real del dispositivo). Se elimina por completo "ya_regresa" (el pre-comercial). FadeOut/FadeIn quedan reservados exclusivamente al límite Programa↔bloque comercial — todo lo demás corta en seco. Nuevo GIF "próximo programa" durante los programas. 2 correcciones en el Actualizador: doble menú, e investigación a fondo del ActionBar comiéndose el layout.*
@@ -2186,8 +2167,6 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
-| 2013.5.8.1            | 2026-08-11 | 🚀 Release | Cambio de Era (2012→2013) en la rama estable; contenido: nuevo ScreenBug estático anunciando el estreno de la nueva serie Doki, y bumper7.mp4 como promo de esa serie |
-| 2013.6.0.0.2          | 2026-08-10 | 🧪 Preview | Continuamos con horario (mañanera/tardía, según la hora real del dispositivo); "ya_regresa" eliminado por completo; FadeOut/FadeIn acotado exclusivamente al límite Programa↔bloque comercial; 2 correcciones en el Actualizador: doble menú, ActionBar comiéndose el layout |
 | 2013.6.0.0.1          | 2026-08-08 | 🧪 Preview | Cambio de Era (2012→2013), inicio de la rama 6.x "La Era Planetaria"; Bumper reposicionado dentro del corte comercial (post-pre-comercial o post-comercial, sorteado una vez por corte, ya no abre el ciclo); nuevos Bumpers; 2 comerciales actualizados |
 | 2012.5.8.0           | 2026-08-03 | 🚀 Release | Episodios de Programa (varios videos por programa, comerciales entre ellos, créditos al final); sistema de Eventos rediseñado (switch maestro + selector manual, movido a Configuración); banner de clasificación al iniciar un programa (17s); restricción de duración mínima (1 min); BUG FIX: video corrido con Nextprogram2, ActionBar tapando contenido (edge-to-edge), líneas de texto pegadas |
 | 2012.5.7.0           | 2026-07-30 | 🚀 Release | Cambio de Era (2011→2012); nuevos comerciales de la Era 2012; consolida la Preview 2011.5.6.0.60 como Release estable (CrtOverlayView único y compartido entre video y NextProgram, ancho real del recuadro de NextProgram corregido) |
