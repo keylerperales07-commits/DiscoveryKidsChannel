@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="release_app_name">Discovery Kids LA</string>
-    <string name="beta_app_name">Discovery Kids LA Preview</string>
+    <string name="release_app_name">Discovery Kids LA HD</string>
+    <string name="beta_app_name">Discovery Kids LA HD Preview</string>
 
     <!-- ══ Diálogo: Continuar donde estabas ══ -->
     <string name="dialog_resume_title">¿Continuar donde estabas?</string>

@@ -6,6 +6,63 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
+## [2013.6.0.0.2] — 🧪 Preview · Era Doki 1.0 · Era 2013 · "La Era Planetaria" — 2026-08-10
+
+> *Preview para el 10 de agosto de 2026. Continuamos con horario (mañanera/tardía, según la hora real del dispositivo). Se elimina por completo "ya_regresa" (el pre-comercial). FadeOut/FadeIn quedan reservados exclusivamente al límite Programa↔bloque comercial — todo lo demás corta en seco. Nuevo GIF "próximo programa" durante los programas. 2 correcciones en el Actualizador: doble menú, e investigación a fondo del ActionBar comiéndose el layout.*
+
+### 🆕 Continuamos con horario
+
+El continuamos (post-comercial) ya no se empareja con un ya_regresa fijo por programa: ahora depende de la hora real del dispositivo al momento del corte.
+
+- `continuamos1.mp4` → **`continuamos_mananera1.mp4`** — sale si el corte ocurre entre las 00:00 y las 11:59.
+- `continuamos2.mp4` → **`continuamos_tardia1.mp4`** — sale entre las 12:00 y las 23:59.
+
+> ⚠️ Los nombres de recurso no llevan tilde ni ñ (`mananera`, no `mañanera`) — Android no permite esos caracteres en `res/raw`.
+
+### 🗑️ "Ya regresa" eliminado por completo
+
+El clip pre-comercial "ya_regresa" (determinístico por programa) se elimina del canal entero: el corte comercial ya no arranca con un aviso propio, corta directo del Programa al Bumper/comercial. Se eliminó también la opción "ya_regresa personalizado" de Configuración de Programa — el continuamos sigue siendo personalizable, sin cambios.
+
+### 🎬 FadeOut/FadeIn acotado al límite Programa↔comercial
+
+A partir de esta Preview, FadeOut/FadeIn quedan reservados **exclusivamente** al límite Programa↔bloque comercial: el Programa se apaga (FadeOut, 500 ms) justo antes de cortar al bloque comercial, y se enciende (FadeIn, 1 s) al retomarse justo después. Todo lo demás —Bumper, Intro, Créditos, y los clips dentro del bloque comercial (comercial y continuamos)— corta en seco, sin animación.
+
+- Si el Programa termina y no quedan más episodios pendientes (pasa a Créditos o al siguiente ítem del playlist), también corta en seco — el FadeOut ya no aplica en ese caso, solo cuando lo que sigue es realmente un corte comercial.
+
+### 🆕 GIF "próximo programa" durante los programas
+
+Nuevo overlay `proximo_programa_screenbug.gif`, que aparece una vez por segmento a mitad del programa, sustituyendo brevemente al ScreenBug estático (`screenbug.png`).
+
+- Nunca antes de 1 minuto de arrancado el segmento, ni de forma que quede dentro del último minuto antes de un corte comercial o del final del programa/episodio — si el segmento no tiene ese margen de sobra (menos de 2 min 15 s), directamente no se muestra.
+- Al mostrarse: el `screenbug.png` desaparece y el GIF aparece, sin animación (corte seco, igual que el resto del ScreenBug).
+- A los 15 segundos: el GIF desaparece y vuelve el `screenbug.png`, también sin animación.
+- No aplica durante la Intro (solo durante el Programa en sí).
+
+### 🔧 Corregido
+
+- **Actualizador con dos barras superiores.** `UpdateActivity` usaba `SettingsTheme` (que trae el ActionBar real de Android) *y además* tenía su propio header manual en el layout — el resultado eran dos barras apiladas. Se alineó con el patrón que ya funciona en `SettingsActivity`: se sacó el header manual, y el título/navegación "Atrás" ahora los da el ActionBar real (`supportActionBar` + `onSupportNavigateUp()`).
+- **ActionBar comiéndose parte del Layout (investigación a fondo).** El parche anterior había agregado el padding de insets sin sacar el header duplicado, así que el síntoma seguía igual. Al sacar el header manual y aplicar el mismo padding de insets ya probado en `SettingsActivity`/`ProgramConfigActivity`/`DiscoveryKidsLauncherActivity` sobre la raíz del layout (`updateRoot`), ambos problemas quedan resueltos de raíz.
+
+### 🔧 Notas técnicas (`LiveDiscoveryKids.kt`)
+
+- Nueva `continuamosResForCurrentTime()`: devuelve `R.raw.continuamos_mananera1` o `R.raw.continuamos_tardia1` según `Calendar.HOUR_OF_DAY`. `resolveContinuamosUri()` la usa como fallback clásico (sin cambios en el camino "Personalizado").
+- Eliminados por completo: `ENSEGUIDAS_PRE_COMERCIAL`, `ENSEGUIDA_YA_VOLVEMOS_MAP`, `resolveYaRegresaUri()`, `playCommercialStepPreComercial()`, el campo `commercialChosenPreComercial`, y `CommercialStep.PRE_COMERCIAL`. El bloque comercial pasa a ser `[Bumper] → comercial → [Bumper] → continuamos`.
+- Nuevas `playUriHardCut()` / `resumeUriHardCut()` (corte directo, con el mismo bookkeeping de resume que las funciones que reemplazan) — usadas en `playBumper()`, `playIntro()`, `playCreditos()`, los pasos del bloque comercial, `resumeCommercialBlock()` y el resume genérico de `onResume()`.
+- `beginProgramSegment()` suma el parámetro `fadeIn: Boolean = false`: solo `true` cuando el Programa arranca justo después de un corte comercial (`resumeProgramAfterCommercial()`, y la restauración de sesión equivalente). El FadeOut de fin de segmento ahora es condicional (`willCutToCommercial`): anima solo si lo que sigue es realmente un corte comercial.
+- Eliminadas por completo `playUriWithTransition()` y `resumeUriWithSeek()` (quedaron sin ningún caller).
+- Nuevas constantes `PROXIMO_PROGRAMA_MIN_START_MS`/`PROXIMO_PROGRAMA_MIN_BEFORE_END_MS` (1 min c/u) y `PROXIMO_PROGRAMA_VISIBLE_MS` (15 s). `scheduleMultipleScreenbugs()` suma el parámetro `allowProximoPrograma: Boolean = true` (en `false` desde `playIntro()`, ya que el GIF es específico del Programa) y agenda el show/hide del nuevo GIF dentro de la ventana que dejan esos márgenes — si el segmento no tiene margen suficiente, no se agenda nada. Nuevo campo `proximoProgramaScreenbugGif: GifMovieDrawable?`, precargado en `preloadScreenBugAssets()` y sumado a `showScreenBugResource()`.
+- `SettingsManager.kt`: eliminados `KEY_YAREGRESA_CUSTOM_PREFIX`/`KEY_YAREGRESA_URI_PREFIX`, `DEFAULT_YAREGRESA_CUSTOM`, e `isYaRegresaCustom()`/`setYaRegresaCustom()`/`getYaRegresaUri()`/`setYaRegresaUri()`.
+- `ProgramConfigActivity.kt`/`activity_program_config.xml`: eliminados el switch/botón "ya_regresa personalizado" y `PickTarget.YA_REGRESA`. `DiscoveryKidsLauncherActivity.kt`: `validateChannelSetup()` ya no valida ya_regresa personalizado.
+- `UpdateActivity.kt`/`activity_update.xml`: header manual eliminado; ActionBar real con título "Actualizaciones" + `onSupportNavigateUp()`; padding de insets sobre `updateRoot`.
+
+### ⚠️ Alcance
+
+> Cambios de código en `LiveDiscoveryKids.kt` (continuamos con horario, eliminación de ya_regresa, FadeOut/FadeIn acotado, GIF "próximo programa"), `SettingsManager.kt` (limpieza de claves de ya_regresa), `ProgramConfigActivity.kt`/`activity_program_config.xml` (UI de ya_regresa eliminada), `DiscoveryKidsLauncherActivity.kt` (validación actualizada), `UpdateActivity.kt`/`activity_update.xml` (doble menú/ActionBar). `build.gradle`: `versionName` a `2013.6.0.0.2`.
+>
+> ⚠️ Requiere el archivo `proximo_programa_screenbug.gif` en `res/drawable/` — no incluido en este cambio de código, hay que agregarlo aparte.
+
+---
+
 ## [2013.6.0.0.1] — 🧪 Preview · Era Doki 1.0 · Era 2013 · "La Era Planetaria" — 2026-08-08
 
 > *Preview para el 8 de agosto de 2026. Cambio de Era (2012→2013), inicio de la rama 6.x. El Bumper deja de abrir el corte comercial fijo y pasa a insertarse en un punto aleatorio DENTRO de cada corte — sorteado una sola vez por corte. Nuevos Bumpers, y 2 comerciales actualizados a la UPDATE "La Era Planetaria".*

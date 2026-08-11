@@ -62,6 +62,15 @@ import androidx.appcompat.app.AppCompatActivity
  * "Comprobar actualizaciones" en la captura de referencia. El estado se
  * sigue manejando igual que antes (mismo enum, mismos callbacks de
  * AppUpdater) — lo único que cambió es qué vistas se muestran y cómo.
+ * Preview 2013.6.0.0.2 — BUG FIX (doble menú / ActionBar comiéndose el
+ * Layout): ver el comentario largo en activity_update.xml para el
+ * diagnóstico completo. Esta Activity ahora sigue el MISMO patrón que ya
+ * funciona en SettingsActivity: ActionBar real con título "Actualizaciones"
+ * y navegación "Up" (onSupportNavigateUp() → finish()), en vez de un header
+ * manual propio + la Activity confiando en un ActionBar "de fábrica" sin
+ * configurar. También se aplica el mismo padding de insets sobre la raíz
+ * del layout (updateRoot) para que el ActionBar no tape el contenido bajo
+ * edge-to-edge — mismo código que SettingsActivity.onCreate().
  */
 class UpdateActivity : AppCompatActivity() {
 
@@ -88,14 +97,35 @@ class UpdateActivity : AppCompatActivity() {
         setTheme(R.style.SettingsTheme)
         setContentView(R.layout.activity_update)
 
+        // Preview 2013.6.0.0.2 — ActionBar real (título + "Up"), reemplaza
+        // al header manual que tenía este layout antes. Mismo patrón que
+        // SettingsActivity.onCreate().
+        supportActionBar?.apply {
+            title = "Actualizaciones"
+            setDisplayHomeAsUpEnabled(true)
+        }
+
+        // Preview 2013.6.0.0.2 — BUG FIX ("el ActionBar se come una parte
+        // del Layout"): mismo padding de insets que ya usan
+        // SettingsActivity/ProgramConfigActivity/DiscoveryKidsLauncherActivity.
+        val updateRoot = findViewById<View>(R.id.updateRoot)
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(updateRoot) { view, insets ->
+            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            view.setPadding(view.paddingLeft, bars.top, view.paddingRight, bars.bottom)
+            insets
+        }
+
         bindViews()
         render(UpdateScreenState.CHECKING)
         startCheck()
     }
 
-    private fun bindViews() {
-        findViewById<android.widget.ImageButton>(R.id.btnUpdateBack).setOnClickListener { finish() }
+    override fun onSupportNavigateUp(): Boolean {
+        finish()
+        return true
+    }
 
+    private fun bindViews() {
         imgUpdateIcon = findViewById(R.id.imgUpdateIcon)
         progressThin = findViewById(R.id.progressThin)
         txtTitle = findViewById(R.id.txtUpdateTitle)

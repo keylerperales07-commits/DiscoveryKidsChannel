@@ -51,7 +51,7 @@ import java.io.File
  *     pertenecen a un programa en particular, así que no tiene sentido que
  *     vivan en una pantalla de opciones "de programa").
  *   - ProgramConfigActivity (un botón "⚙️ Opciones" por fila, acá abajo):
- *     solo las OPCIONES de CADA programa — ya_regresa, continuamos, Intro,
+ *     solo las OPCIONES de CADA programa — continuamos, Intro,
  *     Créditos, A continuación personalizado, activar comerciales —
  *     completamente independientes entre programas.
  *
@@ -140,7 +140,7 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
             return
         }
         // Por si el usuario volvió de ProgramConfigActivity habiendo elegido
-        // un video de ya_regresa/continuamos/etc — acá no cambia nada visible
+        // un video de continuamos/etc — acá no cambia nada visible
         // (esa parte vive en la otra Activity), pero si volvió habiendo
         // cambiado la cantidad de programas desde otra instancia, conviene
         // refrescar por las dudas.
@@ -237,9 +237,9 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
             "$episodeCount episodios — Opciones → Episodios"
         }
 
-        // Opciones de ESTE programa puntual (Episodios, ya_regresa,
-        // continuamos, Intro, Créditos, A continuación personalizado,
-        // activar comerciales) — ver ProgramConfigActivity.
+        // Opciones de ESTE programa puntual (Episodios, continuamos, Intro,
+        // Créditos, A continuación personalizado, activar comerciales) —
+        // ver ProgramConfigActivity.
         btnOptions.setOnClickListener {
             val intent = Intent(this, ProgramConfigActivity::class.java)
             intent.putExtra(ProgramConfigActivity.EXTRA_PROGRAM_INDEX, index)
@@ -250,7 +250,7 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
     /**
      * Release 5.4.0 — chequeo previo a "Iniciar canal": evita que
      * LiveDiscoveryKids arranque un ciclo con clips activados (Intro,
-     * Créditos, ya_regresa/continuamos personalizados, A continuación
+     * Créditos, continuamos personalizado, A continuación
      * personalizado, o Programas) que en realidad no tienen un video
      * asociado — antes esto se saltaba en silencio dentro del canal
      * (advance() sin más), lo cual el usuario podía no notar hasta ver el
@@ -272,9 +272,6 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
             }
             if (SettingsManager.isCreditosEnabled(this, index) && SettingsManager.getCreditosUri(this, index).isNullOrBlank()) {
                 problems += "Programa ${index + 1}: activaste Créditos pero no elegiste el video (Opciones del programa)"
-            }
-            if (SettingsManager.isYaRegresaCustom(this, index) && SettingsManager.getYaRegresaUri(this, index).isNullOrBlank()) {
-                problems += "Programa ${index + 1}: activaste \"ya_regresa\" personalizado pero no elegiste el video (Opciones del programa)"
             }
             if (SettingsManager.isContinuamosCustom(this, index) && SettingsManager.getContinuamosUri(this, index).isNullOrBlank()) {
                 problems += "Programa ${index + 1}: activaste \"continuamos\" personalizado pero no elegiste el video (Opciones del programa)"
