@@ -6,26 +6,62 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2013.5.8.1] — 🚀 Release · Era Doki 1.0 · Era 2013 · "La Era Planetaria" — 2026-08-11
+## [2013.6.0.0.3] — 🧪 Preview · Era Doki 1.0 · Era 2013 · "La Era Planetaria" — 2026-08-11
 
-> *Cambio de Era (2012→2013) en la rama estable. Contenido: nuevo ScreenBug estático anunciando el estreno de la nueva serie Doki, y `bumper7.mp4` como promo de esa serie.*
+> *Reposicionamiento de NextProgram (recuadros medidos por separado para nextprogram1/nextprogram2), screenbug_end ya no sale al terminar el programa, clasif_banner también en la Intro. 2 bugs corregidos a fondo: Intro/Créditos "se reiniciaban" al cambiar de Activity, y el Actualizador no reconocía una release final que consolida una Preview. Rediseño del Discovery Kids Launcher a la estética del sitio web clásico, con fondo e ícono de la app según el horario.*
 
-### 🎨 Cambio de Era
+### 🔧 NextProgram: recuadros separados por GIF
 
-> Era 2012 → Era 2013 (rama estable, en paralelo a la Preview 6.x, ya en Era 2013 desde la 2013.6.0.0.1).
+Al actualizarse los GIFs de NextProgram, `nextprogram1.gif` y `nextprogram2.gif` dejaron de compartir la misma posición de recuadro. Se midieron por separado, sobre capturas de referencia:
 
-### 🆕 Contenido
+- `nextprogram1.gif` → recuadro grande (el "cuadro rosa" de la referencia).
+- `nextprogram2.gif` → recuadro chico (el "cuadro rojo" de la referencia) — el recuadro grande que trae ese GIF a la derecha es parte de la animación propia del GIF, no es donde va el video en vivo.
 
-- **`screenbug.png` actualizado** — el ScreenBug estático (fase 2 de 3 del sistema de ScreenBug — aparición GIF, estático PNG, salida GIF) ahora anuncia el estreno de la nueva serie Doki.
-- **`bumper7.mp4` agregado** — nuevo bumper, promo de la nueva serie Doki.
+Reemplaza el ajuste aproximado en píxeles (`NEXTPROGRAM2_VIDEO_SHIFT_RIGHT_DP`) de la Release 5.8.0 por coordenadas reales, una por GIF.
+
+### 🔧 screenbug_end ya no sale al terminar el programa
+
+Antes, `screenbug_end` (fase 3 del ScreenBug) solo se suprimía en el último segmento del programa si ese programa tenía Créditos válidos — si no tenía, igual aparecía 46s antes del final. Ahora se suprime siempre que el segmento sea el último del programa, tenga o no Créditos: `screenbug.png` simplemente sigue mostrándose sin cambios hasta que arrancan los Créditos (ahí desaparece, sin animación) o, si no hay Créditos, hasta que el programa corta al siguiente ítem del playlist. Antes de un corte comercial a mitad del programa, `screenbug_end` sigue apareciendo normalmente — eso no cambió.
+
+### 🆕 clasif_banner también en la Intro
+
+`clasif_banner.gif` (el banner de clasificación) ahora se muestra al arrancar la Intro, si el programa tiene Intro activada — antes solo se mostraba al arrancar el Programa, incluso cuando había una Intro corriendo antes. Si el programa NO tiene Intro, sigue mostrándose al arrancar el Programa, como siempre (nunca se muestra dos veces).
+
+### 🔧 Corregido
+
+- **Intro y Créditos "se reiniciaban" al cambiar de Activity.** Investigación a fondo: la causa NO estaba en el manejo de `onPause()`/`onResume()` en memoria (eso ya funcionaba bien) — estaba en la restauración desde `SharedPreferences` cuando el proceso muere de verdad (frecuente en el dispositivo físico, con poca memoria). Dos bugs concretos:
+  - `saveChannelState()` guardaba `pausedPositionMs` para *cualquier* tipo de clip — pero esa variable solo se actualiza para el Programa (`isInProgramSegment`); para Intro/Créditos/Bumper la posición real vive en `currentClipPositionMs`. Se guardaba una posición vieja/incorrecta.
+  - `resumeSavedState()` no tenía rama para `"intro"`/`"creditos"` — caían al `else` genérico, que resetea `playlistIndex = 0`: no reiniciaba solo ese clip, **reiniciaba todo el canal** desde el principio.
+  
+  Con las dos corregidas, Intro/Créditos reinician igual que Bumper/Enseguida (desde el principio del mismo clip, sin resetear el canal — son cortos, no vale la pena reconstruir el seek exacto).
+
+- **Actualizador: una release final "más vieja" que la Preview que consolida.** Ejemplo: Preview `6.0.0.3` instalada → sale la release final `6.0.0.01` que la consolida → el Actualizador decía "no hay actualizaciones". La causa: el fix de la Release 2009.4.6.1 truncaba la versión LOCAL a 3 segmentos (sin BUILD) para evitar el problema contrario (una preview vieja pareciendo "más nueva" que una release sin BUILD en su tag) — pero esto hacía que cualquier preview y su release final, al compartir MAJOR.MINOR.PATCH, se compararan como iguales (ninguna "mayor que" la otra) en vez de que la release ganara. Solución real: usar el flag `prerelease` que GitHub ya expone en cada release — si coinciden en MAJOR.MINOR.PATCH pero la remota NO es prerelease, la remota gana siempre, sin importar los números de BUILD de ningún lado.
+
+### 🎨 Rediseño del Discovery Kids Launcher
+
+Vuelve a la estética del sitio web clásico de Discovery Kids Latinoamérica: franja verde curva arriba con el logo, botón "Iniciar canal" como píldora amarilla, y la sección Programas dentro de un panel blanco/crema redondeado.
+
+- **Fondo según el horario real del dispositivo**: celeste de 00:00 a 11:59 (mañana), anaranjado de 12:00 a 18:59 (tarde), violeta de 19:00 a 23:59 (noche). Se aplica en `onCreate()` y de nuevo en `onResume()`, por si la app quedó abierta de un horario al siguiente.
+- **Ícono de la app según el horario**: de mañana usa `ic_launcher`/`ic_launcher_round` (y sus variantes `_preview`, de fábrica); de tarde entra a los íconos `_tarde` — la tarde aplica también para la noche (no hay un tercer set). Implementado con dos `<activity-alias>` en el manifest (uno por franja), habilitando uno y deshabilitando el otro por código (`PackageManager.setComponentEnabledSetting()`) — es la única forma soportada por Android de cambiar el ícono del launcher del sistema en tiempo de ejecución.
+
+> ⚠️ Los fondos (`launcher_bg_manana.xml`/`tarde`/`noche`) son degradados placeholder con los colores del sitio de referencia — para el fondo ilustrado real, reemplazar esos 3 archivos por imágenes con el mismo nombre de recurso (ej. `launcher_bg_manana.webp`), sin tocar código.
+>
+> ⚠️ Los íconos de tarde/noche (`ic_launcher_tarde`, `ic_launcher_round_tarde`, `ic_launcher_preview_tarde`, `ic_launcher_round_preview_tarde`) no vienen incluidos — hay que agregarlos a `res/mipmap-*/` para que compile.
+
+### 🔧 Notas técnicas
+
+- `LiveDiscoveryKids.kt`: nuevas `NEXTPROGRAM1_BOX_*_FRACTION`/`NEXTPROGRAM2_BOX_*_FRACTION` (reemplazan a `NEXTPROGRAM_BOX_*_FRACTION` + `NEXTPROGRAM2_VIDEO_SHIFT_RIGHT_DP`) en `showVideoInBox()`. `suppressEndPhase` pasado a `scheduleMultipleScreenbugs()` desde `beginProgramSegment()` cambia de `deferToCreditos` a `isFinalSegment` (directo). `showClasifBanner()` ahora se llama desde `playIntro()` (si `hasValidIntro`) y `playProgram()` ya no lo llama en ese caso. `saveChannelState()`: `posToSave` usa `currentClipPositionMs` como fallback en vez de `pausedPositionMs`. `resumeSavedState()`: nueva rama `"intro", "creditos" -> advance()`. Nuevos strings `resume_where_intro`/`resume_where_creditos`.
+- `AppUpdater.kt`: `currentVersionName()` ya no trunca a 3 segmentos (devuelve la versión completa). Nueva `isRemoteAnUpdate(remote, local, remoteIsPrerelease)`, que reemplaza la comparación directa por `compareVersions()` en `checkForUpdate()`.
+- `DiscoveryKidsLauncherActivity.kt`: nuevas `applyTimeOfDayBackground()`/`applyTimeOfDayIcon()`/`currentTimeOfDay()`. `AndroidManifest.xml`: el intent-filter LAUNCHER se movió de `DiscoveryKidsLauncherActivity` a dos `<activity-alias>` (`LauncherIconManana`/`LauncherIconTardeNoche`).
+- Nuevos drawables: `launcher_bg_manana.xml`/`tarde.xml`/`noche.xml`, `bg_launcher_header_green.xml`, `bg_launcher_panel.xml`. Nuevos colores en `colors.xml` (`dk_launcher_*`).
 
 ### ⚠️ Alcance
 
-> Solo contenido (`screenbug.png`, `bumper7.mp4`) y documentación. `build.gradle`: `versionName` a `2013.5.8.1`.
+> Cambios de código en `LiveDiscoveryKids.kt` (NextProgram, screenbug_end, clasif_banner, bug fix Intro/Créditos), `AppUpdater.kt` (bug fix de versión), `DiscoveryKidsLauncherActivity.kt`/`activity_launcher.xml` (rediseño), `AndroidManifest.xml` (activity-alias de íconos), `colors.xml`, nuevos drawables, `strings.xml`. `build.gradle`: `versionName` a `2013.6.0.0.3`.
+>
+> ⚠️ Requiere agregar aparte: fondos ilustrados reales del Launcher (opcional, hay placeholder) e íconos de tarde/noche (obligatorio para compilar — ver arriba).
 
----
 
-## [2013.6.0.0.2] — 🧪 Preview · Era Doki 1.0 · Era 2013 · "La Era Planetaria" — 2026-08-10
 
 > *Preview para el 10 de agosto de 2026. Continuamos con horario (mañanera/tardía, según la hora real del dispositivo). Se elimina por completo "ya_regresa" (el pre-comercial). FadeOut/FadeIn quedan reservados exclusivamente al límite Programa↔bloque comercial — todo lo demás corta en seco. Nuevo GIF "próximo programa" durante los programas. 2 correcciones en el Actualizador: doble menú, e investigación a fondo del ActionBar comiéndose el layout.*
 
@@ -2186,8 +2222,6 @@ Esta versión no introduce nuevas funcionalidades ni modifica el comportamiento 
 
 | Versión              | Fecha      | Canal      | Resumen                                                                 |
 |----------------------|------------|------------|-------------------------------------------------------------------------|
-| 2013.5.8.1            | 2026-08-11 | 🚀 Release | Cambio de Era (2012→2013) en la rama estable; contenido: nuevo ScreenBug estático anunciando el estreno de la nueva serie Doki, y bumper7.mp4 como promo de esa serie |
-| 2013.6.0.0.2          | 2026-08-10 | 🧪 Preview | Continuamos con horario (mañanera/tardía, según la hora real del dispositivo); "ya_regresa" eliminado por completo; FadeOut/FadeIn acotado exclusivamente al límite Programa↔bloque comercial; 2 correcciones en el Actualizador: doble menú, ActionBar comiéndose el layout |
 | 2013.6.0.0.1          | 2026-08-08 | 🧪 Preview | Cambio de Era (2012→2013), inicio de la rama 6.x "La Era Planetaria"; Bumper reposicionado dentro del corte comercial (post-pre-comercial o post-comercial, sorteado una vez por corte, ya no abre el ciclo); nuevos Bumpers; 2 comerciales actualizados |
 | 2012.5.8.0           | 2026-08-03 | 🚀 Release | Episodios de Programa (varios videos por programa, comerciales entre ellos, créditos al final); sistema de Eventos rediseñado (switch maestro + selector manual, movido a Configuración); banner de clasificación al iniciar un programa (17s); restricción de duración mínima (1 min); BUG FIX: video corrido con Nextprogram2, ActionBar tapando contenido (edge-to-edge), líneas de texto pegadas |
 | 2012.5.7.0           | 2026-07-30 | 🚀 Release | Cambio de Era (2011→2012); nuevos comerciales de la Era 2012; consolida la Preview 2011.5.6.0.60 como Release estable (CrtOverlayView único y compartido entre video y NextProgram, ancho real del recuadro de NextProgram corregido) |

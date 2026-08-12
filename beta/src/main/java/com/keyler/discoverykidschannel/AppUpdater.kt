@@ -106,6 +106,11 @@ import java.util.concurrent.TimeUnit
  * el usuario debe habilitar "Instalar apps desconocidas" para esta app la
  * primera vez; el sistema muestra esa pantalla automáticamente al intentar
  * abrir el instalador si el permiso no está concedido.
+ *
+ * Preview 2013.6.0.0.3 — BUG FIX: una release final que consolida una
+ * Preview previa (mismo MAJOR.MINOR.PATCH, ej. preview "6.0.0.3" → release
+ * "6.0.0.01") se detectaba como "sin actualización" — ver comentario largo
+ * en currentVersionName() e isRemoteAnUpdate() para el detalle completo.
  */
 object AppUpdater {
 
@@ -169,6 +174,8 @@ object AppUpdater {
                 }
 
                 val localVersion = currentVersionName(context)
+                // Preview 2013.6.0.0.3 — ver comentario largo en currentVersionName().
+                val remoteIsPrerelease = release.optBoolean("prerelease", false)
 
                 runOnUi {
                     if (apkUrl == null) {
@@ -176,7 +183,8 @@ object AppUpdater {
                         callback.onError("El último release ($remoteVersion) no tiene un archivo .apk adjunto en GitHub.")
                         return@runOnUi
                     }
-                    if (compareVersions(remoteVersion, localVersion) > 0) {
+                    val isUpdate = isRemoteAnUpdate(remoteVersion, localVersion, remoteIsPrerelease)
+                    if (isUpdate) {
                         callback.onUpdateAvailable(remoteVersion, apkUrl, htmlUrl)
                     } else {
                         callback.onUpToDate()
@@ -238,23 +246,38 @@ object AppUpdater {
         // Se descarta el primer segmento (la Era, fija para todo el esquema
         // de versionado del proyecto) para que la comparación quede en el
         // mismo formato corto que usan los tags: MAJOR.MINOR.PATCH[.BUILD].
-        var segments = raw.split(".")
-        var versionWithoutEra = if (segments.size > 1) segments.drop(1).joinToString(".") else raw
+        val segments = raw.split(".")
+        val versionWithoutEra = if (segments.size > 1) segments.drop(1).joinToString(".") else raw
         
-        // Release 2009.4.6.1 — BUG FIX: el BUILD segment (4to segmento) hace que
-        // las previews (ej. 4.6.0.60) se comparen como "mayores" que la release
-        // final de la misma versión (ej. 4.6.0.01). Cuando alguien instala una
-        // preview (2008.4.6.0.60 → versionName da 4.6.0.60) y después quiere
-        // actualizar a la release final (tag en GitHub es v4.6.0 → se compara
-        // como 4.6.0), el comparador devuelve negativo (release < preview), así
-        // que el actualizador cree que ya está al día.
+        // Release 2009.4.6.1 — INTENTO DE BUG FIX (INSUFICIENTE, ver Preview
+        // 2013.6.0.0.3 más abajo): acá se llegó a devolver solo MAJOR.MINOR.PATCH,
+        // descartando el segmento BUILD, para que una preview instalada
+        // (ej. 4.6.0.60) no se comparara como "mayor" que la release final de
+        // esa misma versión (tag "v4.6.0", sin BUILD → se completaba con 0).
+        // Funcionaba para ESE caso puntual, pero rompía este otro: si la
+        // release final SÍ trae un BUILD explícito en su propio tag (la
+        // convención de Keyler es marcar la primera build estable de una
+        // versión como ".01" en vez de omitir el segmento — ver versionName
+        // de ejemplos anteriores como "2012.5.8.0.01") y ese ".01" es
+        // NUMÉRICAMENTE MENOR al build de la preview que ya se tenía
+        // instalada (ej. release "v6.0.0.01" después de haber tenido
+        // instalada la preview "6.0.0.3"), truncar el local a "6.0.0" hacía
+        // que remoto ("6.0.0.01") y local ("6.0.0") quedaran EMPATADOS
+        // (0 no es "mayor que" nada) en vez de que el release ganara — el
+        // Actualizador terminaba creyendo que la release "vieja" (post-truncado,
+        // igual a la preview) no era una actualización real.
         //
-        // Solución: devolver solo MAJOR.MINOR.PATCH, sin BUILD. Así:
-        // - preview 2008.4.6.0.60 → currentVersionName() da 4.6.0
-        // - release 2008.4.6.0.01 → currentVersionName() da 4.6.0
-        // - ambas se tratan como "4.6.0", y el comparador funciona bien.
-        segments = versionWithoutEra.split(".")
-        return if (segments.size > 3) segments.take(3).joinToString(".") else versionWithoutEra
+        // Preview 2013.6.0.0.3 — SOLUCIÓN REAL: se deja de truncar acá (se
+        // devuelve el versionName completo, con BUILD y todo) y en su lugar
+        // checkForUpdate() usa el flag `prerelease` que GitHub ya expone en
+        // cada release para decidir: si remoto y local coinciden en
+        // MAJOR.MINOR.PATCH pero remoto NO es prerelease (es una release
+        // estable de verdad), remoto gana SIEMPRE sin importar los números
+        // de BUILD de ninguno de los dos lados — una release estable siempre
+        // supera a cualquier preview de esa misma versión, por definición,
+        // sin depender de que Keyler mantenga los números de BUILD
+        // estrictamente crecientes entre previews y su release final.
+        return versionWithoutEra
     }
 
     /**
@@ -280,6 +303,28 @@ object AppUpdater {
             if (r != l) return r - l
         }
         return 0
+    }
+
+    /**
+     * Preview 2013.6.0.0.3 — decide si [remote] cuenta como actualización
+     * respecto a [local], a partir de compareVersions() MÁS un caso especial:
+     * si ambos coinciden en MAJOR.MINOR.PATCH (los primeros 3 segmentos) pero
+     * [remote] NO es un prerelease de GitHub (es una release estable de
+     * verdad) y las dos versiones completas no son idénticas, [remote] gana
+     * SIEMPRE — sin importar el segmento BUILD de ninguno de los dos lados.
+     * Es el caso de "salió la release final que consolida la preview que ya
+     * tenía instalada": la preview pudo haber tenido un BUILD más alto
+     * (ej. 6.0.0.3) que el ".01" con el que Keyler marca la primera build
+     * estable de una versión (ej. 6.0.0.01) — numéricamente el BUILD de la
+     * preview gana, pero conceptualmente la release siempre debe ganar. Ver
+     * el comentario largo en currentVersionName() para el detalle completo.
+     */
+    internal fun isRemoteAnUpdate(remote: String, local: String, remoteIsPrerelease: Boolean): Boolean {
+        if (compareVersions(remote, local) > 0) return true
+        val remoteMmp = remote.split(".").take(3)
+        val localMmp = local.split(".").take(3)
+        val samePatchVersion = remoteMmp == localMmp
+        return !remoteIsPrerelease && samePatchVersion && remote != local
     }
 
     // ── Paso 2: descargar el APK (OkHttp) y abrir el instalador ─────────────

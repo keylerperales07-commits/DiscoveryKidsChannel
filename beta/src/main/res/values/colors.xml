@@ -19,6 +19,35 @@
     <color name="dk_launcher_gradient_top">#1565C0</color>
     <color name="dk_launcher_gradient_bottom">#00BCD4</color>
 
+    <!-- ══ Rediseño Discovery Kids Launcher — Preview 2013.6.0.0.3 ══
+         Vuelve a la estética del sitio web clásico de Discovery Kids
+         Latinoamérica (referencia visual entregada por Keyler): franja verde
+         curva arriba con el logo "DK" + fila de personajes, panel de
+         contenido blanco/crema redondeado, acentos amarillos. El fondo
+         (detrás de todo) cambia según el horario real del dispositivo — ver
+         DiscoveryKidsLauncherActivity.applyTimeOfDayTheme(): mañana (celeste),
+         tarde (anaranjado) y noche (violeta). Estos son degradados de
+         respaldo con los mismos colores del sitio de referencia — si Keyler
+         agrega los fondos ilustrados reales (bg_launcher_manana.webp/
+         bg_launcher_tarde.webp/bg_launcher_noche.webp en res/drawable), esos
+         reemplazan a los degradados automáticamente (ver
+         launcher_bg_manana.xml/tarde/noche.xml, que son solo un <bitmap>
+         envolviendo cada webp si existe, con el degradado como fallback si
+         el bitmap no está). -->
+    <color name="dk_launcher_header_green">#7CB342</color>
+    <color name="dk_launcher_header_green_dark">#558B2F</color>
+    <color name="dk_launcher_yellow">#FFD500</color>
+    <color name="dk_launcher_yellow_dark">#F9A825</color>
+    <color name="dk_launcher_panel_bg">#F5EBD9</color>
+    <color name="dk_launcher_text_on_green">#1B3B0F</color>
+
+    <color name="dk_launcher_manana_top">#8FD3F4</color>
+    <color name="dk_launcher_manana_bottom">#A8E6CF</color>
+    <color name="dk_launcher_tarde_top">#F6C453</color>
+    <color name="dk_launcher_tarde_bottom">#E0883A</color>
+    <color name="dk_launcher_noche_top">#3B2265</color>
+    <color name="dk_launcher_noche_bottom">#7A4FA3</color>
+
     <!-- ══ Material Design 3 — Discovery Kids Launcher (Release 2009.5.1.0) ══
          Esquema CLARO. Semilla: el azul ya usado en la app (#1565C0, el
          mismo del degradado del menubar anterior), con el cian del propio

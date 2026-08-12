@@ -5,7 +5,9 @@
 */
 package com.keyler.discoverykidschannel
 
+import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -20,6 +22,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
 import java.io.File
+import java.util.Calendar
 
 /**
  * DiscoveryKidsLauncherActivity — Release 2009.5.0.0 ("Parque Imaginario")
@@ -74,6 +77,14 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Preview 2013.6.0.0.3 — el ícono de la app tiene que actualizarse
+        // según el horario SIEMPRE, sin importar si Experimental está
+        // activado — esta Activity es la que arranca siempre (intent-filter
+        // LAUNCHER en sus activity-alias, ver AndroidManifest.xml), aunque
+        // con Experimental desactivado sea transparente y redirija de
+        // inmediato. Por eso va ANTES del chequeo de Experimental de abajo.
+        applyTimeOfDayIcon()
+
         // Ver doc de la clase: con Experimental desactivado, esta Activity es
         // transparente — pasa directo al canal, sin mostrar nada.
         if (!SettingsManager.isExperimentalEnabled(this)) {
@@ -83,6 +94,11 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         }
 
         setContentView(R.layout.activity_launcher)
+
+        // Preview 2013.6.0.0.3 — Rediseño: fondo del Launcher según el
+        // horario real del dispositivo. Ver applyTimeOfDayBackground() más
+        // abajo (applyTimeOfDayIcon() ya se llamó arriba).
+        applyTimeOfDayBackground()
 
         // Release 2009.5.1.0: ActionBar ORIGINAL de Android (Theme.Material3.
         // DayNight, ver themes.xml) en vez del MenuBar custom hecho a mano.
@@ -144,6 +160,10 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         // (esa parte vive en la otra Activity), pero si volvió habiendo
         // cambiado la cantidad de programas desde otra instancia, conviene
         // refrescar por las dudas.
+        // Preview 2013.6.0.0.3 — por si la app quedó abierta (o en segundo
+        // plano) de un horario al siguiente.
+        applyTimeOfDayBackground()
+        applyTimeOfDayIcon()
         refreshProgramCountLabel()
         rebuildProgramList()
     }
@@ -159,6 +179,66 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    // ── Rediseño por horario (Preview 2013.6.0.0.3) ──────────────────────────
+
+    /**
+     * Franja horaria actual, según la hora real del dispositivo:
+     *   MANANA (00:00–11:59), TARDE (12:00–18:59), NOCHE (19:00–23:59).
+     * "Tarde" y "noche" comparten el mismo set de íconos (pedido explícito
+     * de Keyler — no hay un tercer set), pero SÍ tienen fondos de pantalla
+     * distintos (ver applyTimeOfDayBackground()).
+     */
+    private enum class TimeOfDay { MANANA, TARDE, NOCHE }
+
+    private fun currentTimeOfDay(): TimeOfDay {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        return when {
+            hour in 0..11  -> TimeOfDay.MANANA
+            hour in 12..18 -> TimeOfDay.TARDE
+            else           -> TimeOfDay.NOCHE
+        }
+    }
+
+    /** Cambia el fondo de @+id/launcherRoot según la franja horaria actual. */
+    private fun applyTimeOfDayBackground() {
+        val bgRes = when (currentTimeOfDay()) {
+            TimeOfDay.MANANA -> R.drawable.launcher_bg_manana
+            TimeOfDay.TARDE  -> R.drawable.launcher_bg_tarde
+            TimeOfDay.NOCHE  -> R.drawable.launcher_bg_noche
+        }
+        findViewById<View>(R.id.launcherRoot)?.setBackgroundResource(bgRes)
+    }
+
+    /**
+     * Habilita el activity-alias del ícono que corresponde al horario actual
+     * (mañana, o tarde/noche — ver AndroidManifest.xml) y deshabilita el
+     * otro, para que el ícono que ve el usuario en el launcher del sistema
+     * cambie solo. Android no permite tener los dos habilitados a la vez
+     * (mostraría dos íconos duplicados en el launcher del sistema).
+     *
+     * DONT_KILL_APP: evita que el sistema mate el proceso al cambiar el
+     * estado del componente — normalmente solo hace falta cuando se
+     * deshabilita la Activity que está corriendo en ese momento, que no es
+     * el caso acá (los alias son componentes separados de la Activity real
+     * que sigue corriendo), pero se deja por las dudas / defensivo.
+     */
+    private fun applyTimeOfDayIcon() {
+        val useManana = currentTimeOfDay() == TimeOfDay.MANANA
+        val pm = packageManager
+        val mananaAlias = ComponentName(this, "com.keyler.discoverykidschannel.LauncherIconManana")
+        val tardeNocheAlias = ComponentName(this, "com.keyler.discoverykidschannel.LauncherIconTardeNoche")
+        pm.setComponentEnabledSetting(
+            mananaAlias,
+            if (useManana) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            PackageManager.DONT_KILL_APP
+        )
+        pm.setComponentEnabledSetting(
+            tardeNocheAlias,
+            if (useManana) PackageManager.COMPONENT_ENABLED_STATE_DISABLED else PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            PackageManager.DONT_KILL_APP
+        )
     }
 
     // Release 5.8.0 — BUG FIX (diseño): los ScreenBugs de eventos

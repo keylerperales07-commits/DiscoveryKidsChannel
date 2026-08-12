@@ -433,11 +433,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // programa. clasif_banner.gif dura 17s — se deja el banner puesto
         // ese tiempo exacto para que la animación se vea completa.
         internal const val CLASIF_BANNER_VISIBLE_MS = 17_000L
-        // Release 5.8.0 — cuánto correr el video a la derecha cuando el
-        // recuadro activo es nextprogram2.gif (ver showVideoInBox()). Valor
-        // de partida razonable — si no queda perfectamente alineado con el
-        // recuadro real, ajustar este número.
-        internal const val NEXTPROGRAM2_VIDEO_SHIFT_RIGHT_DP = 12
 
         /** FadeIn duration for video transitions (ms). Applied when the new video starts. */
         internal const val TRANSITION_FADE_IN_MS = 500L
@@ -978,6 +973,12 @@ internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
 
     Log.d(LiveDiscoveryKids.TAG, "▶ INTRO [programa=${programIndex + 1}, uri=$uri]")
 
+    // Preview 2013.6.0.0.3 — el banner de clasificación ahora se muestra acá
+    // (al arrancar la Intro) en vez de al arrancar el Programa, cuando el
+    // programa tiene Intro activada — ver playProgram(), que ya no lo
+    // dispara en ese caso para no mostrarlo dos veces seguidas.
+    showClasifBanner()
+
     // Release 5.4.0/5.4.1/5.5.0: el ScreenBug de inicio (fase 1/2) arranca
     // acá — se pasa la duración REAL de la Intro como segmentEndMs para que
     // el clamp interno de scheduleMultipleScreenbugs() garantice que se
@@ -1316,7 +1317,9 @@ internal fun LiveDiscoveryKids.playProgram(idx: Int, restartFromBeginning: Boole
     beginProgramSegment(uri, startOffsetMs = startPos, isFirstPlay = restartFromBeginning)
     // Release 5.8.0 — banner de clasificación: una vez por programa (no por
     // episodio ni al resumir desde una posición guardada).
-    if (restartFromBeginning) showClasifBanner()
+    // Preview 2013.6.0.0.3 — si el programa tiene Intro activada, el banner
+    // ya se mostró ahí (ver playIntro()) — no repetirlo acá.
+    if (restartFromBeginning && !hasValidIntro(idx)) showClasifBanner()
 }
 
 /**
@@ -1899,9 +1902,17 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
         elapsed
     }
 
-    // La fase 3 (screenbug_end) + NextProgram SÍ se suprimen en el último
-    // segmento del Programa cuando hay Créditos válidos — se difieren a
-    // playCreditos(), que los agenda con la duración real de los créditos.
+    // Preview 2013.6.0.0.3 — screenbug_end (fase 3) se elimina por completo
+    // del ÚLTIMO segmento del programa, tenga o no Créditos válidos: antes
+    // solo se difería (deferToCreditos) cuando SÍ había Créditos; ahora,
+    // haya o no Créditos, screenbug_end nunca se muestra si lo que sigue es
+    // el final del programa — el screenbug.png (fase 2) simplemente sigue
+    // mostrándose sin cambios hasta que arrancan los Créditos (ahí
+    // desaparece, sin animación — ver playCreditos()/scheduleMultipleScreenbugs()
+    // con suppressStartMidPhases=true) o, si no hay Créditos, hasta que el
+    // programa corta al siguiente ítem del playlist. screenbug_end sigue
+    // apareciendo normalmente antes de un corte comercial a mitad del
+    // programa (isFinalSegment=false ahí) — eso no cambió.
     val isFinalSegment = breakQueue.isEmpty()
     val deferToCreditos = isFinalSegment && hasValidCreditos(currentProgramIndex)
 
@@ -1911,7 +1922,7 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
     scheduleMultipleScreenbugs(
         segmentStartMs, segmentEndMs, elapsed,
         startMidElapsed = startMidElapsed,
-        suppressEndPhase = deferToCreditos
+        suppressEndPhase = isFinalSegment
     )
 
     // Preview 2010.5.4.0.40 — NUEVO: overlay "nextprogram". Solo tiene
@@ -2701,9 +2712,24 @@ internal fun LiveDiscoveryKids.startChannel() {
  * de reanudación del programa si estamos en un comercial.
  */
 internal fun LiveDiscoveryKids.saveChannelState() {
+    // Preview 2013.6.0.0.3 — BUG FIX ("Intro y Créditos no tienen pausa: se
+    // reinician al cambiar de Activity"). Investigación a fondo: la causa
+    // real no estaba en onPause()/onResume() (esos ya reanudaban bien en
+    // memoria, ver el bloque "currentClipUri != null" de onResume()) sino
+    // acá — cuando el proceso muere de verdad (común en el dispositivo
+    // físico, con poca memoria) y hay que restaurar desde SharedPreferences,
+    // el fallback "pausedPositionMs" es la posición del position tracker
+    // SOLO para isInProgramSegment=true (ver positionTrackerRunnable) — para
+    // Intro/Créditos/Bumper, la posición real vive en currentClipPositionMs.
+    // Antes se guardaba pausedPositionMs igual (desactualizada — 0, o lo que
+    // quedó de un programa previo), así que "restaurar" reproducía Intro/
+    // Créditos con una posición basura. Ahora que ya se guarda bien, ver
+    // también resumeSavedState() para el otro lado del bug (esa posición ni
+    // siquiera se estaba usando para Intro/Créditos).
     val posToSave = when {
         isInCommercialBlock -> commercialResumeMs
-        else                -> pausedPositionMs
+        isInProgramSegment  -> pausedPositionMs
+        else                -> currentClipPositionMs
     }
     val breakQueueStr = breakQueue.joinToString(",")
 
@@ -2751,6 +2777,8 @@ internal fun LiveDiscoveryKids.showResumeDialog(prefs: SharedPreferences) {
         "commercial" -> getString(R.string.resume_where_commercial, progIdx + 1)
         "bumper"     -> getString(R.string.resume_where_bumper)
         "enseguida"  -> getString(R.string.resume_where_enseguida)
+        "intro"      -> getString(R.string.resume_where_intro, progIdx + 1)
+        "creditos"   -> getString(R.string.resume_where_creditos, progIdx + 1)
 
         else         -> getString(R.string.resume_where_unknown)
     }
@@ -2780,6 +2808,8 @@ internal fun LiveDiscoveryKids.showResumeDialog(prefs: SharedPreferences) {
  *               (se saltea el comercial, es imposible restaurar la mitad de un comercial).
  * - bumper:     reinicia el bumper desde el principio (son cortos, no vale seekar).
  * - enseguida:  reinicia el enseguida desde el principio (igual razonamiento).
+ * - intro/creditos (Preview 2013.6.0.0.3): reinician desde el principio, mismo
+ *               razonamiento que bumper/enseguida — ver comentario en el when de abajo.
  */
 internal fun LiveDiscoveryKids.resumeSavedState(
     itemType: String,
@@ -2843,6 +2873,19 @@ internal fun LiveDiscoveryKids.resumeSavedState(
                 playlistIndex = 0
                 advance()
             }
+        }
+        // Preview 2013.6.0.0.3 — BUG FIX ("Intro y Créditos no tienen
+        // pausa"): antes "intro"/"creditos" no tenían rama acá y caían al
+        // "else" de abajo, que resetea playlistIndex=0 — es decir, ante la
+        // muerte del proceso a mitad de una Intro o unos Créditos, la app no
+        // solo reiniciaba ESE clip: reiniciaba TODO el canal desde el
+        // principio. playlistIndex ya se restauró arriba (línea ~2808), así
+        // que playlist[playlistIndex] ya apunta al mismo PlayItem.Intro/
+        // Creditos de antes — advance() lo vuelve a reproducir correctamente.
+        // Igual que "bumper"/"enseguida": reinicia el clip desde el
+        // principio (son cortos, no vale la pena reconstruir un seek acá).
+        "intro", "creditos" -> {
+            advance()
         }
         "bumper", "enseguida", "talla" -> {
             advance()
@@ -3317,22 +3360,34 @@ internal fun LiveDiscoveryKids.setNextProgramBugAlpha(alpha: Float) {
 // Release 5.6.0 — BUG FIX ("cambiar la posición del VideoView en el
 // NextProgram"): remedido con precisión de píxel sobre 12397.jpg. LEFT/TOP/
 // BOTTOM ya estaban bien calibrados (coinciden con el nuevo margen de
-// error). Lo que faltaba: el ANCHO nunca se midió — se derivaba forzando
-// 4:3 sobre boxHeightPx, pero el recuadro real NO es 4:3 (mide ≈1.4:1),
-// así que el video quedaba consistentemente ~22px más angosto de lo que
-// debía. Ahora hay una fracción RIGHT explícita, medida directamente sobre
-// el borde amarillo real (x:764→774, no derivada de la altura).
-private const val NEXTPROGRAM_BOX_LEFT_FRACTION = 0.4625f
-private const val NEXTPROGRAM_BOX_RIGHT_FRACTION = 0.9271f
-private const val NEXTPROGRAM_BOX_TOP_FRACTION = 0.0833f
-private const val NEXTPROGRAM_BOX_BOTTOM_FRACTION = 0.525f
+// Preview 2013.6.0.0.3 — al actualizarse los GIFs de NextProgram, se
+// confirmó que nextprogram1.gif y nextprogram2.gif NO comparten el mismo
+// recuadro — son dos diseños distintos (nextprogram1: un solo recuadro
+// grande, a la izquierda. nextprogram2: recuadro chico a la izquierda +
+// una animación propia ya incluida en el GIF a la derecha, que no es
+// nuestra — el video en vivo va en el recuadro chico). El shift-en-dp de
+// la 5.8.0 (aproximado, "por si no queda perfecto") se reemplaza por
+// coordenadas medidas directamente sobre capturas de referencia de cada
+// GIF, igual criterio que ya usaba el recuadro original.
+//
+// nextprogram1.gif — recuadro grande.
+private const val NEXTPROGRAM1_BOX_LEFT_FRACTION = 0.1705f
+private const val NEXTPROGRAM1_BOX_RIGHT_FRACTION = 0.6902f
+private const val NEXTPROGRAM1_BOX_TOP_FRACTION = 0.1335f
+private const val NEXTPROGRAM1_BOX_BOTTOM_FRACTION = 0.6287f
+
+// nextprogram2.gif — recuadro chico.
+private const val NEXTPROGRAM2_BOX_LEFT_FRACTION = 0.0687f
+private const val NEXTPROGRAM2_BOX_RIGHT_FRACTION = 0.3434f
+private const val NEXTPROGRAM2_BOX_TOP_FRACTION = 0.3324f
+private const val NEXTPROGRAM2_BOX_BOTTOM_FRACTION = 0.6023f
 
 /**
  * Achica y reposiciona videoContainer para que el video quede dentro del
  * recuadro del marco NextProgram, sin estirarse. Idempotente — llamarla de
  * nuevo mientras ya está en el recuadro no hace nada raro.
  *
- * Los % (NEXTPROGRAM_BOX_*_FRACTION) están calculados sobre el MARCO 4:3
+ * Los % (NEXTPROGRAM1/2_BOX_*_FRACTION) están calculados sobre el MARCO 4:3
  * real (el mismo que ocupa videoContainer sin achicar, y el AspectRatioFrameLayout
  * hermano que contiene a nextProgramBug en activity_main.xml) — NO sobre el
  * ancho/alto físico de la pantalla del dispositivo, que casi nunca es 4:3
@@ -3358,26 +3413,25 @@ internal fun LiveDiscoveryKids.showVideoInBox() {
     val frameWidth = (frameHeight * 4) / 3
     val frameLeftInRoot = (rootWidth - frameWidth) / 2
 
-    val boxHeightPx = ((NEXTPROGRAM_BOX_BOTTOM_FRACTION - NEXTPROGRAM_BOX_TOP_FRACTION) * frameHeight).toInt()
-    // BUG FIX (5.6.0): ancho real del recuadro (NO height×4/3 — el recuadro
-    // no es 4:3), medido con la fracción RIGHT explícita.
-    val boxWidthPx = ((NEXTPROGRAM_BOX_RIGHT_FRACTION - NEXTPROGRAM_BOX_LEFT_FRACTION) * frameWidth).toInt()
-    val boxTopPx = (NEXTPROGRAM_BOX_TOP_FRACTION * frameHeight).toInt()
-    var boxLeftPx = frameLeftInRoot + (NEXTPROGRAM_BOX_LEFT_FRACTION * frameWidth).toInt()
-
-    // Release 5.8.0 — "Si los créditos son Nextprogram2, rodar un poco a la
-    // derecha el VideoView": el recuadro de nextprogram2.gif no está
-    // exactamente en la misma posición que el de nextprogram1.gif — el
-    // video queda corrido a la izquierda si se usan los mismos % de
-    // siempre. Se detecta por currentProgramIndex (mismo índice que usa
-    // showNextProgramResource() para elegir el GIF — ver NEXTPROGRAMS) y
-    // solo aplica al GIF de FÁBRICA, no a un NextProgram personalizado
-    // (ahí no hay forma de saber su alineación real).
+    // Preview 2013.6.0.0.3 — qué recuadro usar: nextprogram2.gif (índice 1
+    // en NEXTPROGRAMS) tiene su propio recuadro chico; cualquier otro caso
+    // (nextprogram1.gif de fábrica, o un NextProgram personalizado — ahí no
+    // hay forma de saber su alineación real, así que se usa el recuadro
+    // grande de nextprogram1 como default razonable) usa el recuadro grande.
     val isFactoryNextProgram2 = !SettingsManager.isNextProgramCustom(this, currentProgramIndex) &&
         (currentProgramIndex % LiveDiscoveryKids.NEXTPROGRAMS.size) == 1
-    if (isFactoryNextProgram2) {
-        boxLeftPx += (LiveDiscoveryKids.NEXTPROGRAM2_VIDEO_SHIFT_RIGHT_DP * resources.displayMetrics.density).toInt()
-    }
+
+    val leftFraction = if (isFactoryNextProgram2) NEXTPROGRAM2_BOX_LEFT_FRACTION else NEXTPROGRAM1_BOX_LEFT_FRACTION
+    val rightFraction = if (isFactoryNextProgram2) NEXTPROGRAM2_BOX_RIGHT_FRACTION else NEXTPROGRAM1_BOX_RIGHT_FRACTION
+    val topFraction = if (isFactoryNextProgram2) NEXTPROGRAM2_BOX_TOP_FRACTION else NEXTPROGRAM1_BOX_TOP_FRACTION
+    val bottomFraction = if (isFactoryNextProgram2) NEXTPROGRAM2_BOX_BOTTOM_FRACTION else NEXTPROGRAM1_BOX_BOTTOM_FRACTION
+
+    val boxHeightPx = ((bottomFraction - topFraction) * frameHeight).toInt()
+    // BUG FIX (5.6.0): ancho real del recuadro (NO height×4/3 — el recuadro
+    // no es 4:3), medido con la fracción RIGHT explícita.
+    val boxWidthPx = ((rightFraction - leftFraction) * frameWidth).toInt()
+    val boxTopPx = (topFraction * frameHeight).toInt()
+    val boxLeftPx = frameLeftInRoot + (leftFraction * frameWidth).toInt()
 
     // BUG FIX (5.6.0): videoContainer es un AspectRatioFrameLayout — su
     // onMeasure() por defecto IGNORA el ancho de layoutParams y siempre

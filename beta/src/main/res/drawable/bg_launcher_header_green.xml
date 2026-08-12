@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Preview 2013.6.0.0.3 — franja verde del header del Launcher, con las
+     puntas inferiores redondeadas (mismo look que la barra verde curva del
+     sitio de referencia). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/dk_launcher_header_green" />
+    <corners
+        android:bottomLeftRadius="28dp"
+        android:bottomRightRadius="28dp" />
+</shape>

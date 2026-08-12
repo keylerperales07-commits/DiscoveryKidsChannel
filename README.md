@@ -14,9 +14,9 @@
   <img src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=flat-square&logo=kotlin&logoColor=white"/>
   <img src="https://img.shields.io/badge/Build-Gradle-02303A?style=flat-square&logo=gradle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Última_versión-v5.8.1-brightgreen?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Última_versión-v5.8.0-brightgreen?style=flat-square"/>
   <img src="https://img.shields.io/badge/Preview-v6.0.0.0.2-yellow?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Era-2013-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Era-2012-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/Fase-4-orange?style=flat-square"/>
 </p>
 
@@ -134,9 +134,11 @@ DiscoveryKidsChannel/
 
 ### Requisitos Previos
 
+> ⚠️ **A partir de la versión 6.1.0, el proyecto cambia de IDE**: de AndroidIDE a **CodeAssist**, por ser más actualizado. Esto hace que el proyecto sea **incompatible con Android Studio** a partir de esa versión.
+
 Antes de comenzar, asegurate de tener instalado lo siguiente:
 
-- [AndroidIDE](https://androidide.com/) o Android Studio
+- [AndroidIDE](https://androidide.com/) (versiones hasta la 6.0.x) o **CodeAssist** (a partir de la 6.1.0) — no Android Studio
 - Java 11+ / Kotlin runtime
 - Dispositivo Android o emulador (API 21+)
 - Permisos de almacenamiento habilitados en el dispositivo
@@ -170,22 +172,21 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-> 🧪 **Preview disponible — `v6.0.0.0.2`** *(Era Doki 1.0 · Era 2013 · "La Era Planetaria")* — Continuamos con horario (mañanera/tardía, según la hora real del dispositivo). Se elimina por completo "ya_regresa" (el pre-comercial). FadeOut/FadeIn quedan reservados exclusivamente al límite Programa↔bloque comercial — todo lo demás corta en seco. Nuevo GIF "próximo programa" a mitad de cada segmento. 2 correcciones en el Actualizador: doble menú, e investigación a fondo del ActionBar comiéndose el layout. Requiere "Habilitar versiones Preview" activado en Configuración → Actualizaciones.
+> 🧪 **Preview disponible — `v6.0.0.0.3`** *(Era Doki 1.0 · Era 2013 · "La Era Planetaria")* — Recuadros de NextProgram medidos por separado para nextprogram1/nextprogram2. screenbug_end ya no sale al terminar el programa. clasif_banner también en la Intro. Corregidos a fondo: Intro/Créditos que se reiniciaban al cambiar de Activity, y el Actualizador no reconociendo una release final que consolida una Preview. Rediseño del Discovery Kids Launcher con fondo e ícono de la app según el horario. Requiere "Habilitar versiones Preview" activado en Configuración → Actualizaciones.
 
-### 🚀 Última versión estable — `v5.8.1` *(Release · Era Doki 1.0 · Era 2013 · "La Era Planetaria")*
-> *Cambio de Era (2012→2013) en la rama estable. Contenido: nuevo ScreenBug estático anunciando el estreno de la nueva serie Doki, y `bumper7.mp4` como promo de esa serie.*
+### 🚀 Última versión estable — `v5.8.0` *(Release · Era Doki 1.0 · Era 2012 · "Parque Imaginario")*
+> *Episodios de Programa (varios videos por programa, comerciales entre ellos, créditos al final), sistema de Eventos rediseñado (switch maestro + selector manual, movido a Configuración), banner de clasificación al iniciar un programa, restricción de duración mínima, y 4 correcciones: video corrido en Nextprogram2, ActionBar tapando contenido (edge-to-edge), y líneas de texto pegadas.*
 
-- 🎨 **Cambio de Era 2012 → 2013** — rama estable.
-- 🆕 **`screenbug.png` actualizado** — el ScreenBug estático anuncia el estreno de la nueva serie Doki.
-- 🆕 **`bumper7.mp4` agregado** — nuevo bumper, promo de la nueva serie Doki.
-
-<details>
-<summary>📜 Versiones estables anteriores</summary>
-
-**`v5.8.0`** *(Era Doki 1.0 · Era 2012 · "Parque Imaginario")* — Episodios de Programa (varios videos por programa, comerciales entre ellos, créditos al final), sistema de Eventos rediseñado (switch maestro + selector manual, movido a Configuración), banner de clasificación al iniciar un programa, restricción de duración mínima, y 4 correcciones: video corrido en Nextprogram2, ActionBar tapando contenido (edge-to-edge), y líneas de texto pegadas.
 - 🆕 **Episodios de Programa** — un programa puede tener varios videos en vez de uno solo; entre episodios se muestran comerciales, al terminar el último salen los Créditos.
 - 🆕 **Sistema de Eventos rediseñado** — switch maestro "Activar eventos" + selector manual de evento (Normal/Navidad/Año Nuevo/Pascua/Día de la Tierra), movido a Configuración.
 - 🆕 **Banner de clasificación** — `clasif_banner.gif` al arrancar cada programa, visible 17s.
+- ⚙️ **Duración mínima de 1 minuto** para cualquier episodio.
+- 🐛 **Video corrido con Nextprogram2** en Créditos — corregido con un ajuste de posición específico.
+- 🐛 **ActionBar tapando contenido** (edge-to-edge de `targetSdk 36`) — corregido con manejo explícito de insets en las 3 pantallas con ActionBar.
+- 🐛 **Líneas de texto pegadas** — agregado espaciado entre líneas en los textos multilínea afectados.
+
+<details>
+<summary>📜 Versiones estables anteriores</summary>
 
 **`v5.7.0`** *(Era Doki 1.0 · Era 2012 · "Parque Imaginario")* — Cambio de Era (2011→2012). Consolida la Preview 2011.5.6.0.60 (CrtOverlayView único y compartido, ancho real del recuadro de NextProgram) como Release estable. Nuevo contenido: comerciales de la Era 2012.
 - 🎨 **Cambio de Era 2011 → 2012** — nuevos comerciales correspondientes.

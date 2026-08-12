@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Preview 2013.6.0.0.3 — Fondo del Discovery Kids Launcher para horario de
+    MAÑANA (00:00–11:59). Degradado placeholder con los colores del sitio de
+    referencia. Para reemplazar por el fondo ilustrado real: borrar este
+    archivo y agregar launcher_bg_manana.webp (o .png) en esta misma carpeta
+    — se usa por nombre de recurso, no hace falta tocar ningún código.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:type="linear"
+        android:angle="90"
+        android:startColor="@color/dk_launcher_manana_top"
+        android:endColor="@color/dk_launcher_manana_bottom" />
+</shape>
