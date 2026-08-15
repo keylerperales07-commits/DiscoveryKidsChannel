@@ -41,6 +41,16 @@
     <color name="dk_launcher_panel_bg">#F5EBD9</color>
     <color name="dk_launcher_text_on_green">#1B3B0F</color>
 
+    <!-- RELEASE 2013.6.0.0 — se pidió que los "cuadros blancos" dejen de ser
+         opacos y muestren el fondo de horario detrás (transparencia), y que
+         los cuadros "dentro de otro cuadro" que no tenían color propio (como
+         la tarjeta "Cantidad de programas") usen el amarillo de los botones.
+         También: texto del Launcher en negro, títulos en amarillo. -->
+    <color name="dk_launcher_panel_bg_transparent">#D9F5EBD9</color>     <!-- panel principal, ~85% opaco -->
+    <color name="dk_launcher_card_yellow">#33FFD500</color>              <!-- "cuadro dentro de cuadro" — amarillo bien transparente, ~20% -->
+    <color name="dk_launcher_text_black">#1A1A1A</color>
+    <color name="dk_launcher_title_yellow">@color/dk_launcher_yellow_dark</color>
+
     <color name="dk_launcher_manana_top">#8FD3F4</color>
     <color name="dk_launcher_manana_bottom">#A8E6CF</color>
     <color name="dk_launcher_tarde_top">#F6C453</color>

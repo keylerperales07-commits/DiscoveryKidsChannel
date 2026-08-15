@@ -7,6 +7,7 @@ package com.keyler.discoverykidschannel
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.keyler.discoverykidschannel.R
 
 /**
  * SettingsManager — Preview 2006.4.1.0.12
@@ -37,24 +38,17 @@ import android.content.SharedPreferences
  * faltaban en la carpeta Movies.
  *
  * Release 2009.5.0.0 — "Parque Imaginario" (Fase 4, inicio rama 5.x). NUEVO:
- *   - KEY_EXPERIMENTAL_ENABLED: interruptor maestro de la sección "Experimental"
- *     de Configuración (desactivado por defecto). Habilita el nuevo Discovery
- *     Kids Launcher como pantalla de inicio real (en vez de pasar directo a
- *     LiveDiscoveryKids) y toda la configuración avanzada de programas
- *     (cantidad de programas, video elegido por el usuario, ya_regresa /
- *     continuamos personalizados por programa). Ver DiscoveryKidsLauncherActivity.
  *   - KEY_PROGRAM_COUNT: cantidad de programas que arma la programación
- *     (1–24). Solo tiene efecto con Experimental activado; con Experimental
- *     desactivado el canal sigue el comportamiento clásico de 4 programas
- *     fijos (pro1–pro4.mp4 en la carpeta Movies).
+ *     (1–24). Discovery Kids Launcher es la pantalla de inicio real de la
+ *     app (RELEASE 2013.6.0.0: ya no depende de ningún interruptor
+ *     "Experimental" — ELIMINADO por completo, ver DiscoveryKidsLauncherActivity).
  *   - KEY_PROGRAM_URI_PREFIX: Uri (content://, persistida via SAF) del video
  *     que el usuario eligió para el programa N. Si no hay Uri guardada,
  *     resolveProgram() cae al comportamiento clásico (buscar pro{N}.mp4).
- *   - KEY_YAREGRESA_CUSTOM_PREFIX / KEY_YAREGRESA_URI_PREFIX y
- *     KEY_CONTINUAMOS_CUSTOM_PREFIX / KEY_CONTINUAMOS_URI_PREFIX: por
- *     programa, si el usuario activó "Personalizado" para el ya_regresa o el
- *     continuamos de ESE programa (en vez del predeterminado que trae la
- *     app) y qué Uri eligió. Ver resolveYaRegresaUri()/resolveContinuamosUri()
+ *   - KEY_CONTINUAMOS_CUSTOM_PREFIX / KEY_CONTINUAMOS_URI_PREFIX: por
+ *     programa, si el usuario activó "Personalizado" para el continuamos de
+ *     ESE programa (en vez del predeterminado que trae la app, según la
+ *     hora del dispositivo) y qué Uri eligió. Ver resolveContinuamosUri()
  *     en LiveDiscoveryKids.kt.
  *
  * Release 2009.5.2.1 — ELIMINADO: KEY_TEXTURE_VIEW_ENABLED y el motor de
@@ -63,10 +57,15 @@ import android.content.SharedPreferences
  * Release 5.4.0 — NUEVO: KEY_INTRO_ENABLED_PREFIX/KEY_INTRO_URI_PREFIX y
  *   KEY_CREDITOS_ENABLED_PREFIX/KEY_CREDITOS_URI_PREFIX — Intro y Créditos
  *   por programa, configurables desde Discovery Kids Launcher →
- *   Configuración de Programa. A diferencia de ya_regresa/continuamos NO
+ *   Configuración de Programa. A diferencia de continuamos NO
  *   traen un video predeterminado: por eso son "activado" + "Uri" en vez de
  *   "personalizado" (si no hay Uri elegida, no se agregan al playlist — ver
  *   LiveDiscoveryKids.hasValidIntro()/hasValidCreditos()).
+ *
+ * Preview 2013.6.0.0.2 — ELIMINADO por completo: KEY_YAREGRESA_CUSTOM_PREFIX /
+ *   KEY_YAREGRESA_URI_PREFIX e isYaRegresaCustom()/setYaRegresaCustom()/
+ *   getYaRegresaUri()/setYaRegresaUri(). El clip "ya_regresa" (pre-comercial)
+ *   se eliminó por completo del canal — ver LiveDiscoveryKids.kt.
  */
 object SettingsManager {
 
@@ -81,9 +80,19 @@ object SettingsManager {
     private const val KEY_PREVIEW_UPDATES_ENABLED = "preview_updates_enabled"
     private const val KEY_PROGRAM_ENABLED_PREFIX = "program_enabled_"   // Release 4.6.0
 
-    // ── Release 2009.5.0.0 — Experimental / Discovery Kids Launcher ─────────
-    private const val KEY_EXPERIMENTAL_ENABLED = "experimental_enabled"
+    // RELEASE 2013.6.0.0 — se eliminó KEY_EXPERIMENTAL_ENABLED: Discovery Kids
+    // Launcher deja de estar detrás del interruptor "Funciones experimentales"
+    // (ELIMINADO por completo — antes era isExperimentalEnabled()/setExperimentalEnabled()
+    // acá abajo) — ahora es simplemente la pantalla de inicio de la app,
+    // siempre visible.
     private const val KEY_PROGRAM_COUNT = "program_count"
+    // RELEASE 2013.6.0.0 — guarda la última franja horaria (mañana/tarde-noche)
+    // para la que ya se aplicó el ícono de la app — ver
+    // DiscoveryKidsLauncherActivity.applyTimeOfDayIcon(). Evita togglear los
+    // activity-alias del ícono en cada apertura de la app (innecesario la
+    // gran mayoría de las veces, ya que la franja no cambió) — eso era parte
+    // de la causa del crash al iniciar justo cuando cambiaba de franja.
+    private const val KEY_LAST_TIME_OF_DAY_ICON = "last_time_of_day_icon"
     private const val KEY_PROGRAM_URI_PREFIX = "program_uri_"
     // Release 5.8.0 — Episodios de Programa: un programa puede tener VARIOS
     // videos (episodios) en vez de uno solo. El episodio 0 sigue siendo
@@ -94,12 +103,10 @@ object SettingsManager {
     // (Predeterminado: 1 = el comportamiento clásico, un solo video).
     private const val KEY_EPISODE_COUNT_PREFIX = "episode_count_"
     private const val KEY_EPISODE_URI_PREFIX = "episode_uri_"   // + "{programIndex}_{episodeIndex}", episodeIndex >= 1
-    private const val KEY_YAREGRESA_CUSTOM_PREFIX = "yaregresa_custom_"
-    private const val KEY_YAREGRESA_URI_PREFIX = "yaregresa_uri_"
     private const val KEY_CONTINUAMOS_CUSTOM_PREFIX = "continuamos_custom_"
     private const val KEY_CONTINUAMOS_URI_PREFIX = "continuamos_uri_"
     // ── Release 5.4.0 — Intro / Créditos por programa ────────────────────────
-    // A diferencia de ya_regresa/continuamos, Intro y Créditos NO tienen un
+    // A diferencia de continuamos, Intro y Créditos NO tienen un
     // video predeterminado incluido en la app: por eso son dos keys por
     // separado (activado + Uri) en vez de "personalizado" — si no hay Uri
     // elegida, no hay nada que reproducir (ver LiveDiscoveryKids.hasValidIntro()/hasValidCreditos()).
@@ -146,11 +153,9 @@ object SettingsManager {
     const val DEFAULT_FORCE_ASPECT_RATIO = false
     const val DEFAULT_PREVIEW_UPDATES_ENABLED = false
     const val DEFAULT_PROGRAM_ENABLED = true   // Release 4.6.0 — todos activados por defecto
-    const val DEFAULT_EXPERIMENTAL_ENABLED = false   // Release 2009.5.0.0
     const val DEFAULT_PROGRAM_COUNT = 4
     const val MIN_PROGRAM_COUNT = 1
     const val MAX_PROGRAM_COUNT = 24
-    const val DEFAULT_YAREGRESA_CUSTOM = false
     const val DEFAULT_CONTINUAMOS_CUSTOM = false
     const val DEFAULT_INTRO_ENABLED = false      // Release 5.4.0
     const val DEFAULT_CREDITOS_ENABLED = false   // Release 5.4.0
@@ -242,24 +247,26 @@ object SettingsManager {
         prefs(context).edit().putBoolean(KEY_PROGRAM_ENABLED_PREFIX + index, enabled).apply()
     }
 
-    // ── Experimental (Release 2009.5.0.0) ───────────────────────────────────
-    // Interruptor maestro: habilita el Discovery Kids Launcher como pantalla
-    // de inicio real y la configuración avanzada de programas. Al cambiarlo,
-    // SettingsActivity muestra un diálogo para reiniciar la app ahora o más
-    // tarde — ver showExperimentalRestartDialog() en SettingsActivity.
-    fun isExperimentalEnabled(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_EXPERIMENTAL_ENABLED, DEFAULT_EXPERIMENTAL_ENABLED)
+    // RELEASE 2013.6.0.0 — ELIMINADO por completo: "Funciones experimentales"
+    // (isExperimentalEnabled()/setExperimentalEnabled(), KEY_EXPERIMENTAL_ENABLED).
+    // Discovery Kids Launcher ya no vive detrás de ningún interruptor — es
+    // directamente la pantalla de inicio de la app.
 
-    fun setExperimentalEnabled(context: Context, enabled: Boolean) {
-        prefs(context).edit().putBoolean(KEY_EXPERIMENTAL_ENABLED, enabled).apply()
-    }
-
-    // ── Cantidad de programas (1–24) — solo aplica con Experimental activado ──
+    // ── Cantidad de programas (1–24) ─────────────────────────────────────────
     fun getProgramCount(context: Context): Int =
         prefs(context).getInt(KEY_PROGRAM_COUNT, DEFAULT_PROGRAM_COUNT).coerceIn(MIN_PROGRAM_COUNT, MAX_PROGRAM_COUNT)
 
     fun setProgramCount(context: Context, count: Int) {
         prefs(context).edit().putInt(KEY_PROGRAM_COUNT, count.coerceIn(MIN_PROGRAM_COUNT, MAX_PROGRAM_COUNT)).apply()
+    }
+
+    // RELEASE 2013.6.0.0 — ver comentario en KEY_LAST_TIME_OF_DAY_ICON.
+    // Valores guardados: "manana" o "tarde_noche" (o null si nunca se aplicó).
+    fun getLastTimeOfDayIcon(context: Context): String? =
+        prefs(context).getString(KEY_LAST_TIME_OF_DAY_ICON, null)
+
+    fun setLastTimeOfDayIcon(context: Context, value: String) {
+        prefs(context).edit().putString(KEY_LAST_TIME_OF_DAY_ICON, value).apply()
     }
 
     // ── Video elegido por el usuario para el programa [index] (SAF, content://) ──
@@ -314,20 +321,8 @@ object SettingsManager {
         }
     }
 
-    // ── ya_regresa personalizado por programa ───────────────────────────────
-    fun isYaRegresaCustom(context: Context, index: Int): Boolean =
-        prefs(context).getBoolean(KEY_YAREGRESA_CUSTOM_PREFIX + index, DEFAULT_YAREGRESA_CUSTOM)
-
-    fun setYaRegresaCustom(context: Context, index: Int, custom: Boolean) {
-        prefs(context).edit().putBoolean(KEY_YAREGRESA_CUSTOM_PREFIX + index, custom).apply()
-    }
-
-    fun getYaRegresaUri(context: Context, index: Int): String? =
-        prefs(context).getString(KEY_YAREGRESA_URI_PREFIX + index, null)
-
-    fun setYaRegresaUri(context: Context, index: Int, uri: String?) {
-        prefs(context).edit().putString(KEY_YAREGRESA_URI_PREFIX + index, uri).apply()
-    }
+    // Preview 2013.6.0.0.2 — ya_regresa personalizado por programa: ELIMINADO
+    // por completo junto con el resto de "ya_regresa" (ver LiveDiscoveryKids.kt).
 
     // ── continuamos personalizado por programa ──────────────────────────────
     fun isContinuamosCustom(context: Context, index: Int): Boolean =
@@ -382,7 +377,7 @@ object SettingsManager {
     // ── NextProgram personalizado por programa (Release 5.5.0) ──────────────
     // A diferencia de Intro/Créditos, acá SÍ hay un valor por defecto de
     // fábrica (nextprogram1..4.gif, ver LiveDiscoveryKids.NEXTPROGRAMS) — por
-    // eso sigue el patrón "personalizado" de ya_regresa/continuamos
+    // eso sigue el patrón "personalizado" de continuamos
     // (isXCustom) en vez del patrón "activado" de Intro/Créditos.
     fun isNextProgramCustom(context: Context, index: Int): Boolean =
         prefs(context).getBoolean(KEY_NEXTPROGRAM_CUSTOM_PREFIX + index, DEFAULT_NEXTPROGRAM_CUSTOM)

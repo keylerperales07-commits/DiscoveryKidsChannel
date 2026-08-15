@@ -7,12 +7,16 @@
 <!--
     item_program_config.xml — Release 2009.5.0.0
 
-    Fila de configuración de UN programa dentro de Discovery Kids Launcher
-    (Experimental). Se infla dinámicamente una vez por programa (hasta 24) —
-    ver DiscoveryKidsLauncherActivity.rebuildProgramList(). Video del
-    programa + ya_regresa personalizado (opcional) + continuamos
-    personalizado (opcional), todo vía selector de archivos del sistema
-    (Storage Access Framework), sin renombrar ni copiar nada a Videos.
+    Fila de configuración de UN programa dentro de Discovery Kids Launcher.
+    Se infla dinámicamente una vez por programa (hasta 24) — ver
+    DiscoveryKidsLauncherActivity.rebuildProgramList(). Video del programa +
+    continuamos personalizado (opcional), todo vía selector de archivos del
+    sistema (Storage Access Framework), sin renombrar ni copiar nada a Videos.
+
+    RELEASE 2013.6.0.0 — ya no depende de "Funciones experimentales"
+    (ELIMINADO por completo). Preview 2013.6.0.0.2 — se quitó de acá la
+    mención a "ya_regresa personalizado" (ELIMINADO por completo esa misma
+    Preview, ver ProgramConfigActivity.kt).
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -76,58 +80,9 @@
 
     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOutlineVariant" android:layout_marginTop="12dp" android:layout_marginBottom="8dp" />
 
-    <!-- ── Ya regresa: Predeterminado / Personalizado ── -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+    <!-- Preview 2013.6.0.0.2 — "Ya regresa" ELIMINADO por completo (ver
+         LiveDiscoveryKids.kt / SettingsManager.kt / ProgramConfigActivity.kt) -->
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Ya regresa personalizado"
-            android:textColor="?attr/colorOnSurface"
-            android:textSize="14sp"
-            android:fontFamily="@font/dk_font" />
-
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/switchYaRegresaCustom"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/btnPickYaRegresaVideo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:visibility="gone"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="?attr/selectableItemBackground"
-        android:paddingStart="4dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp">
-
-        <ImageView
-            android:layout_width="18dp"
-            android:layout_height="18dp"
-            android:src="@drawable/ic_video_pick"
-            android:contentDescription="Elegir ya_regresa" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Elegir video de ya_regresa"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="13sp"
-            android:fontFamily="@font/dk_font" />
-    </LinearLayout>
 
     <!-- ── Continuamos: Predeterminado / Personalizado ── -->
     <LinearLayout

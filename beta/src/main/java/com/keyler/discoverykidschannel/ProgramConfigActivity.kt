@@ -48,11 +48,10 @@ import androidx.appcompat.widget.SwitchCompat
  * "ya_regresa" (pre-comercial) se eliminó por completo del canal — ver
  * LiveDiscoveryKids.kt.
  *
- * Igual que el resto de la configuración "experimental", esta Activity
- * asume que ya se llegó acá desde un lugar que confirmó
- * SettingsManager.isExperimentalEnabled() — no repite ese chequeo (a
- * diferencia de DiscoveryKidsLauncherActivity, que sí es la puerta de
- * entrada real de la app).
+ * RELEASE 2013.6.0.0 — "Funciones experimentales" se eliminó por completo
+ * (ver SettingsManager.kt/DiscoveryKidsLauncherActivity.kt): esta Activity
+ * ya no depende de ningún chequeo previo, se accede siempre desde el botón
+ * "⚙️ Opciones" de cada fila de programa en Discovery Kids Launcher.
  */
 class ProgramConfigActivity : AppCompatActivity() {
 

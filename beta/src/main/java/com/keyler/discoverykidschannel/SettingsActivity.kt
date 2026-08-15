@@ -66,13 +66,13 @@ import androidx.appcompat.widget.SwitchCompat
  *     Kids Launcher pasó a ser la Activity de inicio real de la app (ver
  *     AndroidManifest.xml y DiscoveryKidsLauncherActivity.onCreate()), así
  *     que ya no hace falta un atajo desde acá — se accede abriendo la app.
- *   - NUEVO: sección "Experimental" con el switch maestro "Habilitar
- *     funciones experimentales" (desactivado por defecto). Al cambiarlo se
- *     guarda inmediatamente en SettingsManager y se muestra un AlertDialog
- *     ofreciendo reiniciar la app ahora o más tarde — ver
- *     showExperimentalRestartDialog(). Activarlo habilita el Discovery Kids
- *     Launcher como pantalla de inicio real (en vez de pasar directo al
- *     canal) y toda su configuración avanzada de programas.
+ *
+ * RELEASE 2013.6.0.0 — ELIMINADO por completo: la sección "Experimental" y
+ *   su switch maestro "Habilitar funciones experimentales" (con
+ *   showExperimentalRestartDialog()) que se había agregado en la Release
+ *   2009.5.0.0 — ver nota de esa Release, arriba. Discovery Kids Launcher ya
+ *   no depende de ningún interruptor: siempre es la pantalla de inicio real
+ *   de la app.
  *
  * Release 2009.5.2.1 — ELIMINADO por completo: el motor de video basado en
  *   TextureView (y el switch "Recortar 4:3", ex "Usar TextureView", que lo
@@ -85,7 +85,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var switchCrtEffect: SwitchCompat
     private lateinit var switchForceAspectRatio: SwitchCompat
     private lateinit var switchPreviewUpdates: SwitchCompat
-    private lateinit var switchExperimental: SwitchCompat       // Release 2009.5.0.0
 
     private lateinit var itemScreenbugDelay: LinearLayout
     private lateinit var txtScreenbugDelayValue: TextView
@@ -155,8 +154,6 @@ class SettingsActivity : AppCompatActivity() {
         itemCheckUpdate = findViewById(R.id.itemCheckUpdate)
         txtCheckUpdateValue = findViewById(R.id.txtCheckUpdateValue)
 
-        switchExperimental = findViewById(R.id.switchExperimental)
-
         switchEventsEnabled = findViewById(R.id.switchEventsEnabled)
         itemSelectedEvent = findViewById(R.id.itemSelectedEvent)
         txtSelectedEventLabel = findViewById(R.id.txtSelectedEventLabel)
@@ -169,7 +166,6 @@ class SettingsActivity : AppCompatActivity() {
         switchCrtEffect.isChecked = SettingsManager.isCrtEffectEnabled(this)
         switchForceAspectRatio.isChecked = SettingsManager.isForceAspectRatioEnabled(this)
         switchPreviewUpdates.isChecked = SettingsManager.isPreviewUpdatesEnabled(this)
-        switchExperimental.isChecked = SettingsManager.isExperimentalEnabled(this)
         switchEventsEnabled.isChecked = SettingsManager.isEventsEnabled(this)
 
         refreshScreenbugDelayLabel()
@@ -226,39 +222,6 @@ class SettingsActivity : AppCompatActivity() {
         itemSelectedEvent.setOnClickListener {
             if (SettingsManager.isEventsEnabled(this)) showSelectedEventDialog()
         }
-
-        // ── Experimental (Release 2009.5.0.0) ───────────────────────────────
-        findViewById<LinearLayout>(R.id.itemExperimental).setOnClickListener {
-            switchExperimental.isChecked = !switchExperimental.isChecked
-        }
-        switchExperimental.setOnCheckedChangeListener { _, isChecked ->
-            SettingsManager.setExperimentalEnabled(this, isChecked)
-            showRestartDialog()
-        }
-    }
-
-    /**
-     * Release 2009.5.0.0 — diálogo genérico de "reiniciar ahora o más
-     * tarde", usado por el switch de Experimental (no puede tomar efecto
-     * con las Activities ya creadas: el Launcher decide si redirige al
-     * canal en su propio onCreate()). "Reiniciar ahora" relanza la app desde
-     * DiscoveryKidsLauncherActivity y mata el proceso actual con
-     * Runtime.exit(); "Más tarde" simplemente cierra el diálogo — el cambio
-     * ya quedó guardado y se aplicará la próxima vez que se abra la app.
-     */
-    private fun showRestartDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Reiniciar la app")
-            .setMessage("Este cambio necesita que reinicies la app para aplicarse. ¿Reiniciar ahora?")
-            .setPositiveButton("Reiniciar ahora") { _, _ ->
-                val intent = android.content.Intent(this, DiscoveryKidsLauncherActivity::class.java)
-                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                Runtime.getRuntime().exit(0)
-            }
-            .setNegativeButton("Más tarde", null)
-            .setCancelable(true)
-            .show()
     }
 
     // ── Diálogo: Duración del Screenbug ─────────────────────────────────────
@@ -341,7 +304,6 @@ class SettingsActivity : AppCompatActivity() {
 
     // ── Diálogo: Intervalo de comerciales (Min/Max) ─────────────────────────
     private fun showCommercialIntervalDialog() {
-        val inflater = LayoutInflater.from(this)
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val pad = (16 * resources.displayMetrics.density).toInt()
@@ -422,7 +384,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val packageInfo = packageManager.getPackageInfo(packageName, 0)
         val versionName = packageInfo.versionName
-        val label = packageManager.getApplicationLabel(packageInfo.applicationInfo).toString()
+        val label = packageInfo.applicationInfo?.loadLabel(packageManager)?.toString() ?: ""
         val versionInfoText = "$label • $versionName"
 
         versionInfo.text = versionInfoText

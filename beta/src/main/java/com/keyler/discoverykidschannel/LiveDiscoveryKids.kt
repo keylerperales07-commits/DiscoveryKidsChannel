@@ -291,12 +291,12 @@ class LiveDiscoveryKids : AppCompatActivity() {
     }
 
     // Release 2009.5.0.0 — antes era un `val` fijo de 4 programas. Ahora se
-    // arma en onCreate() vía buildPlaylist(): con Experimental desactivado
-    // sigue siendo el ciclo clásico de 4 programas (pro1–pro4.mp4); con
-    // Experimental activado, se repite el ciclo Bumper→[Intro]→Programa→
-    // [Créditos] una vez por cada uno de los N programas que eligió el usuario
-    // (SettingsManager.getProgramCount(), 1–24). Intro/Créditos son opcionales
-    // — solo se incluyen si el usuario los activó Y eligió un video (ver
+    // arma en onCreate() vía buildPlaylist(): se repite el ciclo
+    // [Intro]→Programa→[Créditos] una vez por cada uno de los N programas
+    // que eligió el usuario en Discovery Kids Launcher (SettingsManager.getProgramCount(),
+    // 1–24 — RELEASE 2013.6.0.0: ya no depende de "Funciones experimentales",
+    // ELIMINADO por completo). Intro/Créditos son opcionales — solo se
+    // incluyen si el usuario los activó Y eligió un video (ver
     // hasValidIntro()/hasValidCreditos()).
     // Release 5.4.0: se quitó StandaloneCommercial del ciclo — los comerciales
     // ahora solo aparecen DENTRO de los programas (ver playCommercial()).
@@ -414,7 +414,16 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // a los enseguida post-programa. Se superpone sobre el programa mismo
         // (no es un clip aparte) y SOLO se programa en el último segmento del
         // programa (sin cortes comerciales pendientes) — ver scheduleNextProgramBug().
-        internal const val NEXTPROGRAM_SHOW_BEFORE_MS = 30_700L   // Aparece 31s antes del final real del programa
+        //
+        // RELEASE 2013.6.0.0 — BUG FIX: NextProgram estaba apareciendo más
+        // segundos antes de lo que correspondía. Se partió la constante única
+        // en una por GIF, mismo criterio que ya usa showVideoInBox() para los
+        // recuadros (ver isFactoryNextProgram2) — nextprogram2.gif ahora
+        // aparece exactamente 30s antes del final, tal como se pidió.
+        // nextprogram1.gif no estaba reportado como con problema, se deja en
+        // el valor que ya tenía.
+        internal const val NEXTPROGRAM1_SHOW_BEFORE_MS = 30_700L  // Aparece 30,7s antes del final real del programa
+        internal const val NEXTPROGRAM2_SHOW_BEFORE_MS = 30_000L  // Aparece 30s antes del final real del programa (RELEASE 2013.6.0.0)
         internal const val NEXTPROGRAM_ANIM_MS = 500L              // Duración del fade-in (imagen de referencia enviada por Keyler)
 
         /** No commercial break is scheduled within this many ms of the program end. */
@@ -542,10 +551,9 @@ class LiveDiscoveryKids : AppCompatActivity() {
             }
         )
 
-        // Release 2009.5.0.0 — playlist dinámica: con Experimental activado,
-        // la cantidad de programas la elige el usuario (1–24, ver
-        // DiscoveryKidsLauncherActivity); con Experimental desactivado se
-        // mantiene el comportamiento clásico de 4 programas fijos.
+        // Release 2009.5.0.0 — playlist dinámica: la cantidad de programas la
+        // elige el usuario en Discovery Kids Launcher (1–24, RELEASE 2013.6.0.0:
+        // ya no depende de "Funciones experimentales", ELIMINADO por completo).
         playlist = buildPlaylist()
         playlistBuiltForCount = totalProgramCount()
 
@@ -949,9 +957,9 @@ internal fun LiveDiscoveryKids.playBumper() {
 // Solo terminan al terminar su propio video (nunca se cortan antes) — igual
 // que cualquier otro clip reproducido con playUriHardCut(). Solo se agregan al playlist
 // (ver buildPlaylist()) si el usuario los activó Y ya eligió un video; si el
-// usuario desactivó Experimental o borró la selección DESPUÉS de armado el
-// playlist de esta sesión, el fallback de abajo (uri == null) los saltea sin
-// romper el ciclo, igual que un programa sin archivo.
+// usuario borró la selección DESPUÉS de armado el playlist de esta sesión,
+// el fallback de abajo (uri == null) los saltea sin romper el ciclo, igual
+// que un programa sin archivo.
 // ══════════════════════════════════════════════════════════════════════════
 
 internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
@@ -1106,31 +1114,34 @@ internal fun LiveDiscoveryKids.playCreditos(programIndex: Int) {
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
- * Release 2009.5.0.0 — cantidad de programas activa en esta sesión.
- * Con Experimental desactivado, siempre 4 (comportamiento clásico,
- * pro1–pro4.mp4). Con Experimental activado, la que eligió el usuario en
- * Discovery Kids Launcher (1–24, SettingsManager.getProgramCount()).
+ * Release 2009.5.0.0 — cantidad de programas activa en esta sesión, la que
+ * eligió el usuario en Discovery Kids Launcher (1–24, SettingsManager.getProgramCount()).
+ *
+ * RELEASE 2013.6.0.0 — ya no depende de "Funciones experimentales"
+ * (ELIMINADO por completo): antes, con Experimental desactivado, siempre
+ * devolvía 4 (comportamiento clásico, pro1–pro4.mp4) sin importar lo que
+ * hubiera configurado el usuario. Ahora la configuración de Discovery Kids
+ * Launcher siempre aplica.
  */
 internal fun LiveDiscoveryKids.totalProgramCount(): Int =
-    if (SettingsManager.isExperimentalEnabled(this)) SettingsManager.getProgramCount(this) else 4
+    SettingsManager.getProgramCount(this)
 
 /**
  * Release 5.4.0 — true si el programa [index] tiene una Intro válida para
  * reproducir: el usuario la activó Y ya eligió un video (a diferencia de
  * continuamos, Intro/Créditos NO tienen un video predeterminado incluido
  * en la app — si no hay Uri elegida, no hay nada que reproducir).
- * Solo aplica con Experimental activado, igual que el resto de la
- * configuración por programa.
+ *
+ * RELEASE 2013.6.0.0 — ya no depende de "Funciones experimentales"
+ * (ELIMINADO por completo, ver totalProgramCount()).
  */
 internal fun LiveDiscoveryKids.hasValidIntro(index: Int): Boolean =
-    SettingsManager.isExperimentalEnabled(this) &&
-        SettingsManager.isIntroEnabled(this, index) &&
+    SettingsManager.isIntroEnabled(this, index) &&
         !SettingsManager.getIntroUri(this, index).isNullOrBlank()
 
 /** Release 5.4.0 — análogo a hasValidIntro() pero para Créditos. */
 internal fun LiveDiscoveryKids.hasValidCreditos(index: Int): Boolean =
-    SettingsManager.isExperimentalEnabled(this) &&
-        SettingsManager.isCreditosEnabled(this, index) &&
+    SettingsManager.isCreditosEnabled(this, index) &&
         !SettingsManager.getCreditosUri(this, index).isNullOrBlank()
 
 /**
@@ -1989,7 +2000,14 @@ internal fun LiveDiscoveryKids.scheduleNextProgramBug(
     if (!isFinalSegment) return
 
     val segmentDuration = (segmentEndMs - segmentStartMs).toLong().coerceAtLeast(0)
-    val showAt = (segmentDuration - LiveDiscoveryKids.NEXTPROGRAM_SHOW_BEFORE_MS).coerceAtLeast(0L)
+    // RELEASE 2013.6.0.0 — BUG FIX: antes usaba un único NEXTPROGRAM_SHOW_BEFORE_MS
+    // para los dos GIFs — ver comentario en la declaración de las constantes.
+    val showBeforeMs = if (isCurrentNextProgramFactory2()) {
+        LiveDiscoveryKids.NEXTPROGRAM2_SHOW_BEFORE_MS
+    } else {
+        LiveDiscoveryKids.NEXTPROGRAM1_SHOW_BEFORE_MS
+    }
+    val showAt = (segmentDuration - showBeforeMs).coerceAtLeast(0L)
 
     if (elapsed >= showAt) {
         Log.d(LiveDiscoveryKids.TAG, "NextProgramBug: elapsed=${elapsed}ms >= showAt(${showAt}ms) → aparece inmediatamente")
@@ -2093,9 +2111,9 @@ internal fun LiveDiscoveryKids.playCommercial(resumeProgramAtMs: Int) {
 
     // Preview 2013.6.0.0.2 — resolveContinuamosUri() ya no depende de qué
     // ya_regresa le tocaba a este programa (ELIMINADO): usa el video
-    // PERSONALIZADO del usuario si activó "Personalizado" para este programa
-    // (Experimental), o si no, continuamosResForCurrentTime() según la hora
-    // real del dispositivo.
+    // PERSONALIZADO del usuario si activó "Personalizado" para este programa,
+    // o si no, continuamosResForCurrentTime() según la hora real del
+    // dispositivo.
     val chosenYaVolvemos = resolveContinuamosUri(currentProgramIndex)
 
     // Release 2006.4.1.1 — se promueven a campos de instancia para que
@@ -2478,13 +2496,15 @@ internal fun LiveDiscoveryKids.resolveProgramEpisode(programIndex: Int, episodeI
 }
 
 internal fun LiveDiscoveryKids.resolveProgram(index: Int): Uri? {
-    // Release 2009.5.0.0 — si Experimental está activado y el usuario eligió
-    // un video propio para este programa desde Discovery Kids Launcher (SAF,
-    // sin necesidad de renombrar/copiar nada a Movies), se usa ese Uri
-    // directamente. La Uri se persiste con takePersistableUriPermission()
-    // al elegirla (ver DiscoveryKidsLauncherActivity.pickProgramVideo()), así
-    // que sigue siendo válida entre reinicios de la app.
-    if (SettingsManager.isExperimentalEnabled(this)) {
+    // Release 2009.5.0.0 — si el usuario eligió un video propio para este
+    // programa desde Discovery Kids Launcher (SAF, sin necesidad de
+    // renombrar/copiar nada a Movies), se usa ese Uri directamente. La Uri
+    // se persiste con takePersistableUriPermission() al elegirla (ver
+    // DiscoveryKidsLauncherActivity.pickProgramVideo()), así que sigue
+    // siendo válida entre reinicios de la app.
+    // RELEASE 2013.6.0.0 — ya no depende de "Funciones experimentales"
+    // (ELIMINADO por completo).
+    run {
         val customUri = SettingsManager.getProgramUri(this, index)
         if (!customUri.isNullOrBlank()) {
             return try {
@@ -2541,14 +2561,16 @@ internal fun LiveDiscoveryKids.rawUri(resId: Int): Uri = Uri.parse("android.reso
 
 /**
  * Preview 2013.6.0.0.2 — resuelve el continuamos (post-comercial) que le
- * toca a ESTE corte. Si Experimental está activado y el usuario marcó
- * "Personalizado" para el programa [programIndex] (SettingsManager.
- * isContinuamosCustom), devuelve el video que eligió; si no, cae al
- * comportamiento clásico: continuamosResForCurrentTime(), según la hora real
- * del dispositivo (ya NO se empareja con un ya_regresa — ELIMINADO por completo).
+ * toca a ESTE corte. Si el usuario marcó "Personalizado" para el programa
+ * [programIndex] (SettingsManager.isContinuamosCustom), devuelve el video
+ * que eligió; si no, cae al comportamiento clásico:
+ * continuamosResForCurrentTime(), según la hora real del dispositivo (ya NO
+ * se empareja con un ya_regresa — ELIMINADO por completo).
+ * RELEASE 2013.6.0.0 — ya no depende de "Funciones experimentales"
+ * (ELIMINADO por completo).
  */
 internal fun LiveDiscoveryKids.resolveContinuamosUri(programIndex: Int): Uri {
-    if (SettingsManager.isExperimentalEnabled(this) && SettingsManager.isContinuamosCustom(this, programIndex)) {
+    if (SettingsManager.isContinuamosCustom(this, programIndex)) {
         val customUri = SettingsManager.getContinuamosUri(this, programIndex)
         if (!customUri.isNullOrBlank()) {
             try { return Uri.parse(customUri) } catch (e: Exception) {
@@ -2682,11 +2704,12 @@ internal fun LiveDiscoveryKids.startChannel() {
     val prefs = getSharedPreferences(LiveDiscoveryKids.PREFS_NAME, Context.MODE_PRIVATE)
     val plIdx = prefs.getInt(LiveDiscoveryKids.PREF_PLAYLIST_IDX, 0)
     val progIdx = prefs.getInt(LiveDiscoveryKids.PREF_PROGRAM_IDX, 0)
-    // Release 2009.5.0.0 — con Experimental activado, la cantidad de
-    // programas (y por lo tanto el tamaño del playlist) puede cambiar entre
-    // sesiones. Si el estado guardado de una sesión anterior ya no encaja
-    // en el playlist actual (índice fuera de rango), se descarta en vez de
-    // arriesgar un crash al indexar playlist[plIdx] — se arranca desde cero.
+    // Release 2009.5.0.0 — la cantidad de programas (y por lo tanto el
+    // tamaño del playlist) puede cambiar entre sesiones si el usuario la
+    // modificó en Discovery Kids Launcher. Si el estado guardado de una
+    // sesión anterior ya no encaja en el playlist actual (índice fuera de
+    // rango), se descarta en vez de arriesgar un crash al indexar
+    // playlist[plIdx] — se arranca desde cero.
     val savedStateFitsCurrentPlaylist = plIdx < playlist.size && progIdx < totalProgramCount()
 
     if (prefs.getBoolean(LiveDiscoveryKids.PREF_HAS_STATE, false) && savedStateFitsCurrentPlaylist) {
@@ -3395,6 +3418,17 @@ private const val NEXTPROGRAM2_BOX_BOTTOM_FRACTION = 0.6023f
  * cálculo de acá reconstruye ese marco (altura = altura de la pantalla,
  * ancho = altura×4/3, centrado) antes de aplicar los %.
  */
+/**
+ * RELEASE 2013.6.0.0 — extraída de showVideoInBox() para poder reusarla
+ * también en scheduleNextProgramBug() (necesita saber cuál GIF está activo
+ * para elegir NEXTPROGRAM1_SHOW_BEFORE_MS vs NEXTPROGRAM2_SHOW_BEFORE_MS).
+ * true si el NextProgram de currentProgramIndex es nextprogram2.gif DE
+ * FÁBRICA (no personalizado) — ver NEXTPROGRAMS.
+ */
+internal fun LiveDiscoveryKids.isCurrentNextProgramFactory2(): Boolean =
+    !SettingsManager.isNextProgramCustom(this, currentProgramIndex) &&
+        (currentProgramIndex % LiveDiscoveryKids.NEXTPROGRAMS.size) == 1
+
 internal fun LiveDiscoveryKids.showVideoInBox() {
     val root = videoContainer.parent as? View ?: return
     val rootWidth = root.width
@@ -3418,8 +3452,7 @@ internal fun LiveDiscoveryKids.showVideoInBox() {
     // (nextprogram1.gif de fábrica, o un NextProgram personalizado — ahí no
     // hay forma de saber su alineación real, así que se usa el recuadro
     // grande de nextprogram1 como default razonable) usa el recuadro grande.
-    val isFactoryNextProgram2 = !SettingsManager.isNextProgramCustom(this, currentProgramIndex) &&
-        (currentProgramIndex % LiveDiscoveryKids.NEXTPROGRAMS.size) == 1
+    val isFactoryNextProgram2 = isCurrentNextProgramFactory2()
 
     val leftFraction = if (isFactoryNextProgram2) NEXTPROGRAM2_BOX_LEFT_FRACTION else NEXTPROGRAM1_BOX_LEFT_FRACTION
     val rightFraction = if (isFactoryNextProgram2) NEXTPROGRAM2_BOX_RIGHT_FRACTION else NEXTPROGRAM1_BOX_RIGHT_FRACTION

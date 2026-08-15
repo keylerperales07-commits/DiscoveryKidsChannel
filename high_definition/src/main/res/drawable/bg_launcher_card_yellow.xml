@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RELEASE 2013.6.0.0 — para los "cuadros dentro de otro cuadro" del
+     Launcher que no tenían un color propio asignado (ej. la tarjeta
+     "Cantidad de programas", dentro del panel principal): amarillento y
+     transparente, como los botones pero sutil, para que se distinga del
+     panel de fondo sin tapar el color de horario. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/dk_launcher_card_yellow" />
+    <corners android:radius="12dp" />
+</shape>

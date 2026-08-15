@@ -15,7 +15,7 @@ import android.graphics.Shader
 import android.util.AttributeSet
 import android.view.View
 import kotlin.math.sin
-
+import com.keyler.discoverykidschannel.R
 /**
  * CrtOverlayView – Efecto CRT sobre VideoView y ScreenBug.
  * Release 2006.4.1.0.12-preview – Discovery Kids Channel · Era Doki 1.0 (2005–2009)

@@ -34,16 +34,38 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.keyler.discoverykidschannel.R
 import java.io.File
 
 /**
- * Preview 2013.5.8.1.02
+ * Preview 2013.6.0.0.2
  *
  * Discovery Kids - TV Simulator • Era Doki 1.0 (2005–2009) • Preview Era 2006
  *
- * Playlist sequence (all transitions: FadeOut 500 ms / FadeIn 1 s):
- *   Bumper → [Intro] → Programa → [Créditos] → Bumper → [Intro] → Programa → [Créditos] → ...
+ * Playlist sequence (Intro/Programa/Créditos: corte directo, sin FadeOut/FadeIn
+ * — ver Preview 2013.6.0.0.2 más abajo):
+ *   [Intro] → Programa → [Créditos] → [Intro] → Programa → [Créditos] → ...
  *   (Intro/Créditos son opcionales por programa — ver hasValidIntro()/hasValidCreditos())
+ *
+ * Preview 2013.6.0.0.1 — EL BUMPER YA NO SALE DE PRIMERO: se quitó
+ * PlayItem.Bumper del ciclo de arriba. Ahora el Bumper se inserta
+ * aleatoriamente DENTRO de cada corte comercial, en uno de dos puntos
+ * posibles (sorteado por corte): antes del comercial, o después del
+ * comercial/antes del post-comercial — ver commercialBumperBeforeComercial /
+ * playCommercial() / playCommercialBumper().
+ *
+ * Preview 2013.6.0.0.2 — SE ELIMINÓ POR COMPLETO "ya_regresa" (el clip
+ * pre-comercial, determinístico por programa): el corte comercial ya no
+ * arranca con un aviso propio, corta directo del Programa al Bumper/comercial.
+ * El continuamos (post-comercial) ya NO se empareja con el ya_regresa de cada
+ * programa: ahora depende de la hora real del dispositivo al momento del
+ * corte (00:00–11:59 → continuamos_mananera1, 12:00–23:59 → continuamos_tardia1
+ * — ver continuamosResForCurrentTime()). FadeOut/FadeIn quedan reservados
+ * EXCLUSIVAMENTE al límite Programa↔bloque comercial: el Programa se apaga
+ * (FadeOut) justo antes de cortar al bloque, y se enciende (FadeIn) al
+ * retomarse justo después — TODO lo demás (Bumper, Intro, Créditos, y los
+ * clips dentro del bloque comercial: comercial y continuamos) corta en seco.
+ * Ver playCommercial() / beginProgramSegment() / playUriHardCut().
  *
  * Preview 2010.5.4.0.40 — REEMPLAZO DE ENSEGUIDA: el clip "enseguida" post-
  * programa (que antes ocupaba un ítem propio del playlist) se elimina. En su
@@ -56,12 +78,6 @@ import java.io.File
  * sin cambios). NUEVO: Intro y Créditos, opcionales por programa (activados
  * y elegidos por el usuario en Configuración de Programa, Discovery Kids
  * Launcher) — ver playIntro()/playCreditos()/resolveIntroUri()/resolveCreditosUri().
- *
- * ya_regresa assignment: determinístico por índice de programa (0-based).
- *   programa 0 (pro1) → ya_regresa1/continuamos1
- *   programa 1 (pro2) → ya_regresa2/continuamos2
- *   programa 2 (pro3) → ya_regresa3/continuamos3
- *   programa 3 (pro4) → ya_regresa4/continuamos4
  *
  * Programs (pro1..pro4.mp4) are read from the user's Movies folder.
  * Bumpers (bumper.mp4–bumper5.mp4) son aleatorios, sin repetir el mismo dos veces seguidas.
@@ -77,8 +93,8 @@ import java.io.File
  * (El modo debug ya no es configurable: vuelve a ser automático en builds Preview).
  *
  * Release 2006.4.1.1 — BUG FIX: el Screenbug y los clips no-programa (bumper,
- * enseguida, comercial) se reiniciaban al volver de segundo plano o de un
- * cambio de Activity. Ver scheduleSegmentLogic(), resumeUriWithSeek() y
+ * comercial) se reiniciaban al volver de segundo plano o de un
+ * cambio de Activity. Ver scheduleSegmentLogic(), resumeUriHardCut() y
  * resumeCommercialBlock() para el detalle de la corrección.
  *
  * Preview 4.1.0.21 — REORGANIZACIÓN DE CÓDIGO (10 semanas desde el primer
@@ -154,11 +170,10 @@ class LiveDiscoveryKids : AppCompatActivity() {
     //     que internamente hace setVideoURI + seekTo dentro de onPrepared,
     //     garantizando que el seek ocurra cuando el MediaPlayer está listo.
     //
-    //   TODO LO DEMÁS (bumper, enseguida, comercial, ya_regresa, continuamos) →
-    //     al volver se reinicia el ítem desde el principio llamando advance().
-    //     Son clips cortos (< 30 s); no vale la pena seek y además
-    //     cancelAllTasks() en onPause() destruye los listeners de playUriWithTransition,
-    //     haciendo imposible reanudar a mitad sin reconfigurarlos.
+    //   TODO LO DEMÁS (bumper, comercial, continuamos) → desde Release
+    //     2006.4.1.1 también se reanudan en su posición real (currentClipUri/
+    //     currentClipPositionMs, ver más abajo), no se reinician. Ver
+    //     resumeUriHardCut() y resumeCommercialBlock().
     //
     // POR QUÉ NO SE USA seekTo() DIRECTO EN onResume():
     //   Android puede haber liberado el surface del VideoView mientras estaba
@@ -187,19 +202,35 @@ class LiveDiscoveryKids : AppCompatActivity() {
     internal var currentClipOnComplete: (() -> Unit)? = null
 
     // Paso actual dentro del bloque comercial (playCommercial), para poder
-    // reconstruir exactamente dónde estábamos al reanudar: el bloque encadena
-    // 3 clips (ya_regresa → comercial → continuamos) y cada uno necesita saber
-    // qué recurso eligió el paso anterior para no volver a sortear al azar.
-    internal enum class CommercialStep { PRE_COMERCIAL, COMERCIAL, POST_COMERCIAL }
-    internal var commercialStep: CommercialStep        = CommercialStep.PRE_COMERCIAL
-    // Release 2009.5.0.0 — pasan de Int (resource id fijo en res/raw) a Uri,
-    // porque ahora pueden ser un video personalizado elegido por el usuario
-    // (ver resolveYaRegresaUri()/resolveContinuamosUri()), no solo un recurso
-    // empaquetado. commercialChosenCommercial sigue siendo Int: el comercial
-    // en sí no es configurable por programa, solo ya_regresa/continuamos.
-    internal var commercialChosenPreComercial: Uri?     = null
+    // reconstruir exactamente dónde estábamos al reanudar.
+    //
+    // Preview 2013.6.0.0.2 — SE ELIMINÓ POR COMPLETO "ya_regresa" (el clip
+    // pre-comercial): el bloque ya no arranca con un aviso propio, corta
+    // directo del Programa al Bumper/comercial. CommercialStep.PRE_COMERCIAL
+    // se elimina; el bloque ahora encadena 2 clips fijos (comercial →
+    // continuamos), más el Bumper que le haya tocado a este corte en uno de
+    // los dos puntos posibles (ver commercialBumperBeforeComercial).
+    internal enum class CommercialStep { BUMPER_BEFORE_COMERCIAL, COMERCIAL, BUMPER_AFTER_COMERCIAL, POST_COMERCIAL }
+    internal var commercialStep: CommercialStep        = CommercialStep.COMERCIAL
+    // Release 2009.5.0.0 — Uri (no solo Int) porque continuamos puede ser un
+    // video personalizado elegido por el usuario (ver resolveContinuamosUri()),
+    // no solo un recurso empaquetado. commercialChosenCommercial sigue siendo
+    // Int: el comercial en sí no es configurable por programa.
     internal var commercialChosenCommercial: Int        = -1
     internal var commercialChosenYaVolvemos: Uri?        = null
+    // Preview 2013.6.0.0.1 — el Bumper ya no es el primer ítem del ciclo (ver
+    // buildPlaylist()); ahora se inserta aleatoriamente DENTRO del corte
+    // comercial, en uno de dos puntos posibles. commercialBumperBeforeComercial
+    // se sortea una sola vez por corte, al arrancar playCommercial(), y decide
+    // cuál de los dos puntos se usa en ESE corte:
+    //   true  → al principio del corte, antes del comercial (antes: después
+    //           del pre-comercial "ya_regresa", eliminado en la 2013.6.0.0.2).
+    //   false → después del comercial, antes del post-comercial (continuamos).
+    // commercialChosenBumperRes guarda el bumper elegido para ese corte, para
+    // que resumeCommercialBlock() pueda reanudar el mismo clip si la app pasa
+    // a segundo plano justo durante ese bumper.
+    internal var commercialBumperBeforeComercial: Boolean = true
+    internal var commercialChosenBumperRes: Int          = -1
 
     // ── Flags de estado ────────────────────────────────────────────────────────
     internal var isInProgramSegment    = false
@@ -261,12 +292,12 @@ class LiveDiscoveryKids : AppCompatActivity() {
     }
 
     // Release 2009.5.0.0 — antes era un `val` fijo de 4 programas. Ahora se
-    // arma en onCreate() vía buildPlaylist(): con Experimental desactivado
-    // sigue siendo el ciclo clásico de 4 programas (pro1–pro4.mp4); con
-    // Experimental activado, se repite el ciclo Bumper→[Intro]→Programa→
-    // [Créditos] una vez por cada uno de los N programas que eligió el usuario
-    // (SettingsManager.getProgramCount(), 1–24). Intro/Créditos son opcionales
-    // — solo se incluyen si el usuario los activó Y eligió un video (ver
+    // arma en onCreate() vía buildPlaylist(): se repite el ciclo
+    // [Intro]→Programa→[Créditos] una vez por cada uno de los N programas
+    // que eligió el usuario en Discovery Kids Launcher (SettingsManager.getProgramCount(),
+    // 1–24 — RELEASE 2013.6.0.0: ya no depende de "Funciones experimentales",
+    // ELIMINADO por completo). Intro/Créditos son opcionales — solo se
+    // incluyen si el usuario los activó Y eligió un video (ver
     // hasValidIntro()/hasValidCreditos()).
     // Release 5.4.0: se quitó StandaloneCommercial del ciclo — los comerciales
     // ahora solo aparecen DENTRO de los programas (ver playCommercial()).
@@ -319,10 +350,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // en vez de que se quede oculta desde el corte Programa→Créditos hasta
     // que le toque a la fase 3 — ver scheduleCreditosOverlays().
     internal var screenBugMidVisible: Boolean = false
-    // ya_regresa determinístico: cada programa tiene asignado su propio ya_regresa fijo.
-    // programa 0 (pro1) → ya_regresa1 | programa 1 (pro2) → ya_regresa2 | etc.
-    // Se indexa por currentProgramIndex en playCommercial().
-    internal var lastEnseguidaPreComercialRes: Int = -1
     internal var currentScreenBugRes: Int = R.drawable.screenbug
     // Release (fix build: D8/R8 crash) — GifMovieDrawable propio (Movie API
     // nativa), cacheado una vez para no re-decodificar el GIF cada vez.
@@ -332,6 +359,10 @@ class LiveDiscoveryKids : AppCompatActivity() {
     // 3 drawables y mismo comportamiento que el normal, solo distinto arte.
     internal var screenBugStartNavidadGif: GifMovieDrawable? = null
     internal var screenBugEndNavidadGif: GifMovieDrawable? = null
+    // Preview 2013.6.0.0.2 — GIF "próximo programa" (proximo_programa_screenbug.gif):
+    // sustituye brevemente al screenbug.png durante el programa, a mitad de
+    // cada segmento — ver PROXIMO_PROGRAMA_* y scheduleMultipleScreenbugs().
+    internal var proximoProgramaScreenbugGif: GifMovieDrawable? = null
 
     // ── NextProgram (Preview 2010.5.4.0.40) ─────────────────────────────────────
     // Overlay GIF que reemplaza a los "enseguida" post-programa: aparece
@@ -363,18 +394,37 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // GIF de nuevo antes de que el alpha llegue a 0, mostrándose un
         // "salto" de un frame del inicio del loop siguiente. Ocultarlo 100ms
         // antes evita ese salto.
-        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 4_900L  // Se oculta 15s después de mostrarse (antes: 5s → 4,9s en 5.4.0)
+        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 8_000L  // Se oculta 15s después de mostrarse (antes: 5s → 4,9s en 5.4.0)
         internal const val SCREENBUG_MID_DELAY_AFTER_START_MS = 0L           // El PNG aparece inmediatamente al ocultarse screenbug_start (antes: 15s de espera)
         // Preview 2010.5.4.0.40: 20s → 46s antes del final, para dejar lugar
         // al nextprogram (aparece 15s después, a los 31s antes del final).
         internal const val SCREENBUG_END_SHOW_BEFORE_MS = 46_000L          // Mostrar screenbug_end 46s antes del final
-        internal const val SCREENBUG_END_VISIBLE_DURATION_MS = 4_900L      // Se oculta 4,9s después de mostrarse (antes 5s → 4,9s en 5.4.0, ver comentario arriba)
+        internal const val SCREENBUG_END_VISIBLE_DURATION_MS = 5_000L      // Se oculta 4,9s después de mostrarse (antes 5s → 4,9s en 5.4.0, ver comentario arriba)
+
+        // Preview 2013.6.0.0.2 — NUEVO: GIF "próximo programa"
+        // (proximo_programa_screenbug.gif). Sustituye brevemente al
+        // screenbug.png durante el programa — ver scheduleMultipleScreenbugs().
+        // Nunca antes de 1 min de arrancado el segmento, ni de forma que
+        // termine mostrándose dentro del último minuto antes de un corte
+        // comercial o del final del programa/episodio.
+        internal const val PROXIMO_PROGRAMA_MIN_START_MS = 60_000L        // No antes de 1 min de iniciado el segmento
+        internal const val PROXIMO_PROGRAMA_MIN_BEFORE_END_MS = 60_000L   // Tiene que terminar de mostrarse con 1 min de margen antes del final del segmento
+        internal const val PROXIMO_PROGRAMA_VISIBLE_MS = 15_000L          // Visible 15s, luego vuelve el screenbug.png
 
         // Preview 2010.5.4.0.40 — NUEVO: overlay "nextprogram" (GIF), reemplaza
         // a los enseguida post-programa. Se superpone sobre el programa mismo
         // (no es un clip aparte) y SOLO se programa en el último segmento del
         // programa (sin cortes comerciales pendientes) — ver scheduleNextProgramBug().
-        internal const val NEXTPROGRAM_SHOW_BEFORE_MS = 30_700L   // Aparece 31s antes del final real del programa
+        //
+        // RELEASE 2013.6.0.0 — BUG FIX: NextProgram estaba apareciendo más
+        // segundos antes de lo que correspondía. Se partió la constante única
+        // en una por GIF, mismo criterio que ya usa showVideoInBox() para los
+        // recuadros (ver isFactoryNextProgram2) — nextprogram2.gif ahora
+        // aparece exactamente 30s antes del final, tal como se pidió.
+        // nextprogram1.gif no estaba reportado como con problema, se deja en
+        // el valor que ya tenía.
+        internal const val NEXTPROGRAM1_SHOW_BEFORE_MS = 30_000L  // Aparece 30,7s antes del final real del programa
+        internal const val NEXTPROGRAM2_SHOW_BEFORE_MS = 30_000L  // Aparece 30s antes del final real del programa (RELEASE 2013.6.0.0)
         internal const val NEXTPROGRAM_ANIM_MS = 500L              // Duración del fade-in (imagen de referencia enviada por Keyler)
 
         /** No commercial break is scheduled within this many ms of the program end. */
@@ -393,11 +443,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // programa. clasif_banner.gif dura 17s — se deja el banner puesto
         // ese tiempo exacto para que la animación se vea completa.
         internal const val CLASIF_BANNER_VISIBLE_MS = 17_000L
-        // Release 5.8.0 — cuánto correr el video a la derecha cuando el
-        // recuadro activo es nextprogram2.gif (ver showVideoInBox()). Valor
-        // de partida razonable — si no queda perfectamente alineado con el
-        // recuadro real, ajustar este número.
-        internal const val NEXTPROGRAM2_VIDEO_SHIFT_RIGHT_DP = 12
 
         /** FadeIn duration for video transitions (ms). Applied when the new video starts. */
         internal const val TRANSITION_FADE_IN_MS = 500L
@@ -434,7 +479,6 @@ class LiveDiscoveryKids : AppCompatActivity() {
          * (Actualización La Era Doki / nuevo Discovery Kids).
          */
         internal val BUMPERS = listOf(
-            R.raw.bumper7,
             R.raw.bumper,
             R.raw.bumper2,
             R.raw.bumper3,
@@ -449,9 +493,8 @@ class LiveDiscoveryKids : AppCompatActivity() {
          * en vez de un ítem propio del playlist, ahora es un overlay que se
          * superpone al programa mismo cerca de su final.
          *
-         * Asignación determinística por índice de programa (0-based), mismo
-         * criterio que ENSEGUIDAS_PRE_COMERCIAL/ya_regresaN — se indexa
-         * directamente por currentProgramIndex (con módulo, ver
+         * Asignación determinística por índice de programa (0-based); se
+         * indexa directamente por currentProgramIndex (con módulo, ver
          * scheduleNextProgramBug()):
          *   programa 0 (pro1) → nextprogram1 | programa 1 (pro2) → nextprogram2
          *   programa 2 (pro3) → nextprogram3 | programa 3 (pro4) → nextprogram4
@@ -459,32 +502,26 @@ class LiveDiscoveryKids : AppCompatActivity() {
         internal val NEXTPROGRAMS = listOf(
             R.drawable.nextprogram1,
             R.drawable.nextprogram2,
-            /*
-            R.drawable.nextprogram3,
-            R.drawable.nextprogram4 */
+            R.drawable.nextprogram1,
+            R.drawable.nextprogram2
         )
 
         /**
-         * Enseguidas pre-comercial (van justo ANTES del bloque publicitario).
-         * Asignación determinística por índice de programa (0-based):
-         *   programa 0 (pro1) → ya_regresa1 | programa 1 (pro2) → ya_regresa2
-         *   programa 2 (pro3) → ya_regresa3 | programa 3 (pro4) → ya_regresa4
-         * Se indexa directamente por currentProgramIndex en playCommercial().
-         * ya_regresaN → se usa continuamosN como post-comercial (mapeo ENSEGUIDA_YA_VOLVEMOS_MAP).
+         * Preview 2013.6.0.0.2 — NUEVO: el continuamos (post-comercial) ya no
+         * se asigna por programa ni se empareja con un ya_regresa (ELIMINADO
+         * por completo, ver CommercialStep). Ahora depende únicamente de la
+         * hora real del dispositivo al momento del corte:
+         *   continuamos_mananera1 → 00:00 a 11:59
+         *   continuamos_tardia1   → 12:00 a 23:59
+         * Ver continuamosResForCurrentTime() / resolveContinuamosUri().
+         *
+         * NOTA: los nombres de recurso no llevan tilde/ñ (Android no permite
+         * esos caracteres en res/raw) — "mananera" en vez de "mañanera".
          */
-        internal val ENSEGUIDAS_PRE_COMERCIAL = listOf(
-            R.raw.ya_regresa1,
-            R.raw.ya_regresa2
-        )
-
-        /**
-         * Mapeo: enseguida pre-comercial → continuamos que se debe usar en ese corte.
-         * ya_regresa1 → continuamos1 | ya_regresa2 → continuamos2
-         */
-        internal val ENSEGUIDA_YA_VOLVEMOS_MAP = mapOf(
-            R.raw.ya_regresa1 to R.raw.continuamos1,
-            R.raw.ya_regresa2 to R.raw.continuamos2
-        )
+        internal fun continuamosResForCurrentTime(): Int {
+            val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+            return if (hour in 0..11) R.raw.continuamos1_mananera else R.raw.continuamos1_tardia
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -515,10 +552,9 @@ class LiveDiscoveryKids : AppCompatActivity() {
             }
         )
 
-        // Release 2009.5.0.0 — playlist dinámica: con Experimental activado,
-        // la cantidad de programas la elige el usuario (1–24, ver
-        // DiscoveryKidsLauncherActivity); con Experimental desactivado se
-        // mantiene el comportamiento clásico de 4 programas fijos.
+        // Release 2009.5.0.0 — playlist dinámica: la cantidad de programas la
+        // elige el usuario en Discovery Kids Launcher (1–24, RELEASE 2013.6.0.0:
+        // ya no depende de "Funciones experimentales", ELIMINADO por completo).
         playlist = buildPlaylist()
         playlistBuiltForCount = totalProgramCount()
 
@@ -634,13 +670,12 @@ class LiveDiscoveryKids : AppCompatActivity() {
      *   que es el único momento en que Android garantiza que el seek funciona
      *   (el surface pudo haberse liberado en segundo plano).
      *
-     * TODO LO DEMÁS: llama advance() para reiniciar el ítem desde el principio.
-     *   playUriWithTransition() reconfigura sus propios listeners desde cero,
-     *   por lo que no hay riesgo de listeners huérfanos.
+     * TODO LO DEMÁS (bumper, comercial, continuamos): desde Release 2006.4.1.1
+     *   se retoma el MISMO clip en su posición real vía resumeUriHardCut()/
+     *   resumeCommercialBlock(), en vez de reiniciar con advance().
      *
-     * COMERCIAL EN CURSO: si nos fuimos en mitad de un bloque comercial,
-     *   retomamos el programa en commercialResumeMs (saltamos el comercial,
-     *   igual que hace la restauración de sesión).
+     * COMERCIAL EN CURSO: retoma el paso exacto del bloque (commercialStep,
+     *   ver resumeCommercialBlock()) en su posición real.
      */
     override fun onResume() {
         super.onResume()
@@ -691,10 +726,12 @@ class LiveDiscoveryKids : AppCompatActivity() {
                 resumeCommercialBlock(currentClipPositionMs)
             }
             currentClipUri != null -> {
-                // Release 2006.4.1.1 — BUG FIX: bumper / enseguida / standaloneCommercial
+                // Release 2006.4.1.1 — BUG FIX: bumper / intro / créditos
                 // se reiniciaban siempre desde el principio al volver de segundo plano.
                 // Ahora se reanuda el mismo clip (currentClipUri) en la posición donde
                 // quedó (currentClipPositionMs) en vez de llamar advance().
+                // Preview 2013.6.0.0.2 — resumeUriHardCut() (sin FadeIn): estos
+                // clips ya cortan en seco, ver comentario largo en playBumper().
                 val uri = currentClipUri!!
                 val onComplete = currentClipOnComplete
                 if (onComplete == null) {
@@ -712,7 +749,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
                 val onPrepared: ((Int) -> Unit)? = if (currentItemType == "creditos") {
                     { durationMs -> scheduleCreditosOverlays(durationMs, elapsed = currentClipPositionMs.toLong()) }
                 } else null
-                resumeUriWithSeek(uri, currentClipPositionMs, onPrepared = onPrepared, onComplete = onComplete)
+                resumeUriHardCut(uri, currentClipPositionMs, onPrepared = onPrepared, onComplete = onComplete)
             }
             else -> {
                 Log.d(TAG, "onResume – sin estado de clip guardado (tipo=$currentItemType) → reiniciando ítem")
@@ -781,9 +818,9 @@ class LiveDiscoveryKids : AppCompatActivity() {
     //                                  goToAdjacentProgram, findAvailableProgramIndex
     //   ChannelProgramPlayback.kt   → playProgram, beginProgramSegment,
     //                                  scheduleSegmentLogic, calcBreaks
-    //   ChannelCommercialBlock.kt   → playCommercial, playCommercialStepPreComercial,
-    //                                  resumeCommercialBlock
-    //   ChannelVideoTransitions.kt  → playUri, playUriWithTransition, resumeUriWithSeek
+    //   ChannelCommercialBlock.kt   → playCommercial, playCommercialStepComercial,
+    //                                  playCommercialStepPostComercial, resumeCommercialBlock
+    //   ChannelVideoTransitions.kt  → playUri, playUriHardCut, resumeUriHardCut
     //   ChannelMediaResolver.kt     → resolveProgram, rawUri
     //   ChannelBackgroundMusic.kt   → startBgMusic, stopBgMusic
     //   ChannelSessionState.kt      → startChannel, saveChannelState,
@@ -891,7 +928,10 @@ internal fun LiveDiscoveryKids.playBumper() {
 
     Log.d(LiveDiscoveryKids.TAG, "▶ BUMPER [res=$chosenBumper]")
 
-    playUriWithTransition(rawUri(chosenBumper)) {
+    // Preview 2013.6.0.0.2 — corte directo (sin FadeOut/FadeIn), ver
+    // playUriHardCut(). El FadeOut/FadeIn queda solo en el límite
+    // Programa↔bloque comercial.
+    playUriHardCut(rawUri(chosenBumper)) {
         playlistIndex++
         advance()
     }
@@ -916,11 +956,11 @@ internal fun LiveDiscoveryKids.playBumper() {
 //     programa.
 //
 // Solo terminan al terminar su propio video (nunca se cortan antes) — igual
-// que cualquier otro playUriWithTransition(). Solo se agregan al playlist
+// que cualquier otro clip reproducido con playUriHardCut(). Solo se agregan al playlist
 // (ver buildPlaylist()) si el usuario los activó Y ya eligió un video; si el
-// usuario desactivó Experimental o borró la selección DESPUÉS de armado el
-// playlist de esta sesión, el fallback de abajo (uri == null) los saltea sin
-// romper el ciclo, igual que un programa sin archivo.
+// usuario borró la selección DESPUÉS de armado el playlist de esta sesión,
+// el fallback de abajo (uri == null) los saltea sin romper el ciclo, igual
+// que un programa sin archivo.
 // ══════════════════════════════════════════════════════════════════════════
 
 internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
@@ -942,6 +982,12 @@ internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
 
     Log.d(LiveDiscoveryKids.TAG, "▶ INTRO [programa=${programIndex + 1}, uri=$uri]")
 
+    // Preview 2013.6.0.0.3 — el banner de clasificación ahora se muestra acá
+    // (al arrancar la Intro) en vez de al arrancar el Programa, cuando el
+    // programa tiene Intro activada — ver playProgram(), que ya no lo
+    // dispara en ese caso para no mostrarlo dos veces seguidas.
+    showClasifBanner()
+
     // Release 5.4.0/5.4.1/5.5.0: el ScreenBug de inicio (fase 1/2) arranca
     // acá — se pasa la duración REAL de la Intro como segmentEndMs para que
     // el clamp interno de scheduleMultipleScreenbugs() garantice que se
@@ -955,7 +1001,9 @@ internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
     // RESTAURA la fase que corresponda (mid si la Intro ya mostró y ocultó
     // el start, o directamente el resto del delay si la Intro fue corta)
     // en vez de re-disparar el start desde cero.
-    playUriWithTransition(
+    // Preview 2013.6.0.0.2 — corte directo (sin FadeOut/FadeIn), ver
+    // playUriHardCut() / comentario largo en playBumper().
+    playUriHardCut(
         uri,
         onPrepared = { durationMs ->
             lastIntroDurationMs = durationMs
@@ -963,7 +1011,8 @@ internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
                 segmentStartMs = 0,
                 segmentEndMs = durationMs,
                 elapsed = 0L,
-                suppressEndPhase = true
+                suppressEndPhase = true,
+                allowProximoPrograma = false
             )
         }
     ) {
@@ -978,7 +1027,7 @@ internal fun LiveDiscoveryKids.playIntro(programIndex: Int) {
  * los Créditos, usando la duración REAL de los créditos (recién conocida
  * en su propio onPrepared) en vez de la del programa. Compartida entre
  * playCreditos() (arranque normal) y el resume genérico de onResume()
- * (currentItemType == "creditos", ver resumeUriWithSeek()).
+ * (currentItemType == "creditos", ver resumeUriHardCut()).
  *
  * Release 5.4.1 — BUG FIX: antes se pasaba SCREENBUG_END_SHOW_BEFORE_MS
  * (46s) implícito, y en créditos más cortos que eso (lo más común) el
@@ -1029,7 +1078,9 @@ internal fun LiveDiscoveryKids.playCreditos(programIndex: Int) {
 
     Log.d(LiveDiscoveryKids.TAG, "▶ CRÉDITOS [programa=${programIndex + 1}, uri=$uri]")
 
-    playUriWithTransition(
+    // Preview 2013.6.0.0.2 — corte directo (sin FadeOut/FadeIn), ver
+    // playUriHardCut() / comentario largo en playBumper().
+    playUriHardCut(
         uri,
         onPrepared = { durationMs -> scheduleCreditosOverlays(durationMs, elapsed = 0L) }
     ) {
@@ -1064,31 +1115,34 @@ internal fun LiveDiscoveryKids.playCreditos(programIndex: Int) {
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
- * Release 2009.5.0.0 — cantidad de programas activa en esta sesión.
- * Con Experimental desactivado, siempre 4 (comportamiento clásico,
- * pro1–pro4.mp4). Con Experimental activado, la que eligió el usuario en
- * Discovery Kids Launcher (1–24, SettingsManager.getProgramCount()).
+ * Release 2009.5.0.0 — cantidad de programas activa en esta sesión, la que
+ * eligió el usuario en Discovery Kids Launcher (1–24, SettingsManager.getProgramCount()).
+ *
+ * RELEASE 2013.6.0.0 — ya no depende de "Funciones experimentales"
+ * (ELIMINADO por completo): antes, con Experimental desactivado, siempre
+ * devolvía 4 (comportamiento clásico, pro1–pro4.mp4) sin importar lo que
+ * hubiera configurado el usuario. Ahora la configuración de Discovery Kids
+ * Launcher siempre aplica.
  */
 internal fun LiveDiscoveryKids.totalProgramCount(): Int =
-    if (SettingsManager.isExperimentalEnabled(this)) SettingsManager.getProgramCount(this) else 4
+    SettingsManager.getProgramCount(this)
 
 /**
  * Release 5.4.0 — true si el programa [index] tiene una Intro válida para
  * reproducir: el usuario la activó Y ya eligió un video (a diferencia de
- * ya_regresa/continuamos, Intro/Créditos NO tienen un video predeterminado
- * incluido en la app — si no hay Uri elegida, no hay nada que reproducir).
- * Solo aplica con Experimental activado, igual que el resto de la
- * configuración por programa.
+ * continuamos, Intro/Créditos NO tienen un video predeterminado incluido
+ * en la app — si no hay Uri elegida, no hay nada que reproducir).
+ *
+ * RELEASE 2013.6.0.0 — ya no depende de "Funciones experimentales"
+ * (ELIMINADO por completo, ver totalProgramCount()).
  */
 internal fun LiveDiscoveryKids.hasValidIntro(index: Int): Boolean =
-    SettingsManager.isExperimentalEnabled(this) &&
-        SettingsManager.isIntroEnabled(this, index) &&
+    SettingsManager.isIntroEnabled(this, index) &&
         !SettingsManager.getIntroUri(this, index).isNullOrBlank()
 
 /** Release 5.4.0 — análogo a hasValidIntro() pero para Créditos. */
 internal fun LiveDiscoveryKids.hasValidCreditos(index: Int): Boolean =
-    SettingsManager.isExperimentalEnabled(this) &&
-        SettingsManager.isCreditosEnabled(this, index) &&
+    SettingsManager.isCreditosEnabled(this, index) &&
         !SettingsManager.getCreditosUri(this, index).isNullOrBlank()
 
 /**
@@ -1106,11 +1160,18 @@ internal fun LiveDiscoveryKids.hasValidCreditos(index: Int): Boolean =
  *   - Se agregan PlayItem.Intro / PlayItem.Creditos, condicionales por
  *     programa (ver hasValidIntro()/hasValidCreditos()): Bumper → [Intro] →
  *     Programa → [Créditos].
+ *
+ * Preview 2013.6.0.0.1 — se quitó PlayItem.Bumper del ciclo: el Bumper ya no
+ * sale de primero antes del programa. Ahora se inserta aleatoriamente DENTRO
+ * del corte comercial (ver commercialBumperBeforeComercial / playCommercial()
+ * / playCommercialBumper()), así que el ciclo del playlist queda [Intro] →
+ * Programa → [Créditos]. PlayItem.Bumper y su rama en advance() se dejan
+ * intactos (no se borran) por si se necesitan más adelante — simplemente ya
+ * no se agregan acá.
  */
 internal fun LiveDiscoveryKids.buildPlaylist(): List<LiveDiscoveryKids.PlayItem> {
     val items = mutableListOf<LiveDiscoveryKids.PlayItem>()
     repeat(totalProgramCount()) { i ->
-        items.add(LiveDiscoveryKids.PlayItem.Bumper)
         if (hasValidIntro(i)) items.add(LiveDiscoveryKids.PlayItem.Intro(i))
         items.add(LiveDiscoveryKids.PlayItem.Program(i))
         if (hasValidCreditos(i)) items.add(LiveDiscoveryKids.PlayItem.Creditos(i))
@@ -1268,19 +1329,32 @@ internal fun LiveDiscoveryKids.playProgram(idx: Int, restartFromBeginning: Boole
     beginProgramSegment(uri, startOffsetMs = startPos, isFirstPlay = restartFromBeginning)
     // Release 5.8.0 — banner de clasificación: una vez por programa (no por
     // episodio ni al resumir desde una posición guardada).
-    if (restartFromBeginning) showClasifBanner()
+    // Preview 2013.6.0.0.3 — si el programa tiene Intro activada, el banner
+    // ya se mostró ahí (ver playIntro()) — no repetirlo acá.
+    if (restartFromBeginning && !hasValidIntro(idx)) showClasifBanner()
 }
 
 /**
 * Plays the program starting at [startOffsetMs].
 * [isFirstPlay] = true  → recalculate breaks from scratch.
 * [isFirstPlay] = false → breaks already trimmed; resume only.
+*
+* Preview 2013.6.0.0.2 — [fadeIn] controla si este arranque anima con FadeIn
+* (1 s, TRANSITION_FADE_IN_MS) o corta en seco (alpha=1f inmediato). A partir
+* de esta Preview, FadeIn queda reservado EXCLUSIVAMENTE al Programa
+* retomando justo DESPUÉS de un corte comercial — por eso el default es
+* false (arranque normal desde Bumper/Intro, o resume de sesión/segundo
+* plano, que ya NO son "después de comerciales"): solo
+* resumeProgramAfterCommercial() pasa fadeIn=true. Ver también el FadeOut de
+* fin de segmento más abajo, que usa la misma regla en el sentido inverso
+* (con willCutToCommercial).
 */
 internal fun LiveDiscoveryKids.beginProgramSegment(
     uri: Uri,
     startOffsetMs: Int,
     isFirstPlay: Boolean,
-    isNewSegment: Boolean = true
+    isNewSegment: Boolean = true,
+    fadeIn: Boolean = false
 ) {
     cancelAllTasks()
     setBugAlpha(0f)
@@ -1316,64 +1390,84 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
         if (startOffsetMs > 0) videoView.seekTo(startOffsetMs)
 
         scheduleSegmentLogic(startOffsetMs, isNewSegment = isNewSegment, isFirstPlay = isFirstPlay)
-        videoView.alpha = 0f
         videoView.start()
-        videoView.animate()
-            .alpha(1f)
-            .setDuration(LiveDiscoveryKids.TRANSITION_FADE_IN_MS)
-            .start()
+        if (fadeIn) {
+            videoView.alpha = 0f
+            videoView.animate()
+                .alpha(1f)
+                .setDuration(LiveDiscoveryKids.TRANSITION_FADE_IN_MS)
+                .start()
+        } else {
+            videoView.alpha = 1f
+        }
         isInProgramSegment = true
         currentItemType = "program"
         startPositionTracker()
         startBgMusic()
 
         // BUG FIX (2010.5.3.0 — investigación a fondo, el bug "seguía igual"
-        // después del fix de la 2009.5.2.1): el fadeOut programado acá SÍ se
+        // después del fix de la 2009.5.2.1): el corte programado acá SÍ se
         // agregó, pero el cálculo de CUÁNDO dispararlo estaba mal para
         // cualquier reanudación (isNewSegment=false: volver de Configuración,
         // de segundo plano, o restaurar sesión) — usaba "programDuration -
         // fadeOutMs" como si el video arrancara siempre desde el segundo 0,
         // ignorando por completo "startOffsetMs" (el punto real donde
         // arranca esta vez, potentialmente muy avanzado en el video). Eso
-        // programaba el fadeOut para un momento que, en un resume, ya había
+        // programaba el corte para un momento que, en un resume, ya había
         // quedado en el PASADO (el video real, arrancando adelantado, llega
         // a su fin real antes de que el timer mal calculado dispare) — así
-        // que el video terminaba por el fallback en seco (onCompletionListener,
-        // sin fadeOut) en vez de por el fadeOut programado, y como esa
-        // transición al siguiente clip arrancaba desde un corte abrupto en
-        // vez de un withEndAction ya asentado, el fadeIn del siguiente clip
-        // también quedaba roto — exactamente el mismo síntoma original.
-        // Mismo patrón que ya usa correctamente resumeUriWithSeek():
+        // que el video terminaba por el fallback en seco (onCompletionListener)
+        // en vez de por el corte programado, y esa transición al siguiente
+        // clip arrancaba desde un corte abrupto no planeado.
+        // Mismo patrón que ya usa correctamente resumeUriHardCut():
         // "remaining = duration - startOffsetMs", NO "duration" a secas.
+        //
+        // Preview 2013.6.0.0.2 — willCutToCommercial decide si este final de
+        // segmento anima FadeOut (500 ms, TRANSITION_FADE_OUT_MS) o corta en
+        // seco: el FadeOut solo aplica si lo que sigue es un corte comercial
+        // (quedan más episodios de este programa — ver resumeProgramAfterCommercial()/
+        // onProgramSegmentFinished()); si el programa ya terminó del todo
+        // (pasa a Créditos o al siguiente ítem del playlist), corta en seco.
         var transitionCompleted = false
         val fadeOutMs = LiveDiscoveryKids.TRANSITION_FADE_OUT_MS
         val remaining = (programDuration - startOffsetMs).toLong().coerceAtLeast(0L)
-        val fadeOutDelay = (remaining - fadeOutMs).coerceAtLeast(0L)
-        post(fadeOutDelay) {
+        val willCutToCommercial = (currentEpisodeIndex + 1) < SettingsManager.getEpisodeCount(this, currentProgramIndex)
+        val cutDelay = if (willCutToCommercial) (remaining - fadeOutMs).coerceAtLeast(0L) else remaining
+        post(cutDelay) {
             if (!transitionCompleted) {
                 transitionCompleted = true
                 videoView.setOnCompletionListener(null)
-                videoView.animate()
-                    .alpha(0f)
-                    .setDuration(fadeOutMs)
-                    .withEndAction {
-                        Log.d(LiveDiscoveryKids.TAG, "Program ended (fadeOut)")
-                        setNextProgramBugAlpha(0f)
-                        isInProgramSegment = false
-                        stopPositionTracker()
-                        pausedPositionMs = 0
-                        stopBgMusic()
-                        onProgramSegmentFinished()
-                    }
-                    .start()
+                if (willCutToCommercial) {
+                    videoView.animate()
+                        .alpha(0f)
+                        .setDuration(fadeOutMs)
+                        .withEndAction {
+                            Log.d(LiveDiscoveryKids.TAG, "Program ended (fadeOut, va a corte comercial)")
+                            setNextProgramBugAlpha(0f)
+                            isInProgramSegment = false
+                            stopPositionTracker()
+                            pausedPositionMs = 0
+                            stopBgMusic()
+                            onProgramSegmentFinished()
+                        }
+                        .start()
+                } else {
+                    Log.d(LiveDiscoveryKids.TAG, "Program ended (corte directo, sin comercial pendiente)")
+                    setNextProgramBugAlpha(0f)
+                    isInProgramSegment = false
+                    stopPositionTracker()
+                    pausedPositionMs = 0
+                    stopBgMusic()
+                    onProgramSegmentFinished()
+                }
             }
         }
 
         videoView.setOnCompletionListener {
             // Fallback: solo por si el programa termina ANTES de que corra
-            // el post(fadeOutDelay) de arriba (ej. clip más corto que
-            // fadeOutMs). En el caso normal, este listener nunca llega a
-            // disparar porque el de arriba ya lo desactiva primero.
+            // el post(cutDelay) de arriba (ej. clip más corto que fadeOutMs).
+            // En el caso normal, este listener nunca llega a disparar porque
+            // el de arriba ya lo desactiva primero.
             if (!transitionCompleted) {
                 transitionCompleted = true
                 Log.d(LiveDiscoveryKids.TAG, "Program ended (fallback onCompletion)")
@@ -1394,8 +1488,8 @@ internal fun LiveDiscoveryKids.beginProgramSegment(
  * Release 5.8.0 — Episodios de Programa: se llama cada vez que un episodio
  * (o un programa clásico de 1 solo episodio, el caso de siempre) termina.
  * Si quedan más episodios para este programa (SettingsManager.getEpisodeCount()),
- * dispara el corte comercial de siempre (mismo look&feel: ya_regresa →
- * comercial → continuamos — ver playCommercial()) y, al terminar ese
+ * dispara el corte comercial de siempre (mismo look&feel: [Bumper] →
+ * comercial → [Bumper] → continuamos — ver playCommercial()) y, al terminar ese
  * corte, arranca el SIGUIENTE episodio desde cero — NO retoma el mismo
  * video (ver resumeProgramAfterCommercial()). Si este era el último
  * episodio, sigue el flujo normal de siempre: Créditos si están
@@ -1465,6 +1559,11 @@ internal fun LiveDiscoveryKids.onProgramSegmentFinished() {
  *   (Créditos: la fase 1/2 no tiene sentido ahí, ya corrió en la Intro y/o el Programa)
  * @param suppressEndPhase true si la fase 3 (+ NextProgram, agendado aparte) no debe
  *   correr en este clip (programa con Créditos válidos: se difiere a playCreditos())
+ * @param allowProximoPrograma Preview 2013.6.0.0.2 — true si el GIF "próximo
+ *   programa" (proximo_programa_screenbug.gif) puede aparecer en este clip.
+ *   Solo tiene sentido durante el Programa en sí — playIntro() lo pasa en
+ *   false (la Intro corre las fases 1/2 del ScreenBug normal, pero no es
+ *   "el programa").
  */
 internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     segmentStartMs: Int,
@@ -1472,7 +1571,8 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     elapsed: Long,
     startMidElapsed: Long = elapsed,
     suppressStartMidPhases: Boolean = false,
-    suppressEndPhase: Boolean = false
+    suppressEndPhase: Boolean = false,
+    allowProximoPrograma: Boolean = true
 ) {
     val segmentDuration = (segmentEndMs - segmentStartMs).toLong().coerceAtLeast(0)
 
@@ -1521,6 +1621,22 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
     val midHideAt = if (suppressEndPhase) Long.MAX_VALUE else endShowAt
     val endHideAt = endShowAt + LiveDiscoveryKids.SCREENBUG_END_VISIBLE_DURATION_MS
 
+    // Preview 2013.6.0.0.2 — GIF "próximo programa": ventana de aparición a
+    // mitad del segmento, con margen de PROXIMO_PROGRAMA_MIN_START_MS (1 min)
+    // desde el arranque y PROXIMO_PROGRAMA_MIN_BEFORE_END_MS (1 min) antes
+    // del final del segmento (próximo corte comercial, o fin de
+    // programa/episodio). Si el segmento no tiene ese margen de sobra
+    // (< 2min15s), directamente no se agenda — a diferencia de las fases
+    // 1/2/3 (que siempre tienen que aparecer en algún punto), este GIF es
+    // opcional: mejor no mostrarlo que mostrarlo pegado al arranque o al
+    // corte comercial.
+    val proximoWindowExists = allowProximoPrograma &&
+        segmentDuration >= (LiveDiscoveryKids.PROXIMO_PROGRAMA_MIN_START_MS +
+            LiveDiscoveryKids.PROXIMO_PROGRAMA_MIN_BEFORE_END_MS +
+            LiveDiscoveryKids.PROXIMO_PROGRAMA_VISIBLE_MS)
+    val proximoShowAt = LiveDiscoveryKids.PROXIMO_PROGRAMA_MIN_START_MS
+    val proximoHideAt = proximoShowAt + LiveDiscoveryKids.PROXIMO_PROGRAMA_VISIBLE_MS
+
     // BUG FIX (investigación a fondo — "el ScreenBug se reinicia"): esta función
     // solo programaba eventos FUTUROS de show/hide según "elapsed". Pero
     // beginProgramSegment() llama setBugAlpha(0f) SIEMPRE al arrancar — incluso
@@ -1537,6 +1653,10 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
         when {
             startMidElapsed >= startShowAt && startMidElapsed < startHideAt && segmentDuration > startShowAt ->
                 fadeInBugWithResource(startRes, resetAnimation = false)
+            proximoWindowExists && startMidElapsed >= proximoShowAt && startMidElapsed < proximoHideAt -> {
+                fadeInBugWithResource(R.drawable.proximo_programa_screenbug, resetAnimation = false)
+                screenBugMidVisible = false
+            }
             startMidElapsed >= midShowAt && startMidElapsed < midHideAt && segmentDuration > midShowAt && midShowAt < midHideAt -> {
                 fadeInBugWithResource(midRes, resetAnimation = false)
                 screenBugMidVisible = true
@@ -1573,6 +1693,30 @@ internal fun LiveDiscoveryKids.scheduleMultipleScreenbugs(
             post(hideDelay) {
                 fadeOutBug()
                 screenBugMidVisible = false
+            }
+        }
+
+        // --- Próximo programa (GIF, sustituye brevemente al screenbug.png) ---
+        // Preview 2013.6.0.0.2. Mismo patrón de show/hide que las fases 1/2/3:
+        // sustituye el drawable actual del ImageView por el GIF (instantáneo,
+        // fadeInBugWithResource ya no anima — ver su doc), y a los 15s lo
+        // vuelve a sustituir por el screenbug.png normal, también instantáneo.
+        if (proximoWindowExists) {
+            if (startMidElapsed < proximoShowAt && segmentDuration > proximoShowAt) {
+                val showDelay = (proximoShowAt - startMidElapsed).coerceAtLeast(0L)
+                post(showDelay) {
+                    fadeInBugWithResource(R.drawable.proximo_programa_screenbug)
+                    screenBugMidVisible = false
+                    Log.d(LiveDiscoveryKids.TAG, "ScreenBug PRÓXIMO PROGRAMA: shown")
+                }
+            }
+            if (startMidElapsed < proximoHideAt && segmentDuration > proximoHideAt) {
+                val hideDelay = (proximoHideAt - startMidElapsed).coerceAtLeast(0L)
+                post(hideDelay) {
+                    fadeInBugWithResource(midRes)
+                    screenBugMidVisible = true
+                    Log.d(LiveDiscoveryKids.TAG, "ScreenBug PRÓXIMO PROGRAMA: hidden, vuelve screenbug.png")
+                }
             }
         }
     }
@@ -1770,9 +1914,17 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
         elapsed
     }
 
-    // La fase 3 (screenbug_end) + NextProgram SÍ se suprimen en el último
-    // segmento del Programa cuando hay Créditos válidos — se difieren a
-    // playCreditos(), que los agenda con la duración real de los créditos.
+    // Preview 2013.6.0.0.3 — screenbug_end (fase 3) se elimina por completo
+    // del ÚLTIMO segmento del programa, tenga o no Créditos válidos: antes
+    // solo se difería (deferToCreditos) cuando SÍ había Créditos; ahora,
+    // haya o no Créditos, screenbug_end nunca se muestra si lo que sigue es
+    // el final del programa — el screenbug.png (fase 2) simplemente sigue
+    // mostrándose sin cambios hasta que arrancan los Créditos (ahí
+    // desaparece, sin animación — ver playCreditos()/scheduleMultipleScreenbugs()
+    // con suppressStartMidPhases=true) o, si no hay Créditos, hasta que el
+    // programa corta al siguiente ítem del playlist. screenbug_end sigue
+    // apareciendo normalmente antes de un corte comercial a mitad del
+    // programa (isFinalSegment=false ahí) — eso no cambió.
     val isFinalSegment = breakQueue.isEmpty()
     val deferToCreditos = isFinalSegment && hasValidCreditos(currentProgramIndex)
 
@@ -1782,7 +1934,7 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
     scheduleMultipleScreenbugs(
         segmentStartMs, segmentEndMs, elapsed,
         startMidElapsed = startMidElapsed,
-        suppressEndPhase = deferToCreditos
+        suppressEndPhase = isFinalSegment
     )
 
     // Preview 2010.5.4.0.40 — NUEVO: overlay "nextprogram". Solo tiene
@@ -1849,7 +2001,14 @@ internal fun LiveDiscoveryKids.scheduleNextProgramBug(
     if (!isFinalSegment) return
 
     val segmentDuration = (segmentEndMs - segmentStartMs).toLong().coerceAtLeast(0)
-    val showAt = (segmentDuration - LiveDiscoveryKids.NEXTPROGRAM_SHOW_BEFORE_MS).coerceAtLeast(0L)
+    // RELEASE 2013.6.0.0 — BUG FIX: antes usaba un único NEXTPROGRAM_SHOW_BEFORE_MS
+    // para los dos GIFs — ver comentario en la declaración de las constantes.
+    val showBeforeMs = if (isCurrentNextProgramFactory2()) {
+        LiveDiscoveryKids.NEXTPROGRAM2_SHOW_BEFORE_MS
+    } else {
+        LiveDiscoveryKids.NEXTPROGRAM1_SHOW_BEFORE_MS
+    }
+    val showAt = (segmentDuration - showBeforeMs).coerceAtLeast(0L)
 
     if (elapsed >= showAt) {
         Log.d(LiveDiscoveryKids.TAG, "NextProgramBug: elapsed=${elapsed}ms >= showAt(${showAt}ms) → aparece inmediatamente")
@@ -1906,9 +2065,22 @@ internal fun LiveDiscoveryKids.calcBreaks(durationMs: Int): List<Int> {
  * ChannelCommercialBlock.kt — Preview 2006.4.1.0.21
  *
  * Funciones de extensión de LiveDiscoveryKids: el bloque comercial que
- * interrumpe un programa en curso. Secuencia: ya_regresa (pre-comercial,
- * determinístico por programa) → comercial (aleatorio) → continuamos
- * (pareado con el ya_regresa elegido) → retoma el programa.
+ * interrumpe un programa en curso.
+ *
+ * Preview 2013.6.0.0.2 — SE ELIMINÓ POR COMPLETO "ya_regresa" (el clip
+ * pre-comercial, determinístico por programa): el bloque ya no arranca con
+ * un aviso propio. Secuencia actual: [Bumper] → comercial (aleatorio) →
+ * [Bumper] → continuamos (según la hora del dispositivo, ver
+ * continuamosResForCurrentTime()) → retoma el programa. El Bumper sale en
+ * uno de los dos puntos posibles marcados con [Bumper] (ver
+ * commercialBumperBeforeComercial), nunca en los dos a la vez.
+ *
+ * FadeOut/FadeIn: a partir de esta Preview quedan reservados EXCLUSIVAMENTE
+ * al límite Programa↔bloque comercial — el FadeOut de playCommercial() (justo
+ * abajo, al cortar el Programa) y el FadeIn que hace beginProgramSegment()
+ * al retomar el programa (ver resumeProgramAfterCommercial()). Todo lo que
+ * pasa DENTRO del bloque (Bumper, comercial, continuamos) corta en seco vía
+ * playUriHardCut()/resumeUriHardCut() — sin animación de por medio.
  *
  * resumeCommercialBlock() reconstruye el paso exacto del bloque (commercialStep)
  * usando los mismos recursos ya elegidos si la app pasó a segundo plano a
@@ -1920,7 +2092,7 @@ internal fun LiveDiscoveryKids.calcBreaks(durationMs: Int): List<Int> {
 
 // ══════════════════════════════════════════════════════════════════════════
 // Commercial playback
-// Secuencia: ya_regresa1/2 (pre-comercial) → comercial(es) → continuamos(pareado) → programa
+// Secuencia: [Bumper] → comercial(es) → [Bumper] → continuamos → programa
 // ══════════════════════════════════════════════════════════════════════════
 
 internal fun LiveDiscoveryKids.playCommercial(resumeProgramAtMs: Int) {
@@ -1938,92 +2110,128 @@ internal fun LiveDiscoveryKids.playCommercial(resumeProgramAtMs: Int) {
     val chosenCommercial = commercialCandidates.random()
     lastCommercialRes = chosenCommercial
 
-    // Release 4.0.1 — BUG FIX: ya_regresa determinístico por programa.
-    // currentProgramIndex (0-based) indexa directamente ENSEGUIDAS_PRE_COMERCIAL,
-    // garantizando que cada programa siempre muestre su propio ya_regresa/continuamos.
-    //
-    // Release 2009.5.0.0 — resolveYaRegresaUri()/resolveContinuamosUri() envuelven
-    // esa misma lógica clásica, pero devuelven el video PERSONALIZADO del
-    // usuario si activó "Personalizado" para este programa en el Discovery
-    // Kids Launcher (Experimental). lastEnseguidaPreComercialRes se mantiene
-    // como referencia informativa (ya no se usa para calcular el continuamos).
-    val chosenPreComercial = resolveYaRegresaUri(currentProgramIndex)
+    // Preview 2013.6.0.0.2 — resolveContinuamosUri() ya no depende de qué
+    // ya_regresa le tocaba a este programa (ELIMINADO): usa el video
+    // PERSONALIZADO del usuario si activó "Personalizado" para este programa,
+    // o si no, continuamosResForCurrentTime() según la hora real del
+    // dispositivo.
     val chosenYaVolvemos = resolveContinuamosUri(currentProgramIndex)
 
     // Release 2006.4.1.1 — se promueven a campos de instancia para que
-    // onResume() pueda reconstruir exactamente este bloque comercial
-    // (qué clips se eligieron y en qué paso estaba) si la app pasa a
-    // segundo plano a mitad del bloque, en vez de volver a sortear y
-    // reiniciar todo desde ya_regresa.
-    commercialChosenPreComercial = chosenPreComercial
+    // onResume() pueda reconstruir exactamente este bloque comercial (qué
+    // clips se eligieron y en qué paso estaba) si la app pasa a segundo
+    // plano a mitad del bloque, en vez de volver a sortear.
     commercialChosenCommercial   = chosenCommercial
     commercialChosenYaVolvemos   = chosenYaVolvemos
-    commercialStep = LiveDiscoveryKids.CommercialStep.PRE_COMERCIAL
 
-    Log.d(LiveDiscoveryKids.TAG, "▶ ENSEGUIDA pre-comercial [res=$chosenPreComercial] → continuamos [res=$chosenYaVolvemos]")
+    // Preview 2013.6.0.0.1 — se sortea, una vez por corte, en cuál de los dos
+    // puntos posibles va a salir el Bumper de este corte (ver comentario en
+    // la declaración de commercialBumperBeforeComercial). commercialChosenBumperRes
+    // se resetea acá y recién se fija cuando playCommercialBumper() elige el
+    // bumper, más adelante en el flujo.
+    commercialBumperBeforeComercial = listOf(true, false).random()
+    commercialChosenBumperRes = -1
 
+    Log.d(LiveDiscoveryKids.TAG, "▶ Corte comercial → continuamos [uri=$chosenYaVolvemos] (bumper ${if (commercialBumperBeforeComercial) "antes" else "después"} del comercial)")
+
+    // Preview 2013.6.0.0.2 — este es el ÚNICO FadeOut que queda en todo el
+    // bloque comercial: el Programa se apaga acá (500 ms, TRANSITION_FADE_OUT_MS)
+    // y todo lo que sigue (Bumper/comercial/continuamos) corta en seco.
     videoView.animate()
         .alpha(0f)
         .setDuration(LiveDiscoveryKids.TRANSITION_FADE_OUT_MS)
         .withEndAction {
-            playCommercialStepPreComercial(chosenPreComercial, chosenCommercial, chosenYaVolvemos, resumeProgramAtMs, startOffsetMs = 0)
+            if (commercialBumperBeforeComercial) {
+                playCommercialBumper(LiveDiscoveryKids.CommercialStep.BUMPER_BEFORE_COMERCIAL) {
+                    playCommercialStepComercial(chosenCommercial, chosenYaVolvemos, resumeProgramAtMs)
+                }
+            } else {
+                playCommercialStepComercial(chosenCommercial, chosenYaVolvemos, resumeProgramAtMs)
+            }
         }
         .start()
 }
 
 /**
- * Paso 1 del bloque comercial: ya_regresa (pre-comercial). FadeIn 1 s, sin
- * FadeOut de entrada (ya lo hizo el caller).
- *
- * Release 2009.5.0.0 — [chosenPreComercial] y [chosenYaVolvemos] pasan de
- * Int (resource id) a Uri: pueden ser un recurso empaquetado (comportamiento
- * clásico, vía rawUri()) o un video elegido por el usuario (SAF), resueltos
- * antes de llegar acá por resolveYaRegresaUri()/resolveContinuamosUri().
+ * Preview 2013.6.0.0.2 — paso del bloque comercial: el comercial en sí.
+ * Corte directo (playUriHardCut()), sin FadeOut/FadeIn.
  */
-internal fun LiveDiscoveryKids.playCommercialStepPreComercial(
-    chosenPreComercial: Uri,
+internal fun LiveDiscoveryKids.playCommercialStepComercial(
     chosenCommercial: Int,
     chosenYaVolvemos: Uri,
-    resumeProgramAtMs: Int,
-    startOffsetMs: Int
+    resumeProgramAtMs: Int
 ) {
-    commercialStep = LiveDiscoveryKids.CommercialStep.PRE_COMERCIAL
-    currentClipUri = chosenPreComercial
-    currentClipPositionMs = startOffsetMs
-    currentClipOnComplete = null   // este paso no usa playUriWithTransition; se maneja manualmente
-    startPositionTracker()
+    Log.d(LiveDiscoveryKids.TAG, "▶ COMMERCIAL [res=$chosenCommercial] (resumes program at ${resumeProgramAtMs}ms)")
+    commercialStep = LiveDiscoveryKids.CommercialStep.COMERCIAL
 
-    videoView.alpha = 0f
-    videoView.setOnPreparedListener { mp ->
-        mp.isLooping = false
-        if (startOffsetMs > 0) videoView.seekTo(startOffsetMs)
-        videoView.start()
-        videoView.animate().alpha(1f).setDuration(LiveDiscoveryKids.TRANSITION_FADE_IN_MS).start()
-    }
-    videoView.setOnCompletionListener {
-        Log.d(LiveDiscoveryKids.TAG, "▶ COMMERCIAL [res=$chosenCommercial] (resumes program at ${resumeProgramAtMs}ms)")
-        commercialStep = LiveDiscoveryKids.CommercialStep.COMERCIAL
-
-        // Paso 2: comercial — FadeOut 500 ms (TRANSITION_FADE_OUT_MS)
-        playUriWithTransition(rawUri(chosenCommercial)) {
-            Log.d(LiveDiscoveryKids.TAG, "▶ YA VOLVEMOS post-comercial [uri=$chosenYaVolvemos]")
-            commercialStep = LiveDiscoveryKids.CommercialStep.POST_COMERCIAL
-
-            // Paso 3: continuamos (FadeOut 500 ms / FadeIn 1 s)
-            playUriWithTransition(chosenYaVolvemos) {
-                Log.d(LiveDiscoveryKids.TAG, "Ya volvemos done – resuming program at ${resumeProgramAtMs}ms")
-                isInCommercialBlock = false
-                resumeProgramAfterCommercial(resumeProgramAtMs)
+    playUriHardCut(rawUri(chosenCommercial)) {
+        // Preview 2013.6.0.0.1 — si a este corte le tocó el Bumper DESPUÉS
+        // del comercial, se inserta acá, antes del post-comercial (continuamos).
+        if (!commercialBumperBeforeComercial) {
+            playCommercialBumper(LiveDiscoveryKids.CommercialStep.BUMPER_AFTER_COMERCIAL) {
+                playCommercialStepPostComercial(chosenYaVolvemos, resumeProgramAtMs)
             }
+        } else {
+            playCommercialStepPostComercial(chosenYaVolvemos, resumeProgramAtMs)
         }
     }
-    videoView.setVideoURI(chosenPreComercial)
-    videoView.requestFocus()
+}
+
+/**
+ * Preview 2013.6.0.0.2 — paso del bloque comercial: continuamos
+ * (post-comercial). Corte directo (playUriHardCut()), sin FadeOut/FadeIn —
+ * el FadeIn de vuelta al programa lo hace beginProgramSegment() en
+ * resumeProgramAfterCommercial(), no este paso.
+ */
+internal fun LiveDiscoveryKids.playCommercialStepPostComercial(
+    chosenYaVolvemos: Uri,
+    resumeProgramAtMs: Int
+) {
+    Log.d(LiveDiscoveryKids.TAG, "▶ CONTINUAMOS post-comercial [uri=$chosenYaVolvemos]")
+    commercialStep = LiveDiscoveryKids.CommercialStep.POST_COMERCIAL
+
+    playUriHardCut(chosenYaVolvemos) {
+        Log.d(LiveDiscoveryKids.TAG, "Continuamos done – resuming program at ${resumeProgramAtMs}ms")
+        isInCommercialBlock = false
+        resumeProgramAfterCommercial(resumeProgramAtMs)
+    }
+}
+
+/**
+ * Preview 2013.6.0.0.1 — Bumper insertado DENTRO del corte comercial, en el
+ * punto que le haya tocado a este corte (ver commercialBumperBeforeComercial).
+ * [step] es BUMPER_BEFORE_COMERCIAL o BUMPER_AFTER_COMERCIAL — se guarda en
+ * commercialStep para que resumeCommercialBlock() sepa exactamente en qué
+ * punto reanudar si la app pasa a segundo plano durante este bumper.
+ * commercialChosenBumperRes guarda el bumper elegido por la misma razón,
+ * igual que commercialChosenCommercial/YaVolvemos.
+ *
+ * A diferencia del Bumper "clásico" (playBumper(), usado ANTES de esta
+ * Preview como primer ítem del ciclo del playlist, antes del programa —
+ * ver buildPlaylist()), este no llama advance() al terminar: sigue
+ * encadenado dentro del corte comercial vía [onDone].
+ *
+ * Preview 2013.6.0.0.2 — corte directo (playUriHardCut()), sin FadeOut/FadeIn.
+ */
+internal fun LiveDiscoveryKids.playCommercialBumper(
+    step: LiveDiscoveryKids.CommercialStep,
+    onDone: () -> Unit
+) {
+    commercialStep = step
+
+    val candidates = LiveDiscoveryKids.BUMPERS.filter { it != lastBumperRes }.ifEmpty { LiveDiscoveryKids.BUMPERS }
+    val chosenBumper = candidates.random()
+    lastBumperRes = chosenBumper
+    commercialChosenBumperRes = chosenBumper
+
+    Log.d(LiveDiscoveryKids.TAG, "▶ BUMPER (dentro del corte comercial, $step) [res=$chosenBumper]")
+
+    playUriHardCut(rawUri(chosenBumper), onComplete = onDone)
 }
 
 /**
  * Release 5.8.0 — Episodios de Programa: se llama al final de CUALQUIER
- * corte comercial (arranque normal en playCommercialStepPreComercial(), o
+ * corte comercial (arranque normal en playCommercialStepPostComercial(), o
  * reanudado tras pasar a segundo plano en resumeCommercialBlock()) para
  * decidir qué sigue. Si el programa actual tiene más episodios pendientes
  * (SettingsManager.getEpisodeCount()), arranca el SIGUIENTE episodio desde
@@ -2031,6 +2239,10 @@ internal fun LiveDiscoveryKids.playCommercialStepPreComercial(
  * "retomar" un video nuevo en una posición pensada para el anterior. Si no
  * quedan más episodios (o el programa es de 1 solo, el caso de siempre),
  * retoma el mismo video en [resumeAtMs], tal como siempre.
+ *
+ * Preview 2013.6.0.0.2 — fadeIn=true en los dos casos: acá es, literalmente,
+ * "el programa arrancando después de un corte comercial" — el único lugar
+ * donde FadeIn sigue existiendo (ver beginProgramSegment()).
  */
 internal fun LiveDiscoveryKids.resumeProgramAfterCommercial(resumeAtMs: Int) {
     val episodeCount = SettingsManager.getEpisodeCount(this, currentProgramIndex)
@@ -2040,7 +2252,7 @@ internal fun LiveDiscoveryKids.resumeProgramAfterCommercial(resumeAtMs: Int) {
         if (nextUri != null) {
             Log.d(LiveDiscoveryKids.TAG, "▶ Próximo episodio ${currentEpisodeIndex + 1}/$episodeCount de programa $currentProgramIndex [uri=$nextUri]")
             currentProgramUri = nextUri
-            beginProgramSegment(nextUri, startOffsetMs = 0, isFirstPlay = true, isNewSegment = true)
+            beginProgramSegment(nextUri, startOffsetMs = 0, isFirstPlay = true, isNewSegment = true, fadeIn = true)
             return
         }
         Log.w(LiveDiscoveryKids.TAG, "Episodio ${currentEpisodeIndex + 1} sin Uri resuelta — sigo con el flujo normal (Créditos/avanzar)")
@@ -2051,50 +2263,61 @@ internal fun LiveDiscoveryKids.resumeProgramAfterCommercial(resumeAtMs: Int) {
         advance()
         return
     }
-    beginProgramSegment(uri, startOffsetMs = resumeAtMs, isFirstPlay = false)
+    beginProgramSegment(uri, startOffsetMs = resumeAtMs, isFirstPlay = false, fadeIn = true)
 }
 
 /**
  * Release 2006.4.1.1 — Reanuda el bloque comercial exactamente en el paso
  * y la posición donde estaba al pasar a segundo plano, usando los mismos
- * recursos ya elegidos (commercialChosenPreComercial/Commercial/YaVolvemos)
- * en vez de volver a sortear. Se llama desde onResume().
+ * recursos ya elegidos (commercialChosenCommercial/YaVolvemos) en vez de
+ * volver a sortear. Se llama desde onResume().
  *
- * Release 2009.5.0.0 — commercialChosenPreComercial/YaVolvemos ahora son
- * Uri? (nullable porque son campos de instancia con valor inicial null);
- * si por algún motivo son null acá (no debería pasar en un resume real, ya
- * que playCommercial() siempre los fija primero), se recalculan con
- * resolveYaRegresaUri()/resolveContinuamosUri() como fallback defensivo.
+ * Release 2009.5.0.0 — commercialChosenYaVolvemos ahora es Uri? (nullable
+ * porque es un campo de instancia con valor inicial null); si por algún
+ * motivo es null acá (no debería pasar en un resume real, ya que
+ * playCommercial() siempre lo fija primero), se recalcula con
+ * resolveContinuamosUri() como fallback defensivo.
+ *
+ * Preview 2013.6.0.0.2 — CommercialStep.PRE_COMERCIAL (ya_regresa) ELIMINADO;
+ * el primer paso posible del bloque ahora es BUMPER_BEFORE_COMERCIAL o
+ * COMERCIAL. Todos los resumes acá usan resumeUriHardCut() (sin FadeIn) —
+ * el FadeIn solo pasa al volver al Programa, en resumeProgramAfterCommercial().
  */
 internal fun LiveDiscoveryKids.resumeCommercialBlock(startOffsetMs: Int) {
-    val preComercialUri = commercialChosenPreComercial ?: resolveYaRegresaUri(currentProgramIndex)
     val yaVolvemosUri = commercialChosenYaVolvemos ?: resolveContinuamosUri(currentProgramIndex)
 
     when (commercialStep) {
-        LiveDiscoveryKids.CommercialStep.PRE_COMERCIAL -> {
-            Log.d(LiveDiscoveryKids.TAG, "onResume – reanudando ya_regresa (pre-comercial) en ${startOffsetMs}ms")
-            playCommercialStepPreComercial(
-                preComercialUri,
-                commercialChosenCommercial,
-                yaVolvemosUri,
-                commercialResumeMs,
-                startOffsetMs = startOffsetMs
-            )
+        LiveDiscoveryKids.CommercialStep.BUMPER_BEFORE_COMERCIAL -> {
+            // Preview 2013.6.0.0.1
+            Log.d(LiveDiscoveryKids.TAG, "onResume – reanudando bumper (antes del comercial) en ${startOffsetMs}ms")
+            resumeUriHardCut(rawUri(commercialChosenBumperRes), startOffsetMs) {
+                playCommercialStepComercial(commercialChosenCommercial, yaVolvemosUri, commercialResumeMs)
+            }
         }
         LiveDiscoveryKids.CommercialStep.COMERCIAL -> {
             Log.d(LiveDiscoveryKids.TAG, "onResume – reanudando comercial en ${startOffsetMs}ms")
-            resumeUriWithSeek(rawUri(commercialChosenCommercial), startOffsetMs) {
-                Log.d(LiveDiscoveryKids.TAG, "▶ YA VOLVEMOS post-comercial [uri=$yaVolvemosUri]")
-                commercialStep = LiveDiscoveryKids.CommercialStep.POST_COMERCIAL
-                playUriWithTransition(yaVolvemosUri) {
-                    isInCommercialBlock = false
-                    resumeProgramAfterCommercial(commercialResumeMs)
+            resumeUriHardCut(rawUri(commercialChosenCommercial), startOffsetMs) {
+                // Preview 2013.6.0.0.1 — respeta si a este corte le toca Bumper
+                // DESPUÉS del comercial (ver commercialBumperBeforeComercial).
+                if (!commercialBumperBeforeComercial) {
+                    playCommercialBumper(LiveDiscoveryKids.CommercialStep.BUMPER_AFTER_COMERCIAL) {
+                        playCommercialStepPostComercial(yaVolvemosUri, commercialResumeMs)
+                    }
+                } else {
+                    playCommercialStepPostComercial(yaVolvemosUri, commercialResumeMs)
                 }
+            }
+        }
+        LiveDiscoveryKids.CommercialStep.BUMPER_AFTER_COMERCIAL -> {
+            // Preview 2013.6.0.0.1
+            Log.d(LiveDiscoveryKids.TAG, "onResume – reanudando bumper (después del comercial) en ${startOffsetMs}ms")
+            resumeUriHardCut(rawUri(commercialChosenBumperRes), startOffsetMs) {
+                playCommercialStepPostComercial(yaVolvemosUri, commercialResumeMs)
             }
         }
         LiveDiscoveryKids.CommercialStep.POST_COMERCIAL -> {
             Log.d(LiveDiscoveryKids.TAG, "onResume – reanudando continuamos en ${startOffsetMs}ms")
-            resumeUriWithSeek(yaVolvemosUri, startOffsetMs) {
+            resumeUriHardCut(yaVolvemosUri, startOffsetMs) {
                 isInCommercialBlock = false
                 resumeProgramAfterCommercial(commercialResumeMs)
             }
@@ -2110,17 +2333,23 @@ internal fun LiveDiscoveryKids.resumeCommercialBlock(startOffsetMs: Int) {
  * ChannelVideoTransitions.kt — Preview 2006.4.1.0.21
  *
  * Funciones de extensión de LiveDiscoveryKids: los helpers de bajo nivel
- * que reproducen un clip en el VideoView con FadeOut/FadeIn, usados por
- * TODOS los cambios de video del canal (bumper, enseguida, comerciales,
- * continuamos, retoma de programa tras un corte).
+ * que reproducen un clip en el VideoView, usados por TODOS los cambios de
+ * video del canal (bumper, intro, créditos, comerciales, continuamos,
+ * retoma de programa tras un corte).
  *
- *   - playUri(): reproducción simple sin transición (usada internamente
- *     por rutas que manejan su propio FadeIn, ej. beginProgramSegment).
- *   - playUriWithTransition(): FadeOut/FadeIn estándar para arrancar un
- *     clip nuevo desde el principio.
- *   - resumeUriWithSeek(): igual que playUriWithTransition() pero retoma
- *     un clip en una posición ya avanzada (seekTo dentro de onPrepared),
- *     usado al volver de segundo plano (Release 2006.4.1.1).
+ *   - playUri(): reproducción simple sin transición ni bookkeeping de resume
+ *     (usada internamente por rutas que manejan todo por su cuenta).
+ *   - playUriHardCut(): corte directo (sin FadeOut/FadeIn) con bookkeeping
+ *     de resume — el helper estándar a partir de la Preview 2013.6.0.0.2.
+ *   - resumeUriHardCut(): igual que playUriHardCut() pero retoma un clip en
+ *     una posición ya avanzada (seekTo dentro de onPrepared), usado al
+ *     volver de segundo plano (Release 2006.4.1.1).
+ *
+ * Preview 2013.6.0.0.2 — SE ELIMINARON POR COMPLETO playUriWithTransition()
+ * y resumeUriWithSeek() (el FadeOut/FadeIn genérico para cualquier cambio de
+ * clip): a partir de esta Preview, FadeOut/FadeIn quedan reservados
+ * EXCLUSIVAMENTE al límite Programa↔bloque comercial (ver playCommercial() y
+ * beginProgramSegment()); todo lo demás usa playUriHardCut()/resumeUriHardCut().
  *
  * Reorganización 4.1.0.21 — código movido tal cual desde LiveDiscoveryKids.kt.
  * Sin cambios de comportamiento.
@@ -2142,121 +2371,59 @@ internal fun LiveDiscoveryKids.playUri(uri: Uri, onComplete: () -> Unit) {
 }
 
 /**
- * Beta 2003.3.2.0.21 — BUG FIX: FadeOut 2 s ANTES del fin del video.
- * Beta 2003.3.2.0.22 — Parámetro [fadeOutMs] para FadeOut diferenciado por tipo de clip.
- *
- * Versión anterior (3.2.0.20): el FadeOut se disparaba DESPUÉS de que el video
- * ya había terminado (en onCompletion), causando un corte abrupto visible.
- *
- * Nueva estrategia (3.2.0.21+):
- *   1. Al prepararse el video (onPrepared) se calcula el retardo del FadeOut:
- *      max(0, duration - fadeOutMs). Esto dispara la animación [fadeOutMs] ms
- *      antes del fin real del clip.
- *   2. El FadeOut cancela el onCompletionListener activo y al terminar la
- *      animación ejecuta [onComplete] directamente, iniciando el siguiente clip.
- *   3. onCompletionListener actúa solo como FALLBACK para clips más cortos
- *      que [fadeOutMs] (el handler ya habrá ejecutado onComplete
- *      antes o al mismo tiempo, la segunda llamada se ignora con la guardia
- *      [transitionCompleted]).
- *
- * Release 3.3.0: todos los FadeOut unificados a 500 ms (TRANSITION_FADE_OUT_MS).
- * El parámetro [fadeOutMs] se conserva para posibles ajustes futuros; todos los
- * callers actuales usan el valor por defecto.
- * El FadeIn del clip entrante siempre usa TRANSITION_FADE_IN_MS (1 s).
- *
- * Se usa en TODOS los cambios de video del canal:
- *   enseguida, bumper, StandaloneCommercial, ya_regresa, comercial,
- *   continuamos y retoma de programa tras un corte comercial.
- *
- * playUri() se conserva sin modificar para las rutas internas que no
- * necesitan transición (ej.: beginProgramSegment maneja su propio FadeIn).
+ * Preview 2013.6.0.0.2 — NUEVO: corte directo, sin FadeOut/FadeIn. A partir
+ * de esta Preview, FadeOut/FadeIn quedan reservados EXCLUSIVAMENTE al límite
+ * Programa↔bloque comercial (ver playCommercial() y beginProgramSegment());
+ * todo lo demás (Bumper, Intro, Créditos, y los clips DENTRO del bloque
+ * comercial: comercial y continuamos) corta en seco. A diferencia de
+ * playUri() (que no lleva bookkeeping de resume), esta función sí guarda
+ * currentClipUri/currentClipPositionMs/currentClipOnComplete y arranca
+ * startPositionTracker(), igual que hacía playUriWithTransition(), para que
+ * onResume() pueda reanudar este clip en su posición real si la app pasa a
+ * segundo plano mientras suena.
  */
-internal fun LiveDiscoveryKids.playUriWithTransition(
+internal fun LiveDiscoveryKids.playUriHardCut(
     uri: Uri,
-    fadeOutMs: Long = LiveDiscoveryKids.TRANSITION_FADE_OUT_MS,
     onPrepared: ((durationMs: Int) -> Unit)? = null,
     onComplete: () -> Unit
 ) {
-    // Release 2006.4.1.1: guarda qué clip está sonando y cómo continuar el
-    // flujo cuando termine, para que onResume() pueda reanudarlo en vez de
-    // reiniciarlo si la app pasa a segundo plano mientras se reproduce.
     currentClipUri = uri
     currentClipPositionMs = 0
     currentClipOnComplete = onComplete
     startPositionTracker()
 
-    // FadeOut de cierre del clip anterior — 500 ms (TRANSITION_FADE_OUT_MS) uniforme para todos los clips
-    videoView.animate()
-        .alpha(0f)
-        .setDuration(fadeOutMs)
-        .withEndAction {
-            var transitionCompleted = false   // guardia anti-doble disparo
+    // Corte en seco real: se deja alpha=0 hasta que el clip nuevo ya está
+    // listo para arrancar (onPrepared) — así nunca se llega a ver, ni un
+    // frame, el último cuadro congelado del clip anterior. El salto a
+    // alpha=1f es instantáneo (sin animate()), es decir, un corte.
+    videoView.animate().cancel()
+    videoView.alpha = 0f
 
-            videoView.setOnPreparedListener { mp ->
-                mp.isLooping = false
-                videoView.alpha = 0f
-                videoView.start()
-                videoView.animate()
-                    .alpha(1f)
-                    .setDuration(LiveDiscoveryKids.TRANSITION_FADE_IN_MS)
-                    .start()
-
-                val duration = mp.duration
-                onPrepared?.invoke(duration)
-                val fadeOutDelay = (duration - fadeOutMs).coerceAtLeast(0L)
-                post(fadeOutDelay) {
-                    if (!transitionCompleted) {
-                        transitionCompleted = true
-                        videoView.setOnCompletionListener(null)
-                        videoView.animate()
-                            .alpha(0f)
-                            .setDuration(fadeOutMs)
-                            .withEndAction {
-                                currentClipUri = null
-                                currentClipOnComplete = null
-                                onComplete()
-                            }
-                            .start()
-                    }
-                }
-            }
-
-            videoView.setOnCompletionListener {
-                if (!transitionCompleted) {
-                    transitionCompleted = true
-                    currentClipUri = null
-                    currentClipOnComplete = null
-                    onComplete()
-                }
-            }
-
-            videoView.setVideoURI(uri)
-            videoView.requestFocus()
-        }
-        .start()
+    videoView.setOnPreparedListener { mp ->
+        mp.isLooping = false
+        videoView.start()
+        videoView.alpha = 1f
+        onPrepared?.invoke(mp.duration)
+    }
+    videoView.setOnCompletionListener {
+        currentClipUri = null
+        currentClipOnComplete = null
+        onComplete()
+    }
+    videoView.setVideoURI(uri)
+    videoView.requestFocus()
 }
 
 /**
- * Release 2006.4.1.1 — Reanuda un clip no-programa (bumper, enseguida,
- * comercial) exactamente en [startOffsetMs] en vez de reiniciarlo desde
- * el principio. Se usa desde onResume() cuando la app vuelve de segundo
- * plano o de un cambio de Activity mientras uno de estos clips sonaba.
- *
- * A diferencia de playUriWithTransition():
- *   - No hace FadeOut del clip "anterior" (ya no hay nada en pantalla,
- *     el VideoView quedó en alpha=0 desde onPause/setBugAlpha).
- *   - Hace seekTo(startOffsetMs) dentro de onPrepared, igual que
- *     beginProgramSegment(), porque Android puede haber liberado el
- *     surface del VideoView mientras la app estaba en segundo plano y
- *     seekTo() directo fuera de onPrepared se ignora silenciosamente.
- *   - El FadeOut de salida hacia el siguiente clip se reprograma con el
- *     tiempo que realmente queda (duration - elapsed), no con la duración
- *     completa, para no cortar el clip antes de tiempo.
+ * Preview 2013.6.0.0.2 — análogo a playUriHardCut() pero retomando [uri] en
+ * [startOffsetMs] (seekTo dentro de onPrepared, mismo motivo que
+ * resumeUriWithSeek()). Reemplaza a resumeUriWithSeek() en todos los cortes
+ * que ya no llevan FadeIn (bumper/comercial/continuamos y el resume genérico
+ * de onResume()).
  */
-internal fun LiveDiscoveryKids.resumeUriWithSeek(
+internal fun LiveDiscoveryKids.resumeUriHardCut(
     uri: Uri,
     startOffsetMs: Int,
-    fadeOutMs: Long = LiveDiscoveryKids.TRANSITION_FADE_OUT_MS,
     onPrepared: ((durationMs: Int) -> Unit)? = null,
     onComplete: () -> Unit
 ) {
@@ -2265,8 +2432,6 @@ internal fun LiveDiscoveryKids.resumeUriWithSeek(
     currentClipOnComplete = onComplete
     startPositionTracker()
 
-    var transitionCompleted = false
-
     videoView.animate().cancel()
     videoView.alpha = 0f
 
@@ -2274,44 +2439,18 @@ internal fun LiveDiscoveryKids.resumeUriWithSeek(
         mp.isLooping = false
         if (startOffsetMs > 0) videoView.seekTo(startOffsetMs)
         videoView.start()
-        videoView.animate()
-            .alpha(1f)
-            .setDuration(LiveDiscoveryKids.TRANSITION_FADE_IN_MS)
-            .start()
-
-        val duration = mp.duration
-        onPrepared?.invoke(duration)
-        val remaining = (duration - startOffsetMs).toLong().coerceAtLeast(0L)
-        val fadeOutDelay = (remaining - fadeOutMs).coerceAtLeast(0L)
-        post(fadeOutDelay) {
-            if (!transitionCompleted) {
-                transitionCompleted = true
-                videoView.setOnCompletionListener(null)
-                videoView.animate()
-                    .alpha(0f)
-                    .setDuration(fadeOutMs)
-                    .withEndAction {
-                        currentClipUri = null
-                        currentClipOnComplete = null
-                        onComplete()
-                    }
-                    .start()
-            }
-        }
+        videoView.alpha = 1f
+        onPrepared?.invoke(mp.duration)
     }
-
     videoView.setOnCompletionListener {
-        if (!transitionCompleted) {
-            transitionCompleted = true
-            currentClipUri = null
-            currentClipOnComplete = null
-            onComplete()
-        }
+        currentClipUri = null
+        currentClipOnComplete = null
+        onComplete()
     }
-
     videoView.setVideoURI(uri)
     videoView.requestFocus()
 }
+
 
 
 
@@ -2358,13 +2497,15 @@ internal fun LiveDiscoveryKids.resolveProgramEpisode(programIndex: Int, episodeI
 }
 
 internal fun LiveDiscoveryKids.resolveProgram(index: Int): Uri? {
-    // Release 2009.5.0.0 — si Experimental está activado y el usuario eligió
-    // un video propio para este programa desde Discovery Kids Launcher (SAF,
-    // sin necesidad de renombrar/copiar nada a Movies), se usa ese Uri
-    // directamente. La Uri se persiste con takePersistableUriPermission()
-    // al elegirla (ver DiscoveryKidsLauncherActivity.pickProgramVideo()), así
-    // que sigue siendo válida entre reinicios de la app.
-    if (SettingsManager.isExperimentalEnabled(this)) {
+    // Release 2009.5.0.0 — si el usuario eligió un video propio para este
+    // programa desde Discovery Kids Launcher (SAF, sin necesidad de
+    // renombrar/copiar nada a Movies), se usa ese Uri directamente. La Uri
+    // se persiste con takePersistableUriPermission() al elegirla (ver
+    // DiscoveryKidsLauncherActivity.pickProgramVideo()), así que sigue
+    // siendo válida entre reinicios de la app.
+    // RELEASE 2013.6.0.0 — ya no depende de "Funciones experimentales"
+    // (ELIMINADO por completo).
+    run {
         val customUri = SettingsManager.getProgramUri(this, index)
         if (!customUri.isNullOrBlank()) {
             return try {
@@ -2420,33 +2561,17 @@ internal fun LiveDiscoveryKids.resolveProgram(index: Int): Uri? {
 internal fun LiveDiscoveryKids.rawUri(resId: Int): Uri = Uri.parse("android.resource://$packageName/$resId")
 
 /**
- * Release 2009.5.0.0 — resuelve el ya_regresa (pre-comercial) que le toca al
- * programa [programIndex]. Si Experimental está activado y el usuario marcó
- * "Personalizado" para ese programa (SettingsManager.isYaRegresaCustom),
- * devuelve el video que eligió; si no, cae al comportamiento clásico
- * (ENSEGUIDAS_PRE_COMERCIAL indexado por programa, vía rawUri()).
- */
-internal fun LiveDiscoveryKids.resolveYaRegresaUri(programIndex: Int): Uri {
-    if (SettingsManager.isExperimentalEnabled(this) && SettingsManager.isYaRegresaCustom(this, programIndex)) {
-        val customUri = SettingsManager.getYaRegresaUri(this, programIndex)
-        if (!customUri.isNullOrBlank()) {
-            try { return Uri.parse(customUri) } catch (e: Exception) {
-                Log.e(LiveDiscoveryKids.TAG, "Uri de ya_regresa personalizado inválida (programa $programIndex)", e)
-            }
-        }
-    }
-    val defaultRes = LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL[programIndex % LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL.size]
-    return rawUri(defaultRes)
-}
-
-/**
- * Release 2009.5.0.0 — análogo a resolveYaRegresaUri() pero para el
- * continuamos (post-comercial) del programa [programIndex]. El comportamiento
- * clásico usa el mapeo ENSEGUIDA_YA_VOLVEMOS_MAP a partir del ya_regresa
- * predeterminado de ese mismo programa (no del que se haya personalizado).
+ * Preview 2013.6.0.0.2 — resuelve el continuamos (post-comercial) que le
+ * toca a ESTE corte. Si el usuario marcó "Personalizado" para el programa
+ * [programIndex] (SettingsManager.isContinuamosCustom), devuelve el video
+ * que eligió; si no, cae al comportamiento clásico:
+ * continuamosResForCurrentTime(), según la hora real del dispositivo (ya NO
+ * se empareja con un ya_regresa — ELIMINADO por completo).
+ * RELEASE 2013.6.0.0 — ya no depende de "Funciones experimentales"
+ * (ELIMINADO por completo).
  */
 internal fun LiveDiscoveryKids.resolveContinuamosUri(programIndex: Int): Uri {
-    if (SettingsManager.isExperimentalEnabled(this) && SettingsManager.isContinuamosCustom(this, programIndex)) {
+    if (SettingsManager.isContinuamosCustom(this, programIndex)) {
         val customUri = SettingsManager.getContinuamosUri(this, programIndex)
         if (!customUri.isNullOrBlank()) {
             try { return Uri.parse(customUri) } catch (e: Exception) {
@@ -2454,14 +2579,12 @@ internal fun LiveDiscoveryKids.resolveContinuamosUri(programIndex: Int): Uri {
             }
         }
     }
-    val defaultPreComercial = LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL[programIndex % LiveDiscoveryKids.ENSEGUIDAS_PRE_COMERCIAL.size]
-    val defaultRes = LiveDiscoveryKids.ENSEGUIDA_YA_VOLVEMOS_MAP[defaultPreComercial] ?: R.raw.continuamos1
-    return rawUri(defaultRes)
+    return rawUri(LiveDiscoveryKids.continuamosResForCurrentTime())
 }
 
 /**
  * Release 5.4.0 — resuelve la Intro del programa [programIndex]. A
- * diferencia de ya_regresa/continuamos, NO hay un video predeterminado
+ * diferencia de continuamos, NO hay un video predeterminado
  * incluido en la app: si el usuario no activó Intro para este programa o no
  * eligió un video, devuelve null (y quien llame debe saltear, ver
  * playIntro()). buildPlaylist() ya se asegura de esto vía hasValidIntro()
@@ -2582,11 +2705,12 @@ internal fun LiveDiscoveryKids.startChannel() {
     val prefs = getSharedPreferences(LiveDiscoveryKids.PREFS_NAME, Context.MODE_PRIVATE)
     val plIdx = prefs.getInt(LiveDiscoveryKids.PREF_PLAYLIST_IDX, 0)
     val progIdx = prefs.getInt(LiveDiscoveryKids.PREF_PROGRAM_IDX, 0)
-    // Release 2009.5.0.0 — con Experimental activado, la cantidad de
-    // programas (y por lo tanto el tamaño del playlist) puede cambiar entre
-    // sesiones. Si el estado guardado de una sesión anterior ya no encaja
-    // en el playlist actual (índice fuera de rango), se descarta en vez de
-    // arriesgar un crash al indexar playlist[plIdx] — se arranca desde cero.
+    // Release 2009.5.0.0 — la cantidad de programas (y por lo tanto el
+    // tamaño del playlist) puede cambiar entre sesiones si el usuario la
+    // modificó en Discovery Kids Launcher. Si el estado guardado de una
+    // sesión anterior ya no encaja en el playlist actual (índice fuera de
+    // rango), se descarta en vez de arriesgar un crash al indexar
+    // playlist[plIdx] — se arranca desde cero.
     val savedStateFitsCurrentPlaylist = plIdx < playlist.size && progIdx < totalProgramCount()
 
     if (prefs.getBoolean(LiveDiscoveryKids.PREF_HAS_STATE, false) && savedStateFitsCurrentPlaylist) {
@@ -2612,9 +2736,24 @@ internal fun LiveDiscoveryKids.startChannel() {
  * de reanudación del programa si estamos en un comercial.
  */
 internal fun LiveDiscoveryKids.saveChannelState() {
+    // Preview 2013.6.0.0.3 — BUG FIX ("Intro y Créditos no tienen pausa: se
+    // reinician al cambiar de Activity"). Investigación a fondo: la causa
+    // real no estaba en onPause()/onResume() (esos ya reanudaban bien en
+    // memoria, ver el bloque "currentClipUri != null" de onResume()) sino
+    // acá — cuando el proceso muere de verdad (común en el dispositivo
+    // físico, con poca memoria) y hay que restaurar desde SharedPreferences,
+    // el fallback "pausedPositionMs" es la posición del position tracker
+    // SOLO para isInProgramSegment=true (ver positionTrackerRunnable) — para
+    // Intro/Créditos/Bumper, la posición real vive en currentClipPositionMs.
+    // Antes se guardaba pausedPositionMs igual (desactualizada — 0, o lo que
+    // quedó de un programa previo), así que "restaurar" reproducía Intro/
+    // Créditos con una posición basura. Ahora que ya se guarda bien, ver
+    // también resumeSavedState() para el otro lado del bug (esa posición ni
+    // siquiera se estaba usando para Intro/Créditos).
     val posToSave = when {
         isInCommercialBlock -> commercialResumeMs
-        else                -> pausedPositionMs
+        isInProgramSegment  -> pausedPositionMs
+        else                -> currentClipPositionMs
     }
     val breakQueueStr = breakQueue.joinToString(",")
 
@@ -2662,6 +2801,8 @@ internal fun LiveDiscoveryKids.showResumeDialog(prefs: SharedPreferences) {
         "commercial" -> getString(R.string.resume_where_commercial, progIdx + 1)
         "bumper"     -> getString(R.string.resume_where_bumper)
         "enseguida"  -> getString(R.string.resume_where_enseguida)
+        "intro"      -> getString(R.string.resume_where_intro, progIdx + 1)
+        "creditos"   -> getString(R.string.resume_where_creditos, progIdx + 1)
 
         else         -> getString(R.string.resume_where_unknown)
     }
@@ -2691,6 +2832,8 @@ internal fun LiveDiscoveryKids.showResumeDialog(prefs: SharedPreferences) {
  *               (se saltea el comercial, es imposible restaurar la mitad de un comercial).
  * - bumper:     reinicia el bumper desde el principio (son cortos, no vale seekar).
  * - enseguida:  reinicia el enseguida desde el principio (igual razonamiento).
+ * - intro/creditos (Preview 2013.6.0.0.3): reinician desde el principio, mismo
+ *               razonamiento que bumper/enseguida — ver comentario en el when de abajo.
  */
 internal fun LiveDiscoveryKids.resumeSavedState(
     itemType: String,
@@ -2747,11 +2890,26 @@ internal fun LiveDiscoveryKids.resumeSavedState(
                 Log.d(LiveDiscoveryKids.TAG, "Restaurando post-comercial en ${commMs}ms, breaks pendientes: $breakQueue")
                 // El programa retoma justo después del comercial: acá sí es
                 // legítimamente un segmento nuevo que arranca en commMs.
-                beginProgramSegment(uri, startOffsetMs = commMs, isFirstPlay = false, isNewSegment = true)
+                // Preview 2013.6.0.0.2 — fadeIn=true: es, literalmente, "el
+                // programa arrancando después de un corte comercial".
+                beginProgramSegment(uri, startOffsetMs = commMs, isFirstPlay = false, isNewSegment = true, fadeIn = true)
             } else {
                 playlistIndex = 0
                 advance()
             }
+        }
+        // Preview 2013.6.0.0.3 — BUG FIX ("Intro y Créditos no tienen
+        // pausa"): antes "intro"/"creditos" no tenían rama acá y caían al
+        // "else" de abajo, que resetea playlistIndex=0 — es decir, ante la
+        // muerte del proceso a mitad de una Intro o unos Créditos, la app no
+        // solo reiniciaba ESE clip: reiniciaba TODO el canal desde el
+        // principio. playlistIndex ya se restauró arriba (línea ~2808), así
+        // que playlist[playlistIndex] ya apunta al mismo PlayItem.Intro/
+        // Creditos de antes — advance() lo vuelve a reproducir correctamente.
+        // Igual que "bumper"/"enseguida": reinicia el clip desde el
+        // principio (son cortos, no vale la pena reconstruir un seek acá).
+        "intro", "creditos" -> {
+            advance()
         }
         "bumper", "enseguida", "talla" -> {
             advance()
@@ -2951,6 +3109,11 @@ private fun LiveDiscoveryKids.showScreenBugResource(res: Int, resetAnimation: Bo
             it.start()
             screenBug.setImageDrawable(it)
         } ?: screenBug.setImageResource(res)
+        R.drawable.proximo_programa_screenbug -> proximoProgramaScreenbugGif?.let {
+            if (resetAnimation) it.seekToStart()
+            it.start()
+            screenBug.setImageDrawable(it)
+        } ?: screenBug.setImageResource(res)
         else -> screenBug.setImageResource(res)
     }
 }
@@ -2991,11 +3154,15 @@ internal fun LiveDiscoveryKids.preloadScreenBugAssets() {
             val endNavidad = resources.openRawResource(R.drawable.screenbug_end_navidad).use { stream ->
                 android.graphics.Movie.decodeStream(stream)?.let { GifMovieDrawable(it) }
             }
+            val proximoPrograma = resources.openRawResource(R.drawable.proximo_programa_screenbug).use { stream ->
+                android.graphics.Movie.decodeStream(stream)?.let { GifMovieDrawable(it) }
+            }
             runOnUiThread {
                 screenBugStartGif = start
                 screenBugEndGif = end
                 screenBugStartNavidadGif = startNavidad
                 screenBugEndNavidadGif = endNavidad
+                proximoProgramaScreenbugGif = proximoPrograma
             }
         } catch (e: Exception) {
             Log.e(LiveDiscoveryKids.TAG, "Error precargando GIFs de screenbug", e)
@@ -3217,22 +3384,34 @@ internal fun LiveDiscoveryKids.setNextProgramBugAlpha(alpha: Float) {
 // Release 5.6.0 — BUG FIX ("cambiar la posición del VideoView en el
 // NextProgram"): remedido con precisión de píxel sobre 12397.jpg. LEFT/TOP/
 // BOTTOM ya estaban bien calibrados (coinciden con el nuevo margen de
-// error). Lo que faltaba: el ANCHO nunca se midió — se derivaba forzando
-// 4:3 sobre boxHeightPx, pero el recuadro real NO es 4:3 (mide ≈1.4:1),
-// así que el video quedaba consistentemente ~22px más angosto de lo que
-// debía. Ahora hay una fracción RIGHT explícita, medida directamente sobre
-// el borde amarillo real (x:764→774, no derivada de la altura).
-private const val NEXTPROGRAM_BOX_LEFT_FRACTION = 0.4625f
-private const val NEXTPROGRAM_BOX_RIGHT_FRACTION = 0.9271f
-private const val NEXTPROGRAM_BOX_TOP_FRACTION = 0.0833f
-private const val NEXTPROGRAM_BOX_BOTTOM_FRACTION = 0.525f
+// Preview 2013.6.0.0.3 — al actualizarse los GIFs de NextProgram, se
+// confirmó que nextprogram1.gif y nextprogram2.gif NO comparten el mismo
+// recuadro — son dos diseños distintos (nextprogram1: un solo recuadro
+// grande, a la izquierda. nextprogram2: recuadro chico a la izquierda +
+// una animación propia ya incluida en el GIF a la derecha, que no es
+// nuestra — el video en vivo va en el recuadro chico). El shift-en-dp de
+// la 5.8.0 (aproximado, "por si no queda perfecto") se reemplaza por
+// coordenadas medidas directamente sobre capturas de referencia de cada
+// GIF, igual criterio que ya usaba el recuadro original.
+//
+// nextprogram1.gif — recuadro grande.
+private const val NEXTPROGRAM1_BOX_LEFT_FRACTION = 0.1705f
+private const val NEXTPROGRAM1_BOX_RIGHT_FRACTION = 0.6902f
+private const val NEXTPROGRAM1_BOX_TOP_FRACTION = 0.1335f
+private const val NEXTPROGRAM1_BOX_BOTTOM_FRACTION = 0.6287f
+
+// nextprogram2.gif — recuadro chico.
+private const val NEXTPROGRAM2_BOX_LEFT_FRACTION = 0.0687f
+private const val NEXTPROGRAM2_BOX_RIGHT_FRACTION = 0.3434f
+private const val NEXTPROGRAM2_BOX_TOP_FRACTION = 0.3324f
+private const val NEXTPROGRAM2_BOX_BOTTOM_FRACTION = 0.6023f
 
 /**
  * Achica y reposiciona videoContainer para que el video quede dentro del
  * recuadro del marco NextProgram, sin estirarse. Idempotente — llamarla de
  * nuevo mientras ya está en el recuadro no hace nada raro.
  *
- * Los % (NEXTPROGRAM_BOX_*_FRACTION) están calculados sobre el MARCO 4:3
+ * Los % (NEXTPROGRAM1/2_BOX_*_FRACTION) están calculados sobre el MARCO 4:3
  * real (el mismo que ocupa videoContainer sin achicar, y el AspectRatioFrameLayout
  * hermano que contiene a nextProgramBug en activity_main.xml) — NO sobre el
  * ancho/alto físico de la pantalla del dispositivo, que casi nunca es 4:3
@@ -3240,6 +3419,17 @@ private const val NEXTPROGRAM_BOX_BOTTOM_FRACTION = 0.525f
  * cálculo de acá reconstruye ese marco (altura = altura de la pantalla,
  * ancho = altura×4/3, centrado) antes de aplicar los %.
  */
+/**
+ * RELEASE 2013.6.0.0 — extraída de showVideoInBox() para poder reusarla
+ * también en scheduleNextProgramBug() (necesita saber cuál GIF está activo
+ * para elegir NEXTPROGRAM1_SHOW_BEFORE_MS vs NEXTPROGRAM2_SHOW_BEFORE_MS).
+ * true si el NextProgram de currentProgramIndex es nextprogram2.gif DE
+ * FÁBRICA (no personalizado) — ver NEXTPROGRAMS.
+ */
+internal fun LiveDiscoveryKids.isCurrentNextProgramFactory2(): Boolean =
+    !SettingsManager.isNextProgramCustom(this, currentProgramIndex) &&
+        (currentProgramIndex % LiveDiscoveryKids.NEXTPROGRAMS.size) == 1
+
 internal fun LiveDiscoveryKids.showVideoInBox() {
     val root = videoContainer.parent as? View ?: return
     val rootWidth = root.width
@@ -3258,26 +3448,24 @@ internal fun LiveDiscoveryKids.showVideoInBox() {
     val frameWidth = (frameHeight * 4) / 3
     val frameLeftInRoot = (rootWidth - frameWidth) / 2
 
-    val boxHeightPx = ((NEXTPROGRAM_BOX_BOTTOM_FRACTION - NEXTPROGRAM_BOX_TOP_FRACTION) * frameHeight).toInt()
+    // Preview 2013.6.0.0.3 — qué recuadro usar: nextprogram2.gif (índice 1
+    // en NEXTPROGRAMS) tiene su propio recuadro chico; cualquier otro caso
+    // (nextprogram1.gif de fábrica, o un NextProgram personalizado — ahí no
+    // hay forma de saber su alineación real, así que se usa el recuadro
+    // grande de nextprogram1 como default razonable) usa el recuadro grande.
+    val isFactoryNextProgram2 = isCurrentNextProgramFactory2()
+
+    val leftFraction = if (isFactoryNextProgram2) NEXTPROGRAM2_BOX_LEFT_FRACTION else NEXTPROGRAM1_BOX_LEFT_FRACTION
+    val rightFraction = if (isFactoryNextProgram2) NEXTPROGRAM2_BOX_RIGHT_FRACTION else NEXTPROGRAM1_BOX_RIGHT_FRACTION
+    val topFraction = if (isFactoryNextProgram2) NEXTPROGRAM2_BOX_TOP_FRACTION else NEXTPROGRAM1_BOX_TOP_FRACTION
+    val bottomFraction = if (isFactoryNextProgram2) NEXTPROGRAM2_BOX_BOTTOM_FRACTION else NEXTPROGRAM1_BOX_BOTTOM_FRACTION
+
+    val boxHeightPx = ((bottomFraction - topFraction) * frameHeight).toInt()
     // BUG FIX (5.6.0): ancho real del recuadro (NO height×4/3 — el recuadro
     // no es 4:3), medido con la fracción RIGHT explícita.
-    val boxWidthPx = ((NEXTPROGRAM_BOX_RIGHT_FRACTION - NEXTPROGRAM_BOX_LEFT_FRACTION) * frameWidth).toInt()
-    val boxTopPx = (NEXTPROGRAM_BOX_TOP_FRACTION * frameHeight).toInt()
-    var boxLeftPx = frameLeftInRoot + (NEXTPROGRAM_BOX_LEFT_FRACTION * frameWidth).toInt()
-
-    // Release 5.8.0 — "Si los créditos son Nextprogram2, rodar un poco a la
-    // derecha el VideoView": el recuadro de nextprogram2.gif no está
-    // exactamente en la misma posición que el de nextprogram1.gif — el
-    // video queda corrido a la izquierda si se usan los mismos % de
-    // siempre. Se detecta por currentProgramIndex (mismo índice que usa
-    // showNextProgramResource() para elegir el GIF — ver NEXTPROGRAMS) y
-    // solo aplica al GIF de FÁBRICA, no a un NextProgram personalizado
-    // (ahí no hay forma de saber su alineación real).
-    val isFactoryNextProgram2 = !SettingsManager.isNextProgramCustom(this, currentProgramIndex) &&
-        (currentProgramIndex % LiveDiscoveryKids.NEXTPROGRAMS.size) == 1
-    if (isFactoryNextProgram2) {
-        boxLeftPx += (LiveDiscoveryKids.NEXTPROGRAM2_VIDEO_SHIFT_RIGHT_DP * resources.displayMetrics.density).toInt()
-    }
+    val boxWidthPx = ((rightFraction - leftFraction) * frameWidth).toInt()
+    val boxTopPx = (topFraction * frameHeight).toInt()
+    val boxLeftPx = frameLeftInRoot + (leftFraction * frameWidth).toInt()
 
     // BUG FIX (5.6.0): videoContainer es un AspectRatioFrameLayout — su
     // onMeasure() por defecto IGNORA el ancho de layoutParams y siempre

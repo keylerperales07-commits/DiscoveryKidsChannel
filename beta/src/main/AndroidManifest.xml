@@ -20,16 +20,15 @@
     
     <application 
         android:allowBackup="true" 
-        android:icon="@mipmap/ic_launcher_preview"
-        android:roundIcon="@mipmap/ic_launcher_round_preview"
-        android:label="@string/beta_app_name" 
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/release_app_name" 
         android:supportsRtl="true" 
         android:theme="@style/AppTheme">
         <!-- Release 2009.5.0.0: ya no es la Activity de inicio (intent-filter
              MAIN/LAUNCHER se movió a DiscoveryKidsLauncherActivity, más abajo).
              Sigue exported=true porque se sigue lanzando con un Intent
-             explícito desde esa Activity (y desde SettingsActivity, al
-             reiniciar tras cambiar Experimental). -->
+             explícito desde esa Activity. -->
         <activity 
             android:name="LiveDiscoveryKids" 
             android:exported="true"
@@ -67,12 +66,10 @@
 
         <!-- Release 2009.5.0.0: Discovery Kids Launcher pasa a ser la Activity
              de inicio REAL de la app (intent-filter MAIN/LAUNCHER movido acá
-             desde LiveDiscoveryKids). Con Experimental desactivado (default),
-             redirige de inmediato a LiveDiscoveryKids sin mostrar nada — ver
-             DiscoveryKidsLauncherActivity.onCreate(). Portrait, LauncherTheme
-             (dk_font) — antes (Release 4.6.0) era exported=false y usaba
-             SettingsTheme, porque era una pantalla secundaria abierta solo
-             desde Configuración.
+             desde LiveDiscoveryKids). Portrait, LauncherTheme (dk_font) —
+             antes (Release 4.6.0) era exported=false y usaba SettingsTheme,
+             porque era una pantalla secundaria abierta solo desde
+             Configuración.
 
              Preview 2013.6.0.0.3 — el intent-filter MAIN/LAUNCHER que estaba
              ACÁ se movió a los dos <activity-alias> de abajo (icono_manana/
@@ -81,7 +78,13 @@
              usuario en el launcher del sistema lo define cuál de los dos
              alias está enabled en cada momento (uno solo a la vez — ver
              DiscoveryKidsLauncherActivity.applyTimeOfDayIcon(), que llama
-             PackageManager.setComponentEnabledSetting() al arrancar). -->
+             PackageManager.setComponentEnabledSetting() al arrancar).
+
+             RELEASE 2013.6.0.0 — ELIMINADO por completo: "Funciones
+             experimentales". Antes, con ese interruptor desactivado
+             (default), esta Activity redirigía de inmediato a
+             LiveDiscoveryKids sin mostrar nada. Ahora siempre muestra su UI
+             completa — es simplemente la pantalla de inicio de la app. -->
         <activity 
             android:name=".DiscoveryKidsLauncherActivity"
             android:exported="false"
@@ -93,15 +96,18 @@
              ic_launcher/ic_launcher_round "de fábrica" de siempre. Habilitado
              por defecto (android:enabled="true") — es el estado con el que
              arranca una instalación nueva, antes de que el código llegue a
-             decidir cuál corresponde según la hora real. -->
+             decidir cuál corresponde según la hora real.
+             RELEASE 2013.6.0.0 — usa los íconos/label de RELEASE (ic_launcher,
+             release_app_name), no los de Preview — a diferencia de la rama
+             Preview, que usa ic_launcher_preview/beta_app_name acá mismo. -->
         <activity-alias
             android:name=".LauncherIconManana"
             android:targetActivity=".DiscoveryKidsLauncherActivity"
             android:exported="true"
             android:enabled="true"
-            android:icon="@mipmap/ic_launcher_preview"
-            android:roundIcon="@mipmap/ic_launcher_round_preview"
-            android:label="@string/beta_app_name">
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="@string/release_app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -112,15 +118,17 @@
              de tarde aplica también para la noche (pedido explícito de
              Keyler — no hay un tercer set de íconos). Deshabilitado por
              defecto; se habilita por código junto con deshabilitar el de
-             arriba, nunca los dos habilitados a la vez. -->
+             arriba, nunca los dos habilitados a la vez.
+             RELEASE 2013.6.0.0 — íconos/label de RELEASE, mismo criterio que
+             el alias de arriba. -->
         <activity-alias
             android:name=".LauncherIconTardeNoche"
             android:targetActivity=".DiscoveryKidsLauncherActivity"
             android:exported="true"
             android:enabled="false"
-            android:icon="@mipmap/ic_launcher_preview_tarde"
-            android:roundIcon="@mipmap/ic_launcher_round_preview_tarde"
-            android:label="@string/beta_app_name">
+            android:icon="@mipmap/ic_launcher_tarde"
+            android:roundIcon="@mipmap/ic_launcher_round_tarde"
+            android:label="@string/release_app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -31,69 +31,6 @@
         android:paddingTop="8dp"
         android:paddingBottom="32dp">
 
-        <!-- ══ Sección: General ══ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="General"
-            android:textColor="@color/dk_text_secondary"
-            android:textSize="14sp"
-            android:fontFamily="@font/googlesans"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="12dp"
-            android:paddingBottom="4dp" />
-
-        <!-- Item: Música de fondo (switch) -->
-        <LinearLayout
-            android:id="@+id/itemBgMusic"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginEnd="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Música de fondo"
-                    android:textColor="@color/dk_text_primary"
-                    android:textSize="17sp"
-                    android:fontFamily="@font/googlesans" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Reproduce música ambiental durante los programas (Predeterminado: Activado)"
-                    android:textColor="@color/dk_text_secondary"
-                    android:textSize="13sp"
-                    android:fontFamily="@font/googlesans"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchBgMusic"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
-        </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
-
         <!-- ══ Sección: Pantalla ══ -->
         <TextView
             android:layout_width="wrap_content"
@@ -106,102 +43,6 @@
             android:paddingEnd="20dp"
             android:paddingTop="16dp"
             android:paddingBottom="4dp" />
-
-        <!-- Item: Efecto CRT (switch) -->
-        <LinearLayout
-            android:id="@+id/itemCrtEffect"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginEnd="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Efecto CRT"
-                    android:textColor="@color/dk_text_primary"
-                    android:textSize="17sp"
-                    android:fontFamily="@font/googlesans" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Scanlines, viñeta y parpadeo de TV antiguo (Predeterminado: Activado)"
-                    android:textColor="@color/dk_text_secondary"
-                    android:textSize="13sp"
-                    android:fontFamily="@font/googlesans"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchCrtEffect"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
-        </LinearLayout>
-
-        <!-- Item: Forzar 4:3 (switch) -->
-        <LinearLayout
-            android:id="@+id/itemForceAspectRatio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginEnd="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Forzar 4:3"
-                    android:textColor="@color/dk_text_primary"
-                    android:textSize="17sp"
-                    android:fontFamily="@font/googlesans" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Estira el video para llenar el ancho del marco 4:3. Al desactivar, el video respeta su proporción real (Predeterminado: Desactivado)"
-                    android:textColor="@color/dk_text_secondary"
-                    android:textSize="13sp"
-                    android:fontFamily="@font/googlesans"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchForceAspectRatio"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
-        </LinearLayout>
 
         <!-- Item: Duración del Screenbug (valor, abre diálogo) -->
         <LinearLayout
@@ -485,68 +326,10 @@
                 android:layout_marginTop="2dp" />
         </LinearLayout>
 
-        <!-- ══ Sección: Experimental (Release 2009.5.0.0) ══ -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Experimental"
-            android:textColor="@color/dk_text_secondary"
-            android:textSize="14sp"
-            android:fontFamily="@font/googlesans"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="4dp" />
-
-        <!-- Item: Habilitar funciones experimentales (switch) -->
-        <LinearLayout
-            android:id="@+id/itemExperimental"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginEnd="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Habilitar funciones experimentales"
-                    android:textColor="@color/dk_text_primary"
-                    android:textSize="17sp"
-                    android:fontFamily="@font/googlesans" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Discovery Kids Launcher como pantalla de inicio, cantidad de programas configurable (hasta 24), video elegido por vos para cada programa y ya_regresa/continuamos personalizados (Predeterminado: Desactivado)"
-                    android:textColor="@color/dk_text_secondary"
-                    android:textSize="13sp"
-                    android:fontFamily="@font/googlesans"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchExperimental"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
-        </LinearLayout>
-
-        <!-- ══ Footer: versión ══ -->
+        <!-- ══ Footer: versión ══
+             RELEASE 2013.6.0.0 — se quitó de acá la sección "Experimental"
+             (Release 2009.5.0.0): Discovery Kids Launcher ya no depende de
+             ningún interruptor, siempre es la pantalla de inicio real. ══ -->
         <TextView
             android:id="@+id/txtSettingsVersion"
             android:layout_width="match_parent"

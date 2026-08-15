@@ -37,51 +37,33 @@
       • Los dos TextView de subtítulo (txtUpdateSubtitle1/2) reemplazan a
         txtUpdateMessage: la primera línea siempre muestra la versión
         instalada (equivalente a "Versión de Android: Q"), la segunda es
-        contextual según el estado (igual a la línea de parche de
-        seguridad de la captura).
-      • Los Button planos de antes se reemplazan por renglones de lista
-        clickeables (itemUpdatePrimary / itemUpdateSecondary), idénticos
-        en estructura a los ítems de activity_settings.xml (mismo padding,
-        tipografía y ripple), con un ícono de flecha ">" a la izquierda
-        del texto — así es como se ve "Comprobar actualizaciones" en la
-        captura de referencia.
+    Preview 2013.6.0.0.2 — BUG FIX (doble menú / "el ActionBar se come una
+    parte del Layout"): esta pantalla tenía SU PROPIO header manual (botón
+    Atrás + título "Actualizaciones", como se ve más abajo en versiones
+    anteriores de este comentario) MIENTRAS ADEMÁS usaba SettingsTheme, que
+    trae el ActionBar real de Android (Theme.AppCompat) — el resultado eran
+    DOS barras superiores apiladas (la real, con el título por defecto de la
+    app, y la de este layout, con "Actualizaciones"). Un parche anterior
+    había intentado corregir el synced problema de espaciado agregando el
+    mismo padding de insets que ya usan SettingsActivity/ProgramConfigActivity/
+    DiscoveryKidsLauncherActivity, pero sin sacar el header manual — así que
+    el síntoma visual (doble barra) seguía exactamente igual.
+    SOLUCIÓN (alineada con el patrón que YA funciona en SettingsActivity,
+    ver Release 2009.5.2.1 en SettingsActivity.kt): se saca por completo el
+    header manual de acá abajo — el título y la navegación "Atrás" ahora los
+    da el ActionBar real (UpdateActivity.onCreate(), supportActionBar +
+    onSupportNavigateUp()) — y se le agrega id="updateRoot" al contenedor
+    raíz para aplicarle el MISMO padding de insets ya probado en las otras
+    pantallas (evita que el ActionBar "se coma" parte del contenido bajo
+    edge-to-edge).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/updateRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/dk_bg"
     android:orientation="vertical">
-
-    <!-- Barra superior: mismo patrón que activity_settings (botón Atrás + título). -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="20dp"
-        android:paddingTop="24dp"
-        android:paddingBottom="20dp">
-
-        <ImageButton
-            android:id="@+id/btnUpdateBack"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Volver"
-            android:src="@drawable/ic_back" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="Actualizaciones"
-            android:textColor="@color/dk_text_primary"
-            android:textSize="24sp"
-            android:fontFamily="@font/googlesans" />
-    </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"

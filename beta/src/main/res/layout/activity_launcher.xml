@@ -124,7 +124,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Programas"
-                android:textColor="@color/dk_launcher_header_green_dark"
+                android:textColor="@color/dk_launcher_title_yellow"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:fontFamily="@font/dk_font"
@@ -136,7 +136,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Elegí cuántos programas querés. Para elegir sus videos (episodios), personalizar ya_regresa, continuamos, Intro, Créditos, A continuación o desactivar comerciales, entrá a su ⚙️ Opciones."
-                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textColor="@color/dk_launcher_text_black"
                 android:textSize="13sp"
                 android:fontFamily="@font/dk_font"
                 android:lineSpacingExtra="3dp"
@@ -144,26 +144,31 @@
                 android:paddingEnd="20dp"
                 android:paddingBottom="12dp" />
 
-            <!-- Item: Cantidad de programas (valor, abre diálogo 1–24) -->
+            <!-- Item: Cantidad de programas (valor, abre diálogo 1–24).
+                 RELEASE 2013.6.0.0: "cuadro dentro de otro cuadro" — antes
+                 sin color propio (?attr/colorSurfaceVariant, gris M3
+                 genérico); ahora amarillento transparente
+                 (bg_launcher_card_yellow.xml), como se pidió. -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
                 android:layout_marginEnd="20dp"
                 android:layout_marginBottom="12dp"
-                app:cardElevation="1dp"
+                app:cardElevation="0dp"
                 app:cardCornerRadius="12dp"
                 app:strokeWidth="0dp"
-                app:cardBackgroundColor="?attr/colorSurfaceVariant">
+                app:cardBackgroundColor="@android:color/transparent">
 
                 <LinearLayout
                     android:id="@+id/itemProgramCount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:background="@drawable/bg_launcher_card_yellow"
                     android:clickable="true"
                     android:focusable="true"
-                    android:background="?attr/selectableItemBackground"
+                    android:foreground="?attr/selectableItemBackground"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:paddingTop="14dp"
@@ -173,7 +178,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Cantidad de programas"
-                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textColor="@color/dk_launcher_text_black"
                         android:textSize="17sp"
                         android:fontFamily="@font/dk_font" />
 
@@ -182,11 +187,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="4 de 24 programas (Predeterminado: 4)"
-                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textColor="@color/dk_launcher_text_black"
                         android:textSize="13sp"
                         android:fontFamily="@font/dk_font"
                         android:layout_marginTop="2dp"
-                        android:alpha="0.8" />
+                        android:alpha="0.75" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

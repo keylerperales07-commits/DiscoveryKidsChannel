@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Preview 2013.6.0.0.3 — Fondo del Discovery Kids Launcher para horario de
+    TARDE (12:00–18:59). Mismo criterio que launcher_bg_manana.xml — ver ese
+    archivo para cómo reemplazarlo por el fondo ilustrado real.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:type="linear"
+        android:angle="90"
+        android:startColor="@color/dk_launcher_tarde_top"
+        android:endColor="@color/dk_launcher_tarde_bottom" />
+</shape>

@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import com.keyler.discoverykidschannel.R
 
 /**
  * Fix (build): android-gif-drawable hace crashear a D8/R8 (NullPointerException

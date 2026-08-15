@@ -27,23 +27,20 @@ import java.util.Calendar
 /**
  * DiscoveryKidsLauncherActivity — Release 2009.5.0.0 ("Parque Imaginario")
  *
- * Es la Activity de inicio REAL de la app — ver el intent-filter
- * MAIN/LAUNCHER en AndroidManifest.xml — pero todo lo que implica (esta
- * pantalla, elegir el video de cada programa, cuántos programas armar) vive
- * detrás del interruptor maestro "Habilitar funciones experimentales" de
- * Configuración (SettingsManager.isExperimentalEnabled(), desactivado por
- * defecto):
+ * Es la Activity de inicio REAL de la app — ver los <activity-alias> con el
+ * intent-filter MAIN/LAUNCHER en AndroidManifest.xml (uno por horario, ver
+ * applyTimeOfDayIcon()). Siempre muestra su UI completa:
+ *   • Botón "Iniciar canal" → LiveDiscoveryKids.
+ *   • Sección Programas: cantidad (1–24) y una fila por programa
+ *     (item_program_row.xml) donde el usuario elige el video vía
+ *     selector de archivos del sistema (SAF), y un botón "⚙️ Opciones"
+ *     que abre ProgramConfigActivity para ESE programa puntual.
  *
- *   - Experimental DESACTIVADO (default): onCreate() redirige de inmediato a
- *     LiveDiscoveryKids y hace finish(), sin mostrar nunca esta UI.
- *   - Experimental ACTIVADO: se muestra esta pantalla, con:
- *       • Botón "Iniciar canal" → LiveDiscoveryKids.
- *       • Sección ScreenBugs de eventos (global — Navidad, Año Nuevo,
- *         Pascua, Día de la Tierra).
- *       • Sección Programas: cantidad (1–24) y una fila por programa
- *         (item_program_row.xml) donde el usuario elige el video vía
- *         selector de archivos del sistema (SAF), y un botón "⚙️ Opciones"
- *         que abre ProgramConfigActivity para ESE programa puntual.
+ * RELEASE 2013.6.0.0 — ELIMINADO por completo: el interruptor "Funciones
+ * experimentales" (SettingsManager.isExperimentalEnabled(), ya no existe)
+ * que antes ocultaba esta pantalla y redirigía en silencio a
+ * LiveDiscoveryKids. Ahora esta Activity siempre muestra su UI — es
+ * simplemente la pantalla de inicio de la app, sin ningún gate.
  *
  * Release 5.6.0 — BUG FIX (malentendido de arquitectura, revertido): la
  * 5.5.0 había movido ENTERA la sección "Programas" (y de paso, sin que
@@ -77,21 +74,10 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Preview 2013.6.0.0.3 — el ícono de la app tiene que actualizarse
-        // según el horario SIEMPRE, sin importar si Experimental está
-        // activado — esta Activity es la que arranca siempre (intent-filter
-        // LAUNCHER en sus activity-alias, ver AndroidManifest.xml), aunque
-        // con Experimental desactivado sea transparente y redirija de
-        // inmediato. Por eso va ANTES del chequeo de Experimental de abajo.
+        // RELEASE 2013.6.0.0 — el ícono de la app se actualiza según el
+        // horario en cada apertura (la función misma decide si hace falta
+        // tocar algo — ver applyTimeOfDayIcon()).
         applyTimeOfDayIcon()
-
-        // Ver doc de la clase: con Experimental desactivado, esta Activity es
-        // transparente — pasa directo al canal, sin mostrar nada.
-        if (!SettingsManager.isExperimentalEnabled(this)) {
-            startActivity(Intent(this, LiveDiscoveryKids::class.java))
-            finish()
-            return
-        }
 
         setContentView(R.layout.activity_launcher)
 
@@ -147,14 +133,6 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Por si el usuario desactivó Experimental desde Configuración y
-        // volvió acá con el botón Atrás del sistema: no debería quedar
-        // mostrando una pantalla que ya no corresponde.
-        if (!SettingsManager.isExperimentalEnabled(this)) {
-            startActivity(Intent(this, LiveDiscoveryKids::class.java))
-            finish()
-            return
-        }
         // Por si el usuario volvió de ProgramConfigActivity habiendo elegido
         // un video de continuamos/etc — acá no cambia nada visible
         // (esa parte vive en la otra Activity), pero si volvió habiendo
@@ -218,27 +196,51 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
      * cambie solo. Android no permite tener los dos habilitados a la vez
      * (mostraría dos íconos duplicados en el launcher del sistema).
      *
-     * DONT_KILL_APP: evita que el sistema mate el proceso al cambiar el
-     * estado del componente — normalmente solo hace falta cuando se
-     * deshabilita la Activity que está corriendo en ese momento, que no es
-     * el caso acá (los alias son componentes separados de la Activity real
-     * que sigue corriendo), pero se deja por las dudas / defensivo.
+     * RELEASE 2013.6.0.0 — BUG FIX ("la app crashea al iniciar justo cuando
+     * cambian los colores, y al volver a abrir ya está normal" + "el ícono
+     * no cambia según la hora"). Los dos síntomas eran la misma causa: la
+     * versión anterior llamaba PackageManager.setComponentEnabledSetting()
+     * en TODAS las aperturas de la app, sin importar si hacía falta — y
+     * llamarlo justo en el momento en que la franja horaria cambia significa
+     * deshabilitar el MISMO activity-alias que el sistema acaba de usar para
+     * abrir la app (la Activity está arrancando A TRAVÉS de ese componente),
+     * lo cual puede hacer que el sistema mate la tarea en pleno arranque —
+     * de ahí el crash de "una sola vez". Como además el toggle nunca llegaba
+     * a completarse limpio, el ícono quedaba a mitad de camino — de ahí que
+     * pareciera que "no cambia".
+     *
+     * Dos cambios:
+     *   1. Solo se llama a setComponentEnabledSetting() si la franja
+     *      realmente cambió desde la última vez (SettingsManager.getLastTimeOfDayIcon()) —
+     *      la gran mayoría de las aperturas no hace falta tocar nada.
+     *   2. Todo el bloque va en try/catch: si el sistema igual llegara a
+     *      rechazar el cambio en el peor momento, no vuelve a crashear la
+     *      app — solo se loguea, y se reintenta solo en la próxima apertura
+     *      (no se guarda el nuevo valor si falla).
      */
     private fun applyTimeOfDayIcon() {
-        val useManana = currentTimeOfDay() == TimeOfDay.MANANA
-        val pm = packageManager
-        val mananaAlias = ComponentName(this, "com.keyler.discoverykidschannel.LauncherIconManana")
-        val tardeNocheAlias = ComponentName(this, "com.keyler.discoverykidschannel.LauncherIconTardeNoche")
-        pm.setComponentEnabledSetting(
-            mananaAlias,
-            if (useManana) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-            PackageManager.DONT_KILL_APP
-        )
-        pm.setComponentEnabledSetting(
-            tardeNocheAlias,
-            if (useManana) PackageManager.COMPONENT_ENABLED_STATE_DISABLED else PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-            PackageManager.DONT_KILL_APP
-        )
+        val target = if (currentTimeOfDay() == TimeOfDay.MANANA) "manana" else "tarde_noche"
+        if (SettingsManager.getLastTimeOfDayIcon(this) == target) return   // ya está aplicado, no tocar nada
+
+        try {
+            val useManana = target == "manana"
+            val pm = packageManager
+            val mananaAlias = ComponentName(this, "com.keyler.discoverykidschannel.LauncherIconManana")
+            val tardeNocheAlias = ComponentName(this, "com.keyler.discoverykidschannel.LauncherIconTardeNoche")
+            pm.setComponentEnabledSetting(
+                mananaAlias,
+                if (useManana) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP
+            )
+            pm.setComponentEnabledSetting(
+                tardeNocheAlias,
+                if (useManana) PackageManager.COMPONENT_ENABLED_STATE_DISABLED else PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP
+            )
+            SettingsManager.setLastTimeOfDayIcon(this, target)
+        } catch (e: Exception) {
+            Log.w("DKLauncher", "No se pudo cambiar el ícono de la app según el horario ($target)", e)
+        }
     }
 
     // Release 5.8.0 — BUG FIX (diseño): los ScreenBugs de eventos

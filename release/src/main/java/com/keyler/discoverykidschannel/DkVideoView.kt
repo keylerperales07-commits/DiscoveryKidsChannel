@@ -11,7 +11,7 @@ import android.net.Uri
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.VideoView
-
+import com.keyler.discoverykidschannel.R
 /**
  * DkVideoView — Release 2009.5.0.0 (introdujo un motor de video alternativo
  * basado en TextureView), Release 2009.5.2.1 (TextureView eliminado por

@@ -16,6 +16,7 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import com.keyler.discoverykidschannel.R
 
 /**
  * ProgramConfigActivity — Release 5.5.0, reescrita en la 5.6.0
@@ -38,16 +39,20 @@ import androidx.appcompat.widget.SwitchCompat
  *
  * Contenido:
  *   - Activar comerciales (Release 5.6.0, NUEVO — Predeterminado: activado).
- *   - ya_regresa / continuamos personalizados.
+ *   - continuamos personalizado.
  *   - Intro / Créditos (sin default de fábrica).
  *   - A continuación personalizado (antes "NextProgram personalizado" —
  *     renombrado en la 5.6.0).
  *
- * Igual que el resto de la configuración "experimental", esta Activity
- * asume que ya se llegó acá desde un lugar que confirmó
- * SettingsManager.isExperimentalEnabled() — no repite ese chequeo (a
- * diferencia de DiscoveryKidsLauncherActivity, que sí es la puerta de
- * entrada real de la app).
+ * Preview 2013.6.0.0.2 — ELIMINADO por completo: ya_regresa personalizado
+ * (PickTarget.YA_REGRESA y el switch/botón correspondientes). El clip
+ * "ya_regresa" (pre-comercial) se eliminó por completo del canal — ver
+ * LiveDiscoveryKids.kt.
+ *
+ * RELEASE 2013.6.0.0 — "Funciones experimentales" se eliminó por completo
+ * (ver SettingsManager.kt/DiscoveryKidsLauncherActivity.kt): esta Activity
+ * ya no depende de ningún chequeo previo, se accede siempre desde el botón
+ * "⚙️ Opciones" de cada fila de programa en Discovery Kids Launcher.
  */
 class ProgramConfigActivity : AppCompatActivity() {
 
@@ -55,7 +60,7 @@ class ProgramConfigActivity : AppCompatActivity() {
         const val EXTRA_PROGRAM_INDEX = "program_index"
     }
 
-    private enum class PickTarget { YA_REGRESA, CONTINUAMOS, INTRO, CREDITOS, NEXTPROGRAM, EPISODE }
+    private enum class PickTarget { CONTINUAMOS, INTRO, CREDITOS, NEXTPROGRAM, EPISODE }
 
     private var programIndex = -1
     private var pendingPickTarget: PickTarget? = null
@@ -65,7 +70,7 @@ class ProgramConfigActivity : AppCompatActivity() {
 
     /**
      * SAF: selector de archivos del sistema. El tipo MIME varía según qué
-     * botón lo disparó — video para ya_regresa/continuamos/Intro/Créditos,
+     * botón lo disparó — video para continuamos/Intro/Créditos,
      * image para A continuación (imagen o GIF, ver PickTarget.NEXTPROGRAM
      * más abajo, en el setOnClickListener que lanza esto).
      */
@@ -210,24 +215,12 @@ class ProgramConfigActivity : AppCompatActivity() {
         }
     }
 
-    // ── Opciones del programa (ya_regresa, continuamos, Intro, Créditos, A continuación) ──
+    // ── Opciones del programa (continuamos, Intro, Créditos, A continuación) ──
+    // Preview 2013.6.0.0.2 — ya_regresa personalizado ELIMINADO por completo.
 
     private fun bindProgramOptions() {
-        val switchYaRegresa = findViewById<SwitchCompat>(R.id.switchYaRegresaCustom)
-        val btnPickYaRegresa = findViewById<LinearLayout>(R.id.btnPickYaRegresaVideo)
         val switchContinuamos = findViewById<SwitchCompat>(R.id.switchContinuamosCustom)
         val btnPickContinuamos = findViewById<LinearLayout>(R.id.btnPickContinuamosVideo)
-
-        switchYaRegresa.isChecked = SettingsManager.isYaRegresaCustom(this, programIndex)
-        btnPickYaRegresa.visibility = if (switchYaRegresa.isChecked) View.VISIBLE else View.GONE
-        switchYaRegresa.setOnCheckedChangeListener { _, checked ->
-            SettingsManager.setYaRegresaCustom(this, programIndex, checked)
-            btnPickYaRegresa.visibility = if (checked) View.VISIBLE else View.GONE
-        }
-        btnPickYaRegresa.setOnClickListener {
-            pendingPickTarget = PickTarget.YA_REGRESA
-            pickVideoLauncher.launch(arrayOf("video/*"))
-        }
 
         switchContinuamos.isChecked = SettingsManager.isContinuamosCustom(this, programIndex)
         btnPickContinuamos.visibility = if (switchContinuamos.isChecked) View.VISIBLE else View.GONE
@@ -242,7 +235,7 @@ class ProgramConfigActivity : AppCompatActivity() {
 
         // ── Intro / Créditos (Release 5.4.0) — sin video predeterminado: el
         // switch activa/desactiva, y el texto de estado siempre está visible
-        // mientras esté activado (a diferencia de ya_regresa/continuamos, acá
+        // mientras esté activado (a diferencia de continuamos, acá
         // SÍ importa que el usuario vea claramente si ya eligió un video o
         // no, porque si no elige uno el clip simplemente no aparece).
         val txtIntroStatus = findViewById<TextView>(R.id.txtIntroVideoStatus)
@@ -292,7 +285,7 @@ class ProgramConfigActivity : AppCompatActivity() {
         // ── A continuación personalizado (Release 5.5.0, renombrado en la
         // 5.6.0 — antes "NextProgram personalizado") — SÍ tiene default de
         // fábrica (nextprogramN.gif), por eso sigue el patrón "personalizado"
-        // de ya_regresa/continuamos en vez del de Intro/Créditos.
+        // de continuamos en vez del de Intro/Créditos.
         val switchNextProgram = findViewById<SwitchCompat>(R.id.switchNextProgramCustom)
         val btnPickNextProgram = findViewById<LinearLayout>(R.id.btnPickNextProgramImage)
 
@@ -325,7 +318,6 @@ class ProgramConfigActivity : AppCompatActivity() {
         }
 
         when (pendingPickTarget) {
-            PickTarget.YA_REGRESA -> SettingsManager.setYaRegresaUri(this, programIndex, uri.toString())
             PickTarget.CONTINUAMOS -> SettingsManager.setContinuamosUri(this, programIndex, uri.toString())
             PickTarget.INTRO -> SettingsManager.setIntroUri(this, programIndex, uri.toString())
             PickTarget.CREDITOS -> SettingsManager.setCreditosUri(this, programIndex, uri.toString())

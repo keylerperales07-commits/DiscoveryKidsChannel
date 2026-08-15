@@ -16,4 +16,4 @@
 
 # No ofuscar los nombres de Activity/Fragment propios del proyecto
 # para que los logs y stack traces sean legibles sin mapping.
--keep class com.keyler.discoverykidschannel.** { *; }
+-keep class com.keyler.discoverykidshd.** { *; }

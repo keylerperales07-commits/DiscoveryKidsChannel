@@ -1,121 +1,98 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout
-     xmlns:android="http://schemas.android.com/apk/res/android"
-     xmlns:app="http://schemas.android.com/apk/res-auto"
-     android:layout_height="match_parent"
-     android:layout_width="match_parent"
-     android:background="#000000">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:background="#000000">
 
-    <com.keyler.discoverykidschannel.AspectRatioFrameLayout
-         android:layout_height="match_parent"
-         android:layout_width="match_parent"
-         android:id="@+id/videoContainer"
-         android:layout_gravity="center">
+    <FrameLayout
+        android:id="@+id/videoContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center">
 
         <FrameLayout
-             android:layout_height="match_parent"
-             android:layout_width="wrap_content"
-             android:id="@+id/videoViewContainer"
-             android:layout_gravity="center">
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:id="@+id/videoViewContainer"
+            android:layout_gravity="center" />
 
-        </FrameLayout>
+    </FrameLayout>
 
-        <ImageView
-             android:layout_height="match_parent"
-             android:layout_width="match_parent"
-             android:src="@drawable/screenbug"
-             android:contentDescription="Channel watermark"
-             android:alpha="0"
-             android:id="@+id/screenBug" />
+    <ImageView
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:src="@drawable/screenbug"
+        android:contentDescription="Channel watermark"
+        android:alpha="0"
+        android:id="@+id/screenBug" />
 
-        <ImageView
-             android:layout_height="match_parent"
-             android:layout_width="match_parent"
-             android:contentDescription="Clasificación"
-             android:alpha="0"
-             android:layout_gravity="bottom|start"
-             android:id="@+id/clasifBanner" />
+    <ImageView
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:contentDescription="Clasificación"
+        android:alpha="0"
+        android:layout_gravity="bottom|start"
+        android:id="@+id/clasifBanner" />
 
-    </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
-
-    <com.keyler.discoverykidschannel.AspectRatioFrameLayout
-         android:layout_height="match_parent"
-         android:layout_width="match_parent"
-         android:layout_gravity="center">
-
-        <ImageView
-             android:layout_height="match_parent"
-             android:layout_width="match_parent"
-             android:src="@drawable/nextprogram1"
-             android:contentDescription="Next program frame"
-             android:alpha="0"
-             android:id="@+id/nextProgramBug" />
-
-    </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
-
-    <com.keyler.discoverykidschannel.AspectRatioFrameLayout
-         android:layout_height="match_parent"
-         android:layout_width="match_parent"
-         android:layout_gravity="center">
-
-        <com.keyler.discoverykidschannel.CrtOverlayView
-             android:layout_height="match_parent"
-             android:layout_width="match_parent"
-             android:clickable="false"
-             android:focusable="false"
-             android:id="@+id/crtOverlay" />
-
-    </com.keyler.discoverykidschannel.AspectRatioFrameLayout>
+    <ImageView
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:src="@drawable/nextprogram1"
+        android:contentDescription="Next program frame"
+        android:alpha="0"
+        android:id="@+id/nextProgramBug" />
 
     <TextView
-         android:layout_height="wrap_content"
-         android:layout_width="wrap_content"
-         android:gravity="center"
-         android:alpha="0"
-         android:fontFamily="@font/googlesans"
-         android:textColor="#FFFFFF"
-         android:id="@+id/debugInfo"
-         android:layout_gravity="center|top"
-         android:text="Espere..." />
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:gravity="center"
+        android:alpha="0"
+        android:fontFamily="@font/googlesans"
+        android:textColor="#FFFFFF"
+        android:id="@+id/debugInfo"
+        android:layout_gravity="center|top"
+        android:text="Espere..." />
 
     <ImageButton
-         android:layout_height="wrap_content"
-         android:layout_width="wrap_content"
-         android:visibility="gone"
-         android:src="@drawable/btn_prev"
-         android:background="@android:color/transparent"
-         android:layout_marginStart="16dp"
-         android:id="@+id/btnPrevious"
-         android:layout_gravity="start|center_vertical" />
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:visibility="gone"
+        android:src="@drawable/btn_prev"
+        android:background="@android:color/transparent"
+        android:layout_marginStart="16dp"
+        android:id="@+id/btnPrevious"
+        android:layout_gravity="start|center_vertical" />
 
     <ImageButton
-         android:layout_height="wrap_content"
-         android:layout_width="wrap_content"
-         android:visibility="gone"
-         android:src="@drawable/btn_next"
-         android:layout_marginEnd="16dp"
-         android:background="@android:color/transparent"
-         android:id="@+id/btnNext"
-         android:layout_gravity="end|center_vertical" />
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:visibility="gone"
+        android:src="@drawable/btn_next"
+        android:layout_marginEnd="16dp"
+        android:background="@android:color/transparent"
+        android:id="@+id/btnNext"
+        android:layout_gravity="end|center_vertical" />
 
     <ImageButton
-         android:layout_height="wrap_content"
-         android:layout_width="wrap_content"
-         android:visibility="gone"
-         android:src="@drawable/btn_settings"
-         android:layout_marginEnd="16dp"
-         android:background="@android:color/transparent"
-         android:layout_marginTop="16dp"
-         android:id="@+id/btnSettings"
-         android:layout_gravity="end|top" />
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:visibility="gone"
+        android:src="@drawable/btn_settings"
+        android:layout_marginEnd="16dp"
+        android:background="@android:color/transparent"
+        android:layout_marginTop="16dp"
+        android:id="@+id/btnSettings"
+        android:layout_gravity="end|top" />
 
     <TextView
-         android:layout_height="wrap_content"
-         android:layout_width="wrap_content"
-         android:background="#000"
-         android:fontFamily="@font/googlesans"
-         android:id="@+id/versionInfo"
-         android:text="..."
-         android:layout_gravity="end|bottom" />
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:background="#000"
+        android:fontFamily="@font/googlesans"
+        android:id="@+id/versionInfo"
+        android:text="..."
+        android:layout_gravity="end|bottom" />
 
 </FrameLayout>
