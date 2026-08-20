@@ -394,7 +394,7 @@ class LiveDiscoveryKids : AppCompatActivity() {
         // GIF de nuevo antes de que el alpha llegue a 0, mostrándose un
         // "salto" de un frame del inicio del loop siguiente. Ocultarlo 100ms
         // antes evita ese salto.
-        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 8_000L  // Se oculta 15s después de mostrarse (antes: 5s → 4,9s en 5.4.0)
+        internal const val SCREENBUG_START_ESTIMATED_DURATION_MS = 5_000L  // Se oculta 15s después de mostrarse (antes: 5s → 4,9s en 5.4.0)
         internal const val SCREENBUG_MID_DELAY_AFTER_START_MS = 0L           // El PNG aparece inmediatamente al ocultarse screenbug_start (antes: 15s de espera)
         // Preview 2010.5.4.0.40: 20s → 46s antes del final, para dejar lugar
         // al nextprogram (aparece 15s después, a los 31s antes del final).
@@ -1774,87 +1774,39 @@ internal fun LiveDiscoveryKids.isChristmasScreenBugActive(): Boolean {
 }
 
 /**
- * Release 5.5.0 — true del 25 de diciembre al 7 de enero (inclusive),
- * cualquier año. A diferencia de Navidad, Año Nuevo/Pascua/Día de la
- * Tierra solo reemplazan la fase 2 (screenbug.png, el PNG estático) — las
- * fases 1/3 (screenbug_start/end) siguen siendo siempre las normales, tal
- * como pidió Keyler ("remplaza screenbug.png por screenbug_year.png").
- *
- * Release 5.8.0 — mismo sistema unificado que isChristmasScreenBugActive() (ver ese comentario).
+ * RELEASE 2014.6.1.0 — true el 31 de octubre (Halloween), cualquier año.
+ * Mismo sistema unificado que isChristmasScreenBugActive() (switch maestro +
+ * selector), pero mismo criterio que tenían Año Nuevo/Pascua/Día de la
+ * Tierra (ELIMINADOS esta misma Release): solo reemplaza la fase 2
+ * (screenbug.png por screenbug_halloween.png) — las fases 1/3
+ * (screenbug_start/end) siguen siendo siempre las normales.
  */
-internal fun LiveDiscoveryKids.isAnoNuevoScreenBugActive(): Boolean {
+internal fun LiveDiscoveryKids.isHalloweenScreenBugActive(): Boolean {
     if (!SettingsManager.isEventsEnabled(this)) return false
     val selected = SettingsManager.getSelectedEvent(this)
-    if (selected == SettingsManager.EVENT_ANIO_NUEVO) return true
+    if (selected == SettingsManager.EVENT_HALLOWEEN) return true
     if (selected != SettingsManager.EVENT_NORMAL) return false
     val cal = java.util.Calendar.getInstance()
     val month = cal.get(java.util.Calendar.MONTH)
     val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
-    return (month == java.util.Calendar.DECEMBER && day in 25..31) ||
-        (month == java.util.Calendar.JANUARY && day in 1..7)
-}
-
-/**
- * Release 5.5.0 — fechas de Domingo de Pascua 2026-2030 (algoritmo de
- * Computus, calendario gregoriano). Agregar años más adelante cuando haga
- * falta — no hay una fórmula "en vivo" acá adentro a propósito, para poder
- * revisar/confirmar cada fecha a mano antes de que el ScreenBug la use.
- */
-private val PASCUA_MES_DIA_POR_ANIO: Map<Int, Pair<Int, Int>> = mapOf(
-    2026 to (4 to 5),
-    2027 to (3 to 28),
-    2028 to (4 to 16),
-    2029 to (4 to 1),
-    2030 to (4 to 21)
-)
-
-/**
- * Release 5.5.0 — true el Domingo de Pascua del año en curso (ver
- * PASCUA_MES_DIA_POR_ANIO). Release 5.8.0 — mismo sistema unificado que
- * isChristmasScreenBugActive() (ver ese comentario); forzado manual
- * ("Huevo de Pascua") ignora el mapa de fechas.
- */
-internal fun LiveDiscoveryKids.isPascuaScreenBugActive(): Boolean {
-    if (!SettingsManager.isEventsEnabled(this)) return false
-    val selected = SettingsManager.getSelectedEvent(this)
-    if (selected == SettingsManager.EVENT_PASCUA) return true
-    if (selected != SettingsManager.EVENT_NORMAL) return false
-    val cal = java.util.Calendar.getInstance()
-    val year = cal.get(java.util.Calendar.YEAR)
-    val month = cal.get(java.util.Calendar.MONTH) + 1   // 1-indexado, para comparar directo contra el mapa
-    val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
-    val target = PASCUA_MES_DIA_POR_ANIO[year] ?: return false
-    return month == target.first && day == target.second
-}
-
-/**
- * Release 5.5.0 — true el 22 de abril (Día de la Tierra), cualquier año.
- * Release 5.8.0 — mismo sistema unificado que isChristmasScreenBugActive() (ver ese comentario).
- */
-internal fun LiveDiscoveryKids.isDiaTierraScreenBugActive(): Boolean {
-    if (!SettingsManager.isEventsEnabled(this)) return false
-    val selected = SettingsManager.getSelectedEvent(this)
-    if (selected == SettingsManager.EVENT_DIA_TIERRA) return true
-    if (selected != SettingsManager.EVENT_NORMAL) return false
-    val cal = java.util.Calendar.getInstance()
-    val month = cal.get(java.util.Calendar.MONTH)
-    val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
-    return month == java.util.Calendar.APRIL && day == 22
+    return month == java.util.Calendar.OCTOBER && day == 31
 }
 
 /**
  * Release 5.5.0 — resuelve cuál PNG usar para la fase 2 (mid) del ScreenBug
  * en este momento, según qué evento esté activo (y habilitado por el
- * usuario). Orden de prioridad (no se solapan en la práctica, pero por las
- * dudas): Navidad > Año Nuevo > Pascua > Día de la Tierra > normal.
- * Compartida entre scheduleMultipleScreenbugs() y scheduleCreditosOverlays()
- * (para restaurar la fase 2 correcta al entrar a Créditos sin reiniciarla).
+ * usuario). Compartida entre scheduleMultipleScreenbugs() y
+ * scheduleCreditosOverlays() (para restaurar la fase 2 correcta al entrar a
+ * Créditos sin reiniciarla).
+ *
+ * RELEASE 2014.6.1.0 — ELIMINADOS por completo Año Nuevo, Pascua y Día de la
+ * Tierra (con isAnoNuevoScreenBugActive()/isPascuaScreenBugActive()/
+ * isDiaTierraScreenBugActive() y PASCUA_MES_DIA_POR_ANIO). Quedan solo
+ * Navidad y el nuevo Halloween.
  */
 internal fun LiveDiscoveryKids.currentMidScreenBugResource(): Int = when {
     isChristmasScreenBugActive() -> R.drawable.screenbug_navidad
-    isAnoNuevoScreenBugActive() -> R.drawable.screenbug_year
-    isPascuaScreenBugActive() -> R.drawable.screenbug_easteregg
-    isDiaTierraScreenBugActive() -> R.drawable.screenbug_tierra
+    isHalloweenScreenBugActive() -> R.drawable.screenbug_halloween
     else -> R.drawable.screenbug
 }
 
@@ -1925,7 +1877,22 @@ internal fun LiveDiscoveryKids.scheduleSegmentLogic(segmentStartMs: Int, isNewSe
     // programa corta al siguiente ítem del playlist. screenbug_end sigue
     // apareciendo normalmente antes de un corte comercial a mitad del
     // programa (isFinalSegment=false ahí) — eso no cambió.
-    val isFinalSegment = breakQueue.isEmpty()
+    //
+    // RELEASE 2014.6.1.0 — BUG FIX ("NextProgram aparece entre episodios en
+    // vez de comercial + continuamos"): breakQueue.isEmpty() por sí solo NO
+    // alcanza para saber si esto es realmente el final del programa — solo
+    // dice que no quedan MÁS CORTES DENTRO de este video puntual. Si el
+    // programa tiene Episodios (SettingsManager.getEpisodeCount() > 1) y
+    // todavía queda al menos un episodio más después de este, breakQueue
+    // vacío acá NO significa "se terminó el programa": significa "se
+    // terminó ESTE episodio", y lo que sigue es un corte comercial normal
+    // (con su continuamos) antes de arrancar el próximo episodio — ver
+    // resumeProgramAfterCommercial(). isFinalSegment ahora exige además que
+    // no queden más episodios pendientes, así que tanto screenbug_end como
+    // NextProgram (más abajo) dejan de dispararse entre episodios y vuelven
+    // a comportarse como un corte comercial cualquiera.
+    val hasMoreEpisodes = (currentEpisodeIndex + 1) < SettingsManager.getEpisodeCount(this, currentProgramIndex)
+    val isFinalSegment = breakQueue.isEmpty() && !hasMoreEpisodes
     val deferToCreditos = isFinalSegment && hasValidCreditos(currentProgramIndex)
 
     // Release 2009.4.6.1 — NUEVO: reemplazo de la lógica simple de screenbug
@@ -2012,6 +1979,7 @@ internal fun LiveDiscoveryKids.scheduleNextProgramBug(
 
     if (elapsed >= showAt) {
         Log.d(LiveDiscoveryKids.TAG, "NextProgramBug: elapsed=${elapsed}ms >= showAt(${showAt}ms) → aparece inmediatamente")
+        fadeOutBug()
         showNextProgramResource()
         setNextProgramBugAlpha(1f)
         showVideoInBox()
@@ -3246,6 +3214,7 @@ internal fun LiveDiscoveryKids.setBugAlpha(alpha: Float) {
 /** Aparición animada (fade-in, NEXTPROGRAM_ANIM_MS) del marco NextProgram + reposicionamiento del video en el recuadro. */
 internal fun LiveDiscoveryKids.fadeInNextProgramBug() {
     Log.d(LiveDiscoveryKids.TAG, "NextProgramBug FADE IN [program=$currentProgramIndex]")
+    fadeOutBug()
     showNextProgramResource()
     nextProgramBug.animate().cancel()
     nextProgramBug.alpha = 0f

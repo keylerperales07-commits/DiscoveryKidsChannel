@@ -95,8 +95,16 @@ class DiscoveryKidsLauncherActivity : AppCompatActivity() {
         // tiene el título — el logo se sacó de acá y pasó al cuerpo de la
         // pantalla, entre la ActionBar y el botón "Iniciar canal" (ver
         // activity_launcher.xml, @+id/imgLauncherLogo).
+        //
+        // RELEASE 2014.6.1.0 — la ActionBar pasa a tener el mismo color de
+        // fondo que la franja verde donde vive el logo (bg_launcher_header_green.xml
+        // / @color/dk_launcher_header_green), para que se vea como una sola
+        // franja continua en vez de dos colores distintos apilados.
         supportActionBar?.apply {
             title = "Discovery Kids Launcher"
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(
+                androidx.core.content.ContextCompat.getColor(this@DiscoveryKidsLauncherActivity, R.color.dk_launcher_header_green)
+            ))
         }
 
         // Release 5.8.0 — BUG FIX ("el ActionBar se come una parte del

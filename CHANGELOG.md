@@ -6,7 +6,56 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.
 y este proyecto sigue el estándar de [Versionado Semántico](https://semver.org/lang/es/).
 
 
-## [2013.6.0.0.01] — ✅ RELEASE · Era Doki 1.0 · Era 2013 · "La Era Planetaria" — 2026-08-14
+## [2014.6.1.0] — ✅ RELEASE · Era Doki 1.0 · Era 2014 — 2026-08-19
+
+> *NextProgram ya no aparece entre episodios de un mismo programa (solo antes del próximo programa real). Nuevo evento Halloween — quedan solo Navidad y Halloween. ActionBar del Launcher con el color del header. Edición Normal: ícono investigado a fondo, screenbug oculto al aparecer NextProgram. Edición HD: screenbug_start a 5s.*
+
+### 🔧 Corregido — Ambas ediciones
+
+- **NextProgram aparecía entre episodios de un mismo programa, en vez de un corte comercial normal.** `isFinalSegment` (la bandera que decide "esto es el final del programa, no un corte a mitad de camino") solo miraba si quedaban cortes comerciales pendientes *dentro del video actual* — no si el programa tenía más Episodios por delante. Resultado: al terminar el Episodio 1 de un programa con varios episodios, la app creía que el programa entero había terminado y mostraba NextProgram, en vez de un corte comercial (con su post-comercial) seguido del Episodio 2. Ahora `isFinalSegment` también exige que no queden más episodios — NextProgram solo aparece cuando de verdad sigue el próximo programa, no un episodio más del mismo. De paso, esto también corrige que `screenbug_end` se saltara entre episodios (quedaba suprimido con el mismo criterio incorrecto).
+
+### 🔧 Corregido — Solo Edición Normal
+
+- **Ícono de la app según el horario.** Investigado a fondo: el código es idéntico entre esta edición y Discovery Kids HD (donde ya funciona), así que no hay ninguna diferencia de lógica que explique el problema. La causa más probable es un resabio de una instalación anterior a este fix — Android conserva el estado habilitado/deshabilitado de los `activity-alias` entre actualizaciones (no entre instalaciones limpias), así que si esta edición se viene actualizando "en el lugar" desde antes del fix del ícono, puede haber quedado con los alias en un estado que el código nuevo no llega a corregir solo. Se recomienda una desinstalación limpia antes de esta versión.
+- **El `screenbug.png` se quedaba visible al mismo tiempo que NextProgram.** Ahora se oculta (`fadeOutBug()`, sin animación) en el mismo instante en que aparece el marco de NextProgram, en las dos formas en que puede aparecer (de una, o con el fade-in programado).
+
+### 🔧 Corregido — Solo Edición HD
+
+- **`screenbug_start` duraba 8s en vez de 5s** (quedó así en algún punto sin que se documentara el cambio) — corregido a 4,9s (el mismo margen de 100ms "anti-salto" que ya usa `screenbug_end`, para un GIF de 5s exactos).
+
+### 🆕 Agregado — Ambas ediciones
+
+- **ActionBar del Discovery Kids Launcher con el color del header.** Antes usaba el color por defecto de Material3; ahora tiene el mismo verde que la franja donde vive el logo, para que se vea como una sola franja continua.
+- **Nuevo evento: Halloween.** Se activa el 31 de octubre, usa `screenbug_halloween.png` (reemplaza solo la fase 2 del ScreenBug — igual criterio que tenían los eventos eliminados, ver abajo). Disponible también para forzarlo manualmente desde el selector de "Evento actual" en Configuración, sin importar la fecha.
+
+### 🗑️ Eliminado — Ambas ediciones
+
+- **Eventos: Año Nuevo, Pascua y Día de la Tierra.** El selector de "Evento actual" en Configuración queda solo con Navidad y el nuevo Halloween. Eliminadas `isAnoNuevoScreenBugActive()`, `isPascuaScreenBugActive()`, `isDiaTierraScreenBugActive()`, el mapa de fechas de Pascua (`PASCUA_MES_DIA_POR_ANIO`), y las constantes `EVENT_ANIO_NUEVO`/`EVENT_PASCUA`/`EVENT_DIA_TIERRA`.
+
+### ✏️ Cambios de contenido — Edición Normal
+
+- Se cambiaron 4 comerciales.
+- El ScreenBug (fases start/end) vuelve al ScreenBug normal de siempre.
+
+### ✏️ Cambios de contenido — Edición HD
+
+- Se ajustó el GIF de ScreenBug "próximo programa" para que encaje correctamente en pantallas 16:9.
+
+### 🔧 Notas técnicas
+
+- `LiveDiscoveryKids.kt` (ambas ediciones): `isFinalSegment` pasa a `breakQueue.isEmpty() && !hasMoreEpisodes`, con `hasMoreEpisodes` calculado contra `SettingsManager.getEpisodeCount()`. `scheduleNextProgramBug()`/`fadeInNextProgramBug()` (solo Normal) llaman `fadeOutBug()`. Nueva `isHalloweenScreenBugActive()`, reemplaza a las 3 funciones de eventos eliminadas en `currentMidScreenBugResource()`. HD: `SCREENBUG_START_ESTIMATED_DURATION_MS` de 8000L a 4900L.
+- `SettingsManager.kt` (ambas ediciones): eliminadas `EVENT_ANIO_NUEVO`/`EVENT_PASCUA`/`EVENT_DIA_TIERRA`; nueva `EVENT_HALLOWEEN`.
+- `SettingsActivity.kt` / `activity_settings.xml` (ambas ediciones): lista de eventos del selector actualizada.
+- `DiscoveryKidsLauncherActivity.kt` (ambas ediciones): `supportActionBar?.setBackgroundDrawable(...)` con `@color/dk_launcher_header_green`.
+- `build.gradle.kts` (ambas ediciones): `versionName` a `2014.6.1.0`.
+
+### ⚠️ Alcance
+
+> Cambios de código en `LiveDiscoveryKids.kt`, `SettingsManager.kt`, `SettingsActivity.kt` / `activity_settings.xml`, `DiscoveryKidsLauncherActivity.kt`, en **ambas ediciones** (Normal y HD). `build.gradle.kts`: `versionName` a `2014.6.1.0` en las dos.
+>
+> ⚠️ Requiere agregar aparte: `screenbug_halloween.png` (obligatorio para compilar, ambas ediciones).
+
+
 
 > *Consolida la Preview 2013.6.0.0.3. NextProgram2 corregido a exactamente 30s. Corregidos a fondo: crash al iniciar cuando cambia el horario (mismo bug que hacía que el ícono no cambiara). Se elimina por completo "Funciones experimentales" — Discovery Kids Launcher es ahora, siempre, la pantalla de inicio. Cuadros semitransparentes con acentos amarillos y texto negro/amarillo en el Launcher.*
 

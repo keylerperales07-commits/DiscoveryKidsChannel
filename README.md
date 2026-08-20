@@ -48,7 +48,7 @@ El proyecto está organizado en tres etapas evolutivas que reflejan la historia 
 - 📡 **Overlay Visual CRT** — Efectos de scanlines y pantalla para esa sensación retro de televisor
 - 💾 **Reanudación de Sesión** — La app recuerda dónde quedaste al volver desde el fondo
 - 🆕 **ScreenBug de 3 fases** — Marca de agua animada con el logo del canal: aparición (GIF), estático (PNG) y salida (GIF, a partir de 46 segundos antes del final del bloque). Desde la Release 5.4.0, si el programa tiene Intro/Créditos activados, la aparición ocurre en la Intro y la salida en los Créditos — la cuenta de tiempo no se reinicia al cambiar de clip, "suma" la duración real de cada uno. Los GIF se reproducen con `GifMovieDrawable`, basado en la API nativa `android.graphics.Movie` (sin librerías externas — Release 2009.5.1.0). Nuevo contenido de Mayo–Julio 2009 (Release 2009.5.1.0), Julio 2009–2011 (Release 2009.5.2.0)
-- 🎄 **ScreenBugs de eventos** — Navidad (1-24 dic, 3 fases completas, Release 2010.5.3.0), Año Nuevo (25 dic-7 ene), Pascua (Domingo de Pascua) y Día de la Tierra (22 de abril) — estos 3 últimos reemplazan solo el logo estático del medio (Release 5.5.0). Desde Configuración: switch maestro "Activar eventos" + selector para forzar manualmente un evento puntual o dejar que la app decida sola por fecha ("Normal") — Release 5.8.0
+- 🎄 **ScreenBugs de eventos** — Navidad (1-24 dic, 3 fases completas, Release 2010.5.3.0) y Halloween (31 de octubre, reemplaza solo el logo estático del medio — RELEASE 2014.6.1.0). Desde Configuración: switch maestro "Activar eventos" + selector para forzar manualmente un evento puntual o dejar que la app decida sola por fecha ("Normal") — Release 5.8.0
 - 📣 **Continuamos con horario** *(Preview 2013.6.0.0.2)* — El clip de vuelta del corte comercial ("continuamos") depende de la hora real del dispositivo: mañanera entre las 00:00 y las 11:59, tardía entre las 12:00 y las 23:59. Personalizable por programa desde Configuración de Programa, igual que antes
 - 🎞️ **FadeOut / FadeIn en el límite Programa↔comercial** *(acotado en la Preview 2013.6.0.0.2)* — El Programa se apaga con **FadeOut de 500 ms** justo antes de cortar a un bloque comercial, y se enciende con **FadeIn de 1 segundo** al retomarse justo después. Todo lo demás — Bumpers, Intro, Créditos, y los clips dentro del bloque comercial (comercial y continuamos) — corta en seco
 - 🖼️ **GIF "próximo programa"** *(Preview 2013.6.0.0.2)* — `proximo_programa_screenbug.gif` sustituye brevemente al ScreenBug estático una vez por segmento, a mitad del programa: nunca dentro del primer minuto de arrancado ni del último minuto antes de un comercial o del final del programa/episodio. Aparece y desaparece sin animación (corte seco), visible 15 segundos
@@ -173,23 +173,30 @@ git clone https://github.com/keylerperales07-commits/DiscoveryKidsChannel.git
 
 Consultá [`CHANGELOG.md`](./CHANGELOG.md) para el historial completo de versiones y cambios.
 
-> ✅ **Versión estable disponible — `v2013.6.0.0.01`** *(Era Doki 1.0 · Era 2013 · "La Era Planetaria")* — Consolida la Preview 2013.6.0.0.3. NextProgram2 corregido a exactamente 30s antes del final. Corregidos a fondo: crash al iniciar cuando cambia el horario (y el ícono que no cambiaba — mismo bug), sin necesitar "Habilitar versiones Preview". Se elimina por completo "Funciones experimentales": Discovery Kids Launcher es ahora, siempre, la pantalla de inicio de la app. Los cuadros del Launcher pasan a ser semitransparentes (se ve el fondo de horario detrás) con acentos amarillos y texto en negro/amarillo.
+> ✅ **Versión estable disponible — `v2014.6.1.0`** *(Era Doki 1.0 · Era 2014)* — NextProgram ya no aparece entre episodios de un mismo programa (solo antes del próximo programa real). Nuevo evento Halloween (31 de octubre) — quedan solo Navidad y Halloween. ActionBar del Discovery Kids Launcher con el color del header. Edición Normal: ícono según horario investigado a fondo, screenbug oculto al aparecer NextProgram. Edición HD: screenbug_start corregido a 5s.
 
-### 🚀 Última versión estable — `v2013.6.0.0.01` *(Release · Era Doki 1.0 · Era 2013 · "La Era Planetaria")*
-> *Consolida la Preview 2013.6.0.0.3. NextProgram2 corregido a exactamente 30s antes del final. Crash al iniciar corregido a fondo (mismo bug que hacía que el ícono de la app no cambiara según el horario). Se elimina por completo "Funciones experimentales". Launcher con cuadros semitransparentes, acentos amarillos y texto negro/amarillo. Nueva app hermana: Discovery Kids HD.*
+### 🚀 Última versión estable — `v2014.6.1.0` *(Release · Era Doki 1.0 · Era 2014)*
+> *NextProgram ya no aparece entre episodios de un mismo programa. Nuevo evento Halloween — quedan solo Navidad y Halloween. ActionBar del Launcher con el color del header. Edición Normal: ícono investigado a fondo, screenbug oculto al aparecer NextProgram. Edición HD: screenbug_start a 5s.*
 
+- 🐛 **NextProgram entre episodios** — corregido en ambas ediciones: ahora solo aparece antes del próximo programa real, no entre episodios de uno mismo.
+- 🐛 **Ícono según horario (Edición Normal)** — investigado a fondo (mismo código que en HD, donde ya funciona); se recomienda desinstalación limpia si venís actualizando desde antes del fix anterior.
+- 🐛 **screenbug oculto al aparecer NextProgram (Edición Normal)** y **screenbug_start a 5s (Edición HD)**.
+- 🎨 **ActionBar del Launcher** con el color del header (ambas ediciones).
+- 🆕 **Evento Halloween** (31 de octubre) — 🗑️ eliminados Año Nuevo, Pascua y Día de la Tierra (ambas ediciones).
+
+<details>
+<summary>📜 Versiones estables anteriores</summary>
+
+**`v2013.6.0.0.01`** *(Era Doki 1.0 · Era 2013 · "La Era Planetaria")* — Consolida la Preview 2013.6.0.0.3. NextProgram2 corregido a exactamente 30s antes del final. Crash al iniciar corregido a fondo (mismo bug que hacía que el ícono de la app no cambiara según el horario). Se elimina por completo "Funciones experimentales". Launcher con cuadros semitransparentes, acentos amarillos y texto negro/amarillo. Nueva app hermana: Discovery Kids HD.
 - 🐛 **NextProgram2** corregido a 30s exactos antes del final (antes compartía el tiempo con NextProgram1).
 - 🐛 **Crash al iniciar cuando cambia el horario** + **ícono que no cambiaba** — misma causa, investigada a fondo y corregida.
 - 🗑️ **"Funciones experimentales" eliminado** — Discovery Kids Launcher es ahora, siempre, la pantalla de inicio.
 - 🎨 **Launcher con transparencia** — panel semitransparente (se ve el fondo de horario detrás), acentos amarillos en los cuadros sin color propio, texto negro/títulos amarillos.
 - 🆕 **Discovery Kids HD** — nueva app hermana, disponible como asset adicional en este mismo release. Ver [📺 Discovery Kids HD](#-discovery-kids-hd) más abajo.
 
-<details>
-<summary>📜 Versiones estables anteriores</summary>
-
 **`v5.8.0`** *(Era Doki 1.0 · Era 2012 · "Parque Imaginario")* — Episodios de Programa (varios videos por programa, comerciales entre ellos, créditos al final), sistema de Eventos rediseñado (switch maestro + selector manual, movido a Configuración), banner de clasificación al iniciar un programa, restricción de duración mínima, y 4 correcciones: video corrido en Nextprogram2, ActionBar tapando contenido (edge-to-edge), y líneas de texto pegadas.
 - 🆕 **Episodios de Programa** — un programa puede tener varios videos en vez de uno solo; entre episodios se muestran comerciales, al terminar el último salen los Créditos.
-- 🆕 **Sistema de Eventos rediseñado** — switch maestro "Activar eventos" + selector manual de evento (Normal/Navidad/Año Nuevo/Pascua/Día de la Tierra), movido a Configuración.
+- 🆕 **Sistema de Eventos rediseñado** — switch maestro "Activar eventos" + selector manual de evento (Normal/Navidad/Año Nuevo/Pascua/Día de la Tierra — la lista de eventos disponibles cambió más adelante, ver `v2014.6.1.0` arriba), movido a Configuración.
 - 🆕 **Banner de clasificación** — `clasif_banner.gif` al arrancar cada programa, visible 17s.
 - ⚙️ **Duración mínima de 1 minuto** para cualquier episodio.
 - 🐛 **Video corrido con Nextprogram2** en Créditos — corregido con un ajuste de posición específico.

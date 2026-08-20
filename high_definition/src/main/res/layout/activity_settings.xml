@@ -128,11 +128,13 @@
         <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/dk_stroke" android:layout_marginStart="20dp" android:layout_marginEnd="20dp" />
 
         <!-- ══ Sección: Eventos (Release 5.8.0, NUEVO) ══
-             Reemplaza a los 4 switches individuales por evento que vivían
-             en Discovery Kids Launcher (Navidad/Año Nuevo/Pascua/Día de la
-             Tierra). Ahora: un switch maestro + un selector de qué evento
-             usar en este momento (o "Normal", que deja que la app decida
-             sola según la fecha, comportamiento de siempre). -->
+             Reemplaza a los switches individuales por evento que vivían
+             en Discovery Kids Launcher. Un switch maestro + un selector de
+             qué evento usar en este momento (o "Normal", que deja que la
+             app decida sola según la fecha, comportamiento de siempre).
+             RELEASE 2014.6.1.0 — el selector queda con Navidad y Halloween
+             (nuevo, 31 de octubre) — se eliminaron Año Nuevo/Pascua/Día de
+             la Tierra. -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

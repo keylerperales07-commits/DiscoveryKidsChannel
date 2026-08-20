@@ -226,13 +226,13 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     // ── Diálogo: Duración del Screenbug ─────────────────────────────────────
-    // ── Diálogo: Evento actual (Release 5.8.0) ──────────────────────────────
+    // ── Diálogo: Evento actual (Release 5.8.0)
+    //    RELEASE 2014.6.1.0 — se eliminaron Día de la Tierra/Año Nuevo/Huevo
+    //    de Pascua; se agrega Halloween (nuevo, 31 de octubre). ─────────────
     private val eventLabels = listOf(
         SettingsManager.EVENT_NORMAL to "Normal — la app decide sola según la fecha",
         SettingsManager.EVENT_NAVIDAD to "Navidad",
-        SettingsManager.EVENT_DIA_TIERRA to "Día de la Tierra",
-        SettingsManager.EVENT_ANIO_NUEVO to "Año Nuevo",
-        SettingsManager.EVENT_PASCUA to "Huevo de Pascua"
+        SettingsManager.EVENT_HALLOWEEN to "Halloween"
     )
 
     private fun showSelectedEventDialog() {

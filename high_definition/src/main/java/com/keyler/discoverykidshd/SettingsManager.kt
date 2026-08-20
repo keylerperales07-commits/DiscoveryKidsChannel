@@ -132,21 +132,22 @@ object SettingsManager {
     // nunca agenda cortes comerciales (ver LiveDiscoveryKids.beginProgramSegment()).
     private const val KEY_COMMERCIALS_ENABLED_PREFIX = "commercials_enabled_"
 
-    // Release 5.8.0 — BUG FIX (diseño simplificado): los 4 switches
-    // individuales por evento (Navidad/Año Nuevo/Pascua/Día de la Tierra),
-    // que vivían en Discovery Kids Launcher, se reemplazan por un único
-    // switch maestro "Activar eventos" (Predeterminado: activado) + un
-    // selector de "Evento actual" — ambos acá en Configuración. Con el
-    // maestro activado, el selector permite elegir "Normal" (la app decide
-    // sola según la fecha, comportamiento de siempre) o forzar un evento
-    // puntual manualmente, sin importar la fecha real (útil para
-    // previsualizar/probar, o simplemente para dejarlo fijo si alguien
-    // quiere). Con el maestro desactivado, el selector queda deshabilitado
-    // y ningún evento se activa nunca (siempre el ScreenBug normal) — ver
-    // LiveDiscoveryKids.isChristmasScreenBugActive() y las 3 funciones
-    // análogas (isAnoNuevoScreenBugActive(), etc.).
+    // Release 5.8.0 — BUG FIX (diseño simplificado): los switches
+    // individuales por evento, que vivían en Discovery Kids Launcher, se
+    // reemplazan por un único switch maestro "Activar eventos"
+    // (Predeterminado: activado) + un selector de "Evento actual" — ambos
+    // acá en Configuración. Con el maestro activado, el selector permite
+    // elegir "Normal" (la app decide sola según la fecha, comportamiento de
+    // siempre) o forzar un evento puntual manualmente, sin importar la
+    // fecha real (útil para previsualizar/probar, o simplemente para
+    // dejarlo fijo si alguien quiere). Con el maestro desactivado, el
+    // selector queda deshabilitado y ningún evento se activa nunca (siempre
+    // el ScreenBug normal) — ver LiveDiscoveryKids.isChristmasScreenBugActive()
+    // y RELEASE 2014.6.1.0 — isHalloweenScreenBugActive() (único evento que
+    // queda además de Navidad; se eliminaron Año Nuevo, Pascua y Día de la
+    // Tierra).
     private const val KEY_EVENTS_ENABLED = "events_enabled"
-    private const val KEY_SELECTED_EVENT = "selected_event"   // "normal" | "navidad" | "anio_nuevo" | "pascua" | "dia_tierra"
+    private const val KEY_SELECTED_EVENT = "selected_event"   // "normal" | "navidad" | "halloween" (RELEASE 2014.6.1.0)
 
     // ── Valores por defecto ─────────────────────────────────────────────────
     const val DEFAULT_SCREENBUG_DELAY_SEC = 20
@@ -382,7 +383,7 @@ object SettingsManager {
         prefs(context).edit().putBoolean(KEY_EVENTS_ENABLED, enabled).apply()
     }
 
-    /** "normal" | "navidad" | "anio_nuevo" | "pascua" | "dia_tierra" — ver EVENT_* de acá abajo. */
+    /** "normal" | "navidad" | "halloween" — ver EVENT_* de acá abajo (RELEASE 2014.6.1.0). */
     fun getSelectedEvent(context: Context): String =
         prefs(context).getString(KEY_SELECTED_EVENT, DEFAULT_SELECTED_EVENT) ?: DEFAULT_SELECTED_EVENT
 
@@ -392,7 +393,9 @@ object SettingsManager {
 
     const val EVENT_NORMAL = "normal"
     const val EVENT_NAVIDAD = "navidad"
-    const val EVENT_ANIO_NUEVO = "anio_nuevo"
-    const val EVENT_PASCUA = "pascua"
-    const val EVENT_DIA_TIERRA = "dia_tierra"
+    // RELEASE 2014.6.1.0 — ELIMINADOS por completo: EVENT_ANIO_NUEVO,
+    // EVENT_PASCUA, EVENT_DIA_TIERRA (con su lógica en LiveDiscoveryKids.kt:
+    // isAnoNuevoScreenBugActive()/isPascuaScreenBugActive()/isDiaTierraScreenBugActive()).
+    // Quedan solo Navidad y el nuevo Halloween.
+    const val EVENT_HALLOWEEN = "halloween"
 }
